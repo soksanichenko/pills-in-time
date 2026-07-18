@@ -25,6 +25,9 @@ class IntakeRepository @Inject constructor(
 
     suspend fun getById(logId: Long): IntakeLog? = intakeLogDao.getById(logId)
 
+    suspend fun getLogForOccurrenceOnce(scheduledIntakeId: Long, intakeTimeId: Long, occurrenceDate: LocalDate): IntakeLog? =
+        intakeLogDao.getLogForOccurrence(scheduledIntakeId, intakeTimeId, occurrenceDate)
+
     /**
      * Quick in-app actions (Home row check button, action-sheet Took it/Skipped)
      * are tagged source = REMINDER, distinct only from the retroactive manual

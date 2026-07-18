@@ -7,11 +7,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import app.zelgray.pills_in_time.MainActivity
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.repository.DrugRepository
+import app.zelgray.pills_in_time.data.repository.IntakeRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
@@ -19,6 +23,7 @@ import app.zelgray.pills_in_time.ui.drugs.doseTextPlain
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.LocalTime
+import java.util.concurrent.TimeUnit
 
 @HiltWorker
 class PostNotificationWorker @AssistedInject constructor(
@@ -26,6 +31,7 @@ class PostNotificationWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val drugRepository: DrugRepository,
     private val stockRepository: StockRepository,
+    private val intakeRepository: IntakeRepository,
     private val resolveEffectiveStrength: ResolveEffectiveStrengthUseCase,
 ) : CoroutineWorker(appContext, params) {
 
@@ -41,8 +47,15 @@ class PostNotificationWorker @AssistedInject constructor(
 
         if (drugId < 0 || scheduledIntakeId < 0 || intakeTimeId < 0 || occurrenceDateEpochDay < 0) return Result.failure()
 
-        val drug = drugRepository.getById(drugId) ?: return Result.failure()
         val occurrenceDate = NotificationContracts.occurrenceDateOf(occurrenceDateEpochDay)
+
+        // Occurrence may already be resolved (e.g. logged from the Home screen directly)
+        // since the last repeat was scheduled — stop the chain here instead of nagging further.
+        if (intakeRepository.getLogForOccurrenceOnce(scheduledIntakeId, intakeTimeId, occurrenceDate) != null) {
+            return Result.success()
+        }
+
+        val drug = drugRepository.getById(drugId) ?: return Result.failure()
         val timeOfDay = LocalTime.ofSecondOfDay(timeOfDaySecond.toLong())
         val notificationId = ScheduleAlarmsForWindowUseCase.computeRequestCode(scheduledIntakeId, intakeTimeId, occurrenceDate)
 
@@ -68,7 +81,21 @@ class PostNotificationWorker @AssistedInject constructor(
             .build()
 
         NotificationManagerCompat.from(applicationContext).notify(notificationId, notification)
+        scheduleRepeat(notificationId)
         return Result.success()
+    }
+
+    /** Re-posts this same reminder every REPEAT_INTERVAL_MINUTES until Take/Skip/Snooze cancels or replaces this chain. */
+    private fun scheduleRepeat(notificationId: Int) {
+        val request = OneTimeWorkRequestBuilder<PostNotificationWorker>()
+            .setInputData(inputData)
+            .setInitialDelay(REPEAT_INTERVAL_MINUTES, TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            NotificationContracts.repeatWorkName(notificationId),
+            ExistingWorkPolicy.REPLACE,
+            request,
+        )
     }
 
     private fun contentIntent(
@@ -123,4 +150,8 @@ class PostNotificationWorker @AssistedInject constructor(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+    companion object {
+        private const val REPEAT_INTERVAL_MINUTES = 5L
+    }
 }

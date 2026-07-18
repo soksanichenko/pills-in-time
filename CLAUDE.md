@@ -68,6 +68,8 @@ Migrations: `MIGRATION_1_2`, `MIGRATION_2_3` registered in `DatabaseModule`; kee
 
 Rolling-window exact-alarm design: `DailyRescheduleWorker` (periodic + enqueued on every period/time CRUD and on boot via `BootRescheduleReceiver`) reconciles the `scheduled_alarms` registry against a fresh few-day window from `ScheduleAlarmsForWindowUseCase`, registering `AlarmManager` exact alarms per occurrence (request code = stable hash of the occurrence triple). `NotificationPostReceiver` builds the reminder notification (channel: `medication_reminders`); `IntakeActionReceiver` handles the 3 actions, delegating the actual Room write to `LogIntakeActionWorker` (kept out of `onReceive`'s execution budget) and snooze to `SnoozeWorker` (re-arms a single alarm at `now + snoozeMinutes` from `SettingsRepository`, default 15 min, no DB write). `LowStockCheckWorker` runs `CheckLowStockRemindersUseCase` periodically on a separate channel (`low_stock_reminders`).
 
+`PostNotificationWorker` self-reschedules: after posting, it enqueues another copy of itself 5 minutes later as WorkManager unique work named `post_notification_<notificationId>` (`ExistingWorkPolicy.REPLACE`), so an ignored reminder keeps re-alerting every 5 minutes. `IntakeActionReceiver` cancels that unique work on Take/Skip/Snooze; `SnoozeWorker` re-enqueues under the same unique name (so the snooze delay replaces the pending 5-minute repeat instead of racing it — once the snoozed notification re-fires, the 5-minute repeat resumes automatically if still unacknowledged). Each run also checks `IntakeRepository.getLogForOccurrenceOnce` first and no-ops (without rescheduling) if the occurrence was already logged some other way (e.g. a Home screen quick action), so the chain self-terminates even without an explicit cancel.
+
 Exact-alarm permission (API 31+) is requested via `AlarmPermissions`; falls back to inexact alarms if declined.
 
 ## Backup (Google Drive)
@@ -86,6 +88,10 @@ Exact-alarm permission (API 31+) is requested via `AlarmPermissions`; falls back
 ## Localization
 
 `values/` (English, source of truth) + `values-uk/`, `values-ru/`, `values-cs/` — flat `snake_case` string keys, all four locale files must stay in parity (same key set). `plurals.xml` exists per-locale alongside `strings.xml`. Locale switching is per-app (`AppLanguage`/`LanguageManager` in `ui/settings/Language.kt`, wrapping `AppCompatDelegate.setApplicationLocales`), independent of system language, declared in `locales_config.xml` + manifest `android:localeConfig`.
+
+## Release Signing
+
+`app/build.gradle.kts` loads `keystore.properties` (repo root, gitignored — never commit) via `rootProject.file(...)`; if the file is absent, `signingConfigs`/`buildTypes.release.signingConfig` are skipped entirely, so debug/CI builds without a keystore still work (release builds just come out unsigned). Expected keys in `keystore.properties`: `storeFile`, `storePassword`, `keyAlias`, `keyPassword`. `*.keystore`/`*.jks` are also gitignored. Bump `versionCode` in `defaultConfig` before every new Play Console upload (it rejects a reused `versionCode` outright); `./gradlew bundleRelease` produces `app/build/outputs/bundle/release/app-release.aab`.
 
 ## Key Dependencies
 

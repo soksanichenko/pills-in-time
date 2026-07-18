@@ -62,6 +62,9 @@ object NotificationContracts {
         .build()
 
     fun occurrenceDateOf(epochDay: Long): LocalDate = LocalDate.ofEpochDay(epochDay)
+
+    /** Unique WorkManager work name for the repeat/snooze chain of a given occurrence's notification. */
+    fun repeatWorkName(notificationId: Int): String = "post_notification_$notificationId"
 }
 
 /** Identifies a single occurrence to jump straight to when the app is opened from a notification tap. */

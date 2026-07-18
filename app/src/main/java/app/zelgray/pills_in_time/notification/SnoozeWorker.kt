@@ -3,6 +3,7 @@ package app.zelgray.pills_in_time.notification
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -26,11 +27,16 @@ class SnoozeWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val snoozeMinutes = settingsRepository.getSnoozeMinutesOnce()
+        val notificationId = inputData.getInt(NotificationContracts.EXTRA_NOTIFICATION_ID, -1)
         val request = OneTimeWorkRequestBuilder<PostNotificationWorker>()
             .setInputData(inputData)
             .setInitialDelay(snoozeMinutes.toLong(), TimeUnit.MINUTES)
             .build()
-        WorkManager.getInstance(applicationContext).enqueue(request)
+        WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+            NotificationContracts.repeatWorkName(notificationId),
+            ExistingWorkPolicy.REPLACE,
+            request,
+        )
         return Result.success()
     }
 }

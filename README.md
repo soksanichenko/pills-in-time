@@ -24,7 +24,7 @@ Day-grouped log of every taken/skipped occurrence, filterable by drug, with manu
 For each period, projects how much stock is left at the period's start and end by simulating day-by-day consumption from today. Also suggests which physical tablets/capsules on hand combine (in 0.5-unit steps, across up to 4 distinct strengths) to hit a target strength dose exactly, ranked by fewest total pieces.
 
 ### Notifications
-- **Medication reminders**: exact alarms for the next few days, rescheduled automatically whenever a period/time changes, after a device reboot, and via a periodic background refresh. Each notification has Took it / Skipped / Remind later actions; snooze duration is configurable.
+- **Medication reminders**: exact alarms for the next few days, rescheduled automatically whenever a period/time changes, after a device reboot, and via a periodic background refresh. Each notification has Took it / Skipped / Remind later actions; snooze duration is configurable. Left unanswered, a reminder repeats every 5 minutes until you respond.
 - **Low-stock reminders**: a per-batch, optional "remind me N days before it runs out" alert based on the same stock projection.
 
 ### Backup & restore (Google Drive)

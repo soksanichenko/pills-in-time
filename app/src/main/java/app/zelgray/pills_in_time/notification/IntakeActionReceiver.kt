@@ -21,6 +21,7 @@ class IntakeActionReceiver : BroadcastReceiver() {
         val notificationId = intent.getIntExtra(NotificationContracts.EXTRA_NOTIFICATION_ID, -1)
         if (notificationId != -1) {
             NotificationManagerCompat.from(context).cancel(notificationId)
+            WorkManager.getInstance(context).cancelUniqueWork(NotificationContracts.repeatWorkName(notificationId))
         }
 
         val baseData = NotificationContracts.dataFromIntent(intent)

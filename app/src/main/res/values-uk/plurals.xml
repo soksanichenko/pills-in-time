@@ -1,0 +1,23 @@
+<resources>
+    <plurals name="unit_tablet">
+        <item quantity="one">%1$s таблетка</item>
+        <item quantity="few">%1$s таблетки</item>
+        <item quantity="many">%1$s таблеток</item>
+        <item quantity="other">%1$s таблетки</item>
+    </plurals>
+    <plurals name="unit_capsule">
+        <item quantity="one">%1$s капсула</item>
+        <item quantity="few">%1$s капсули</item>
+        <item quantity="many">%1$s капсул</item>
+        <item quantity="other">%1$s капсули</item>
+    </plurals>
+    <plurals name="unit_drops">
+        <item quantity="one">%1$s крапля</item>
+        <item quantity="few">%1$s краплі</item>
+        <item quantity="many">%1$s крапель</item>
+        <item quantity="other">%1$s краплі</item>
+    </plurals>
+    <plurals name="unit_ml">
+        <item quantity="other">%1$s мл</item>
+    </plurals>
+</resources>

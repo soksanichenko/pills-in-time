@@ -1,0 +1,198 @@
+<resources>
+    <string name="app_name">MedTracker</string>
+
+    <string name="coming_soon">Coming soon</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_drugs">Drugs</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="language_section_title">Language</string>
+    <string name="language_system_default">System default</string>
+    <string name="language_english">English</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_czech">Čeština</string>
+
+    <string name="action_back">Back</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+
+    <string name="drugs_empty">No drugs yet. Tap + to add one.</string>
+
+    <string name="add_drug_title">Add drug</string>
+    <string name="edit_drug_title">Edit drug</string>
+    <string name="drug_name_label">Name</string>
+    <string name="drug_name_placeholder">e.g. Metformin</string>
+    <string name="drug_name_error">Name is required</string>
+    <string name="drug_form_label">Form</string>
+    <string name="drug_form_tablet">Tablet</string>
+    <string name="drug_form_capsule">Capsule</string>
+    <string name="drug_form_drops">Drops</string>
+    <string name="drug_form_ml">ml</string>
+    <string name="drug_form_other">Other</string>
+    <string name="drug_form_other_label">Custom form</string>
+    <string name="drug_form_other_placeholder">e.g. Patch</string>
+
+    <string name="supplies_section_title">Supplies</string>
+    <string name="add_stock_action">Add stock</string>
+    <string name="add_stock_title">Add stock</string>
+    <string name="edit_stock_title">Edit stock</string>
+    <string name="stock_empty">No stock batches yet.</string>
+    <string name="stock_row_summary">%1$s @ %2$s %3$s</string>
+
+    <string name="restock_action">Add to stock</string>
+    <string name="restock_title">Add to stock</string>
+    <string name="restock_quantity_label">Quantity purchased</string>
+    <string name="restock_quantity_error">Enter a quantity greater than 0</string>
+
+    <string name="delete_drug_title">Delete drug?</string>
+    <string name="delete_drug_body_cascade">This drug has active periods or stock. Deleting it will also remove its periods, stock, and history.</string>
+    <string name="delete_drug_body_plain">This will permanently delete the drug.</string>
+
+    <string name="delete_stock_title">Delete stock batch?</string>
+    <string name="delete_stock_body">This will permanently delete this stock batch.</string>
+
+    <string name="quantity_label">Quantity</string>
+    <string name="quantity_placeholder">30</string>
+    <string name="quantity_error">Enter a quantity greater than 0</string>
+    <string name="strength_per_unit_label">Strength per unit</string>
+    <string name="strength_value_label">Value</string>
+    <string name="strength_error">Enter a value greater than 0</string>
+    <string name="unit_mg">mg</string>
+    <string name="unit_mcg">mcg</string>
+    <string name="unit_iu">IU</string>
+
+    <string name="periods_section_title">Periods</string>
+    <string name="add_period_action">Add period</string>
+    <string name="periods_empty">No periods yet.</string>
+    <string name="period_active_now">Active now</string>
+    <string name="period_ongoing_from">%1$s – ongoing</string>
+
+    <string name="delete_period_title">Delete period?</string>
+    <string name="delete_period_body">This will permanently delete this period and its times.</string>
+
+    <string name="add_period_title">Add period</string>
+    <string name="edit_period_title">Edit period</string>
+
+    <string name="period_start_label">Start date</string>
+    <string name="period_start_custom">Custom date</string>
+    <string name="period_start_continue">Continue previous</string>
+    <string name="period_continues_from">Continues after previous period ended %1$s</string>
+    <string name="period_starts_on">Starts on %1$s</string>
+
+    <string name="period_end_label">End</string>
+    <string name="end_mode_date">Date</string>
+    <string name="end_mode_days">Days</string>
+    <string name="end_mode_none">Ongoing</string>
+    <string name="end_mode_none_hint">No end date — this period continues indefinitely.</string>
+    <string name="duration_days_label">Duration (days)</string>
+    <string name="period_ends_on">Ends on %1$s</string>
+
+    <string name="period_times_label">Times of day</string>
+    <string name="dose_mode_units">In units</string>
+    <string name="dose_mode_strength">In strength</string>
+    <string name="dose_value_label">Dose</string>
+    <string name="times_error">Add at least one time with a dose greater than 0</string>
+    <string name="duration_days_error">Enter a duration of at least 1 day</string>
+    <string name="specific_days_error">Select at least one day of the week</string>
+    <string name="time_label">Time</string>
+    <string name="new_time_label">New time</string>
+    <string name="add_time_action">Add</string>
+
+    <string name="period_cycle_label">Cycle</string>
+    <string name="cycle_daily">Daily</string>
+    <string name="cycle_every_other_day">Every other day</string>
+    <string name="cycle_specific_days">Specific days</string>
+    <string name="cycle_days_on_off">Days on / off</string>
+    <string name="cycle_days_on_off_label">%1$d days on, %2$d days off</string>
+    <string name="intake_days_label">Days to take</string>
+    <string name="break_days_label">Days off</string>
+    <string name="days_on_off_error">Enter at least 1 day for both fields</string>
+    <string name="cycle_custom">Custom</string>
+    <string name="cycle_custom_label">Description</string>
+
+    <string name="stock_projection_remaining">%1$s left once all periods end</string>
+    <string name="stock_projection_runs_out">Supply runs out on %1$s</string>
+    <string name="stock_projection_sufficient">Current supply covers the foreseeable future</string>
+    <string name="stock_projection_none">No active or upcoming periods</string>
+    <string name="period_stock_at_start">Stock at start: %1$s</string>
+    <string name="period_stock_at_end">Stock at end: %1$s</string>
+
+    <string name="or_word">or</string>
+    <string name="no_exact_combo">no exact match from current supplies</string>
+
+    <string name="home_empty">No intakes scheduled for this day.</string>
+    <string name="day_today">Today</string>
+    <string name="day_yesterday">Yesterday</string>
+    <string name="day_tomorrow">Tomorrow</string>
+    <string name="previous_day">Previous day</string>
+    <string name="next_day">Next day</string>
+
+    <string name="status_upcoming">Upcoming</string>
+    <string name="status_overdue">Overdue</string>
+    <string name="status_taken">Taken</string>
+    <string name="status_skipped">Skipped</string>
+    <string name="status_missed">Missed</string>
+
+    <string name="action_took_it">Took it</string>
+    <string name="action_skipped">Skipped</string>
+    <string name="action_snooze">Remind later</string>
+
+    <string name="notification_channel_name">Medication reminders</string>
+    <string name="notification_channel_description">Alerts when it\'s time to take a scheduled dose</string>
+
+    <string name="notification_low_stock_channel_name">Low stock reminders</string>
+    <string name="notification_low_stock_channel_description">Alerts when a supply is projected to run out soon</string>
+    <string name="low_stock_notification_title">Low stock: %1$s</string>
+    <string name="low_stock_notification_text">This supply is projected to run out around %1$s</string>
+
+    <string name="low_stock_reminder_label">Remind before running out (days)</string>
+    <string name="low_stock_reminder_placeholder">e.g. 7 (leave empty to disable)</string>
+    <string name="low_stock_reminder_error">Enter a whole number of days, or leave empty</string>
+
+    <string name="exact_alarm_rationale">Enable exact alarms so medication reminders fire right on time.</string>
+    <string name="exact_alarm_enable">Enable</string>
+
+    <string name="reminders_section_title">Reminders</string>
+    <string name="snooze_minutes_label">Snooze duration</string>
+    <string name="snooze_minutes_value">%1$d min</string>
+
+    <string name="history_filter_all">All drugs</string>
+    <string name="history_empty">No history yet.</string>
+    <string name="source_reminder">Reminder</string>
+    <string name="source_manual">Manual</string>
+
+    <string name="delete_entry_title">Delete entry?</string>
+    <string name="delete_entry_body">This will permanently delete this history entry.</string>
+
+    <string name="add_entry_title">Add manual entry</string>
+    <string name="edit_entry_title">Edit entry</string>
+    <string name="entry_drug_label">Drug</string>
+    <string name="entry_period_label">Period</string>
+    <string name="entry_time_label">Time</string>
+    <string name="entry_occurrence_date_label">Date</string>
+    <string name="entry_selection_error">Select a drug, period, and time</string>
+    <string name="entry_actual_section_title">Actual</string>
+    <string name="entry_actual_date_label">Actual date</string>
+    <string name="entry_actual_time_label">Actual time</string>
+    <string name="entry_status_label">Status</string>
+
+    <string name="backup_section_title">Google Drive backup</string>
+    <string name="backup_not_connected">Connect your Google account to back up and restore your data.</string>
+    <string name="backup_connect_action">Connect Google account</string>
+    <string name="backup_never_backed_up">Connected. No backup yet.</string>
+    <string name="backup_last_backup">Last backup: %1$s</string>
+    <string name="backup_now_action">Back up now</string>
+    <string name="restore_action">Restore from backup</string>
+    <string name="restore_confirm_title">Restore from backup?</string>
+    <string name="restore_confirm_body">This replaces all drugs, stock, schedules, and history on this device with the data from your last Google Drive backup. This cannot be undone.</string>
+    <string name="backup_connected_toast">Connected to Google Drive</string>
+    <string name="backup_complete_toast">Backup complete</string>
+    <string name="restore_complete_toast">Restore complete</string>
+    <string name="backup_error_generic">Something went wrong. Please try again.</string>
+    <string name="restore_error_generic">Restore failed. Please try again.</string>
+</resources>

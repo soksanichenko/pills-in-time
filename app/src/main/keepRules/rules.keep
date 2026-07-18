@@ -1,0 +1,35 @@
+# Add project specific R8 rules here.
+# AGP will combine all keep rule files in src/main/keepRules to pass to R8
+#
+# For more details, see
+#   https://d.android.com/r/tools/r8/keep-rules
+
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
+
+# --- WorkManager / Hilt workers ---
+# HiltWorkerFactory instantiates these by class name at runtime; Hilt's own
+# bundled consumer rules should already cover this, but a broken worker fails
+# silently (no notification/backup ever runs), so keep them explicitly too.
+-keep class app.zelgray.pills_in_time.notification.*Worker { *; }
+
+# --- Retrofit / Drive REST API ---
+-keep interface app.zelgray.pills_in_time.data.remote.drive.DriveApi { *; }
+-keep class app.zelgray.pills_in_time.data.remote.drive.DriveFileMetadata { *; }
+-keep class app.zelgray.pills_in_time.data.remote.drive.DriveFileListResponse { *; }
+
+# --- kotlinx.serialization backup DTOs ---
+# Official kotlinx.serialization R8 recipe: keep the generated $serializer
+# companions and the serializer() factory lookup for our @Serializable types.
+-keepattributes *Annotation*, InnerClasses
+-keep,includedescriptorclasses class app.zelgray.pills_in_time.domain.model.**$$serializer { *; }
+-keepclassmembers class app.zelgray.pills_in_time.domain.model.** {
+    *** Companion;
+}
+-keepclasseswithmembers class app.zelgray.pills_in_time.domain.model.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}

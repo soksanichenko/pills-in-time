@@ -1,0 +1,19 @@
+<resources>
+    <!-- %1$s carries the already-formatted dose number; the plurals `quantity`
+         is a separate rounded int used only to pick which form to use. -->
+    <plurals name="unit_tablet">
+        <item quantity="one">%1$s tablet</item>
+        <item quantity="other">%1$s tablets</item>
+    </plurals>
+    <plurals name="unit_capsule">
+        <item quantity="one">%1$s capsule</item>
+        <item quantity="other">%1$s capsules</item>
+    </plurals>
+    <plurals name="unit_drops">
+        <item quantity="one">%1$s drop</item>
+        <item quantity="other">%1$s drops</item>
+    </plurals>
+    <plurals name="unit_ml">
+        <item quantity="other">%1$s ml</item>
+    </plurals>
+</resources>

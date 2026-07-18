@@ -1,0 +1,198 @@
+<resources>
+    <string name="app_name">MedTracker</string>
+
+    <string name="coming_soon">Скоро тут щось буде</string>
+
+    <string name="nav_home">Головна</string>
+    <string name="nav_drugs">Ліки</string>
+    <string name="nav_history">Історія</string>
+    <string name="nav_settings">Налаштування</string>
+
+    <string name="language_section_title">Мова</string>
+    <string name="language_system_default">Системна мова</string>
+    <string name="language_english">English</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_czech">Čeština</string>
+
+    <string name="action_back">Назад</string>
+    <string name="action_edit">Редагувати</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_save">Зберегти</string>
+
+    <string name="drugs_empty">Ще немає ліків. Натисніть +, щоб додати.</string>
+
+    <string name="add_drug_title">Додати ліки</string>
+    <string name="edit_drug_title">Редагувати ліки</string>
+    <string name="drug_name_label">Назва</string>
+    <string name="drug_name_placeholder">напр. Метформін</string>
+    <string name="drug_name_error">Потрібно вказати назву</string>
+    <string name="drug_form_label">Форма</string>
+    <string name="drug_form_tablet">Таблетка</string>
+    <string name="drug_form_capsule">Капсула</string>
+    <string name="drug_form_drops">Краплі</string>
+    <string name="drug_form_ml">мл</string>
+    <string name="drug_form_other">Інше</string>
+    <string name="drug_form_other_label">Своя форма</string>
+    <string name="drug_form_other_placeholder">напр. Пластир</string>
+
+    <string name="supplies_section_title">Запаси</string>
+    <string name="add_stock_action">Додати запас</string>
+    <string name="add_stock_title">Додати запас</string>
+    <string name="edit_stock_title">Редагувати запас</string>
+    <string name="stock_empty">Ще немає партій запасу.</string>
+    <string name="stock_row_summary">%1$s по %2$s %3$s</string>
+
+    <string name="restock_action">Поповнити запас</string>
+    <string name="restock_title">Поповнити запас</string>
+    <string name="restock_quantity_label">Придбана кількість</string>
+    <string name="restock_quantity_error">Введіть кількість більше 0</string>
+
+    <string name="delete_drug_title">Видалити ліки?</string>
+    <string name="delete_drug_body_cascade">У цих ліків є активні періоди прийому або запаси. Видалення також видалить періоди, запаси та історію.</string>
+    <string name="delete_drug_body_plain">Ліки будуть видалені назавжди.</string>
+
+    <string name="delete_stock_title">Видалити партію запасу?</string>
+    <string name="delete_stock_body">Ця партія запасу буде видалена назавжди.</string>
+
+    <string name="quantity_label">Кількість</string>
+    <string name="quantity_placeholder">30</string>
+    <string name="quantity_error">Введіть кількість більше 0</string>
+    <string name="strength_per_unit_label">Дозування на одиницю</string>
+    <string name="strength_value_label">Значення</string>
+    <string name="strength_error">Введіть значення більше 0</string>
+    <string name="unit_mg">мг</string>
+    <string name="unit_mcg">мкг</string>
+    <string name="unit_iu">МО</string>
+
+    <string name="periods_section_title">Періоди</string>
+    <string name="add_period_action">Додати період</string>
+    <string name="periods_empty">Ще немає періодів.</string>
+    <string name="period_active_now">Активний зараз</string>
+    <string name="period_ongoing_from">%1$s — триває</string>
+
+    <string name="delete_period_title">Видалити період?</string>
+    <string name="delete_period_body">Цей період і його часи прийому будуть видалені назавжди.</string>
+
+    <string name="add_period_title">Додати період</string>
+    <string name="edit_period_title">Редагувати період</string>
+
+    <string name="period_start_label">Дата початку</string>
+    <string name="period_start_custom">Своя дата</string>
+    <string name="period_start_continue">Продовжити попередній</string>
+    <string name="period_continues_from">Продовжується після завершення попереднього періоду %1$s</string>
+    <string name="period_starts_on">Починається %1$s</string>
+
+    <string name="period_end_label">Кінець</string>
+    <string name="end_mode_date">Дата</string>
+    <string name="end_mode_days">Дні</string>
+    <string name="end_mode_none">Безстроково</string>
+    <string name="end_mode_none_hint">Без дати завершення — цей період триває безстроково.</string>
+    <string name="duration_days_label">Тривалість (днів)</string>
+    <string name="period_ends_on">Закінчується %1$s</string>
+
+    <string name="period_times_label">Час прийому</string>
+    <string name="dose_mode_units">В одиницях</string>
+    <string name="dose_mode_strength">У дозуванні</string>
+    <string name="dose_value_label">Доза</string>
+    <string name="times_error">Додайте хоча б один час із дозою більше 0</string>
+    <string name="duration_days_error">Введіть тривалість не менше 1 дня</string>
+    <string name="specific_days_error">Виберіть хоча б один день тижня</string>
+    <string name="time_label">Час</string>
+    <string name="new_time_label">Новий час</string>
+    <string name="add_time_action">Додати</string>
+
+    <string name="period_cycle_label">Цикл</string>
+    <string name="cycle_daily">Щодня</string>
+    <string name="cycle_every_other_day">Через день</string>
+    <string name="cycle_specific_days">Конкретні дні</string>
+    <string name="cycle_days_on_off">Прийом / перерва</string>
+    <string name="cycle_days_on_off_label">%1$d дн. прийом, %2$d дн. перерва</string>
+    <string name="intake_days_label">Днів приймати</string>
+    <string name="break_days_label">Днів перерви</string>
+    <string name="days_on_off_error">Введіть не менше 1 дня в обидва поля</string>
+    <string name="cycle_custom">Свій варіант</string>
+    <string name="cycle_custom_label">Опис</string>
+
+    <string name="stock_projection_remaining">%1$s залишиться після завершення всіх періодів</string>
+    <string name="stock_projection_runs_out">Запас закінчиться %1$s</string>
+    <string name="stock_projection_sufficient">Поточного запасу вистачить на найближчий час</string>
+    <string name="stock_projection_none">Немає активних або майбутніх періодів</string>
+    <string name="period_stock_at_start">Запас на початку: %1$s</string>
+    <string name="period_stock_at_end">Запас наприкінці: %1$s</string>
+
+    <string name="or_word">або</string>
+    <string name="no_exact_combo">точного збігу з наявних запасів не знайдено</string>
+
+    <string name="home_empty">На цей день прийомів не заплановано.</string>
+    <string name="day_today">Сьогодні</string>
+    <string name="day_yesterday">Вчора</string>
+    <string name="day_tomorrow">Завтра</string>
+    <string name="previous_day">Попередній день</string>
+    <string name="next_day">Наступний день</string>
+
+    <string name="status_upcoming">Заплановано</string>
+    <string name="status_overdue">Прострочено</string>
+    <string name="status_taken">Прийнято</string>
+    <string name="status_skipped">Пропущено</string>
+    <string name="status_missed">Пропущено без запису</string>
+
+    <string name="action_took_it">Прийняв(ла)</string>
+    <string name="action_skipped">Пропустити</string>
+    <string name="action_snooze">Нагадати пізніше</string>
+
+    <string name="notification_channel_name">Нагадування про прийом ліків</string>
+    <string name="notification_channel_description">Сповіщення про час прийому запланованої дози</string>
+
+    <string name="notification_low_stock_channel_name">Нагадування про запас</string>
+    <string name="notification_low_stock_channel_description">Сповіщення, коли запас скоро закінчиться</string>
+    <string name="low_stock_notification_title">Запас закінчується: %1$s</string>
+    <string name="low_stock_notification_text">Цей запас за прогнозом закінчиться приблизно %1$s</string>
+
+    <string name="low_stock_reminder_label">Нагадати за N днів до закінчення</string>
+    <string name="low_stock_reminder_placeholder">напр. 7 (залиште порожнім, щоб вимкнути)</string>
+    <string name="low_stock_reminder_error">Введіть ціле число днів або залиште порожнім</string>
+
+    <string name="exact_alarm_rationale">Увімкніть точні будильники, щоб нагадування про прийом ліків спрацьовували вчасно.</string>
+    <string name="exact_alarm_enable">Увімкнути</string>
+
+    <string name="reminders_section_title">Нагадування</string>
+    <string name="snooze_minutes_label">Тривалість відкладення</string>
+    <string name="snooze_minutes_value">%1$d хв</string>
+
+    <string name="history_filter_all">Усі ліки</string>
+    <string name="history_empty">Історії ще немає.</string>
+    <string name="source_reminder">Нагадування</string>
+    <string name="source_manual">Вручну</string>
+
+    <string name="delete_entry_title">Видалити запис?</string>
+    <string name="delete_entry_body">Цей запис історії буде видалено назавжди.</string>
+
+    <string name="add_entry_title">Додати запис вручну</string>
+    <string name="edit_entry_title">Редагувати запис</string>
+    <string name="entry_drug_label">Ліки</string>
+    <string name="entry_period_label">Період</string>
+    <string name="entry_time_label">Час</string>
+    <string name="entry_occurrence_date_label">Дата</string>
+    <string name="entry_selection_error">Виберіть ліки, період і час</string>
+    <string name="entry_actual_section_title">Фактично</string>
+    <string name="entry_actual_date_label">Фактична дата</string>
+    <string name="entry_actual_time_label">Фактичний час</string>
+    <string name="entry_status_label">Статус</string>
+
+    <string name="backup_section_title">Резервна копія в Google Drive</string>
+    <string name="backup_not_connected">Підключіть обліковий запис Google, щоб створювати резервні копії та відновлювати дані.</string>
+    <string name="backup_connect_action">Підключити обліковий запис Google</string>
+    <string name="backup_never_backed_up">Підключено. Резервних копій ще немає.</string>
+    <string name="backup_last_backup">Остання копія: %1$s</string>
+    <string name="backup_now_action">Створити копію зараз</string>
+    <string name="restore_action">Відновити з копії</string>
+    <string name="restore_confirm_title">Відновити з резервної копії?</string>
+    <string name="restore_confirm_body">Це замінить усі ліки, запаси, розклади та історію на цьому пристрої даними з останньої резервної копії в Google Drive. Скасувати цю дію неможливо.</string>
+    <string name="backup_connected_toast">Підключено до Google Drive</string>
+    <string name="backup_complete_toast">Резервну копію створено</string>
+    <string name="restore_complete_toast">Відновлення завершено</string>
+    <string name="backup_error_generic">Щось пішло не так. Спробуйте ще раз.</string>
+    <string name="restore_error_generic">Не вдалося відновити дані. Спробуйте ще раз.</string>
+</resources>

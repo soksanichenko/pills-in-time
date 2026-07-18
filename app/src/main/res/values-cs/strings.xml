@@ -1,0 +1,198 @@
+<resources>
+    <string name="app_name">MedTracker</string>
+
+    <string name="coming_soon">Již brzy</string>
+
+    <string name="nav_home">Domů</string>
+    <string name="nav_drugs">Léky</string>
+    <string name="nav_history">Historie</string>
+    <string name="nav_settings">Nastavení</string>
+
+    <string name="language_section_title">Jazyk</string>
+    <string name="language_system_default">Jazyk systému</string>
+    <string name="language_english">English</string>
+    <string name="language_ukrainian">Українська</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_czech">Čeština</string>
+
+    <string name="action_back">Zpět</string>
+    <string name="action_edit">Upravit</string>
+    <string name="action_delete">Smazat</string>
+    <string name="action_cancel">Zrušit</string>
+    <string name="action_save">Uložit</string>
+
+    <string name="drugs_empty">Zatím žádné léky. Klepnutím na + jeden přidáte.</string>
+
+    <string name="add_drug_title">Přidat lék</string>
+    <string name="edit_drug_title">Upravit lék</string>
+    <string name="drug_name_label">Název</string>
+    <string name="drug_name_placeholder">např. Metformin</string>
+    <string name="drug_name_error">Je vyžadován název</string>
+    <string name="drug_form_label">Forma</string>
+    <string name="drug_form_tablet">Tableta</string>
+    <string name="drug_form_capsule">Kapsle</string>
+    <string name="drug_form_drops">Kapky</string>
+    <string name="drug_form_ml">ml</string>
+    <string name="drug_form_other">Jiné</string>
+    <string name="drug_form_other_label">Vlastní forma</string>
+    <string name="drug_form_other_placeholder">např. Náplast</string>
+
+    <string name="supplies_section_title">Zásoby</string>
+    <string name="add_stock_action">Přidat zásobu</string>
+    <string name="add_stock_title">Přidat zásobu</string>
+    <string name="edit_stock_title">Upravit zásobu</string>
+    <string name="stock_empty">Zatím žádné zásoby.</string>
+    <string name="stock_row_summary">%1$s po %2$s %3$s</string>
+
+    <string name="restock_action">Doplnit zásobu</string>
+    <string name="restock_title">Doplnit zásobu</string>
+    <string name="restock_quantity_label">Zakoupené množství</string>
+    <string name="restock_quantity_error">Zadejte množství větší než 0</string>
+
+    <string name="delete_drug_title">Smazat lék?</string>
+    <string name="delete_drug_body_cascade">Tento lék má aktivní období užívání nebo zásoby. Smazáním se odstraní i jeho období, zásoby a historie.</string>
+    <string name="delete_drug_body_plain">Lék bude trvale smazán.</string>
+
+    <string name="delete_stock_title">Smazat zásobu?</string>
+    <string name="delete_stock_body">Tato zásoba bude trvale smazána.</string>
+
+    <string name="quantity_label">Množství</string>
+    <string name="quantity_placeholder">30</string>
+    <string name="quantity_error">Zadejte množství větší než 0</string>
+    <string name="strength_per_unit_label">Síla na jednotku</string>
+    <string name="strength_value_label">Hodnota</string>
+    <string name="strength_error">Zadejte hodnotu větší než 0</string>
+    <string name="unit_mg">mg</string>
+    <string name="unit_mcg">mcg</string>
+    <string name="unit_iu">IU</string>
+
+    <string name="periods_section_title">Období</string>
+    <string name="add_period_action">Přidat období</string>
+    <string name="periods_empty">Zatím žádná období.</string>
+    <string name="period_active_now">Aktivní nyní</string>
+    <string name="period_ongoing_from">%1$s – pokračuje</string>
+
+    <string name="delete_period_title">Smazat období?</string>
+    <string name="delete_period_body">Toto období a jeho časy užívání budou trvale smazány.</string>
+
+    <string name="add_period_title">Přidat období</string>
+    <string name="edit_period_title">Upravit období</string>
+
+    <string name="period_start_label">Datum zahájení</string>
+    <string name="period_start_custom">Vlastní datum</string>
+    <string name="period_start_continue">Pokračovat po předchozím</string>
+    <string name="period_continues_from">Pokračuje po skončení předchozího období %1$s</string>
+    <string name="period_starts_on">Začíná %1$s</string>
+
+    <string name="period_end_label">Konec</string>
+    <string name="end_mode_date">Datum</string>
+    <string name="end_mode_days">Dny</string>
+    <string name="end_mode_none">Bez omezení</string>
+    <string name="end_mode_none_hint">Bez data ukončení — toto období pokračuje bez omezení.</string>
+    <string name="duration_days_label">Trvání (dní)</string>
+    <string name="period_ends_on">Končí %1$s</string>
+
+    <string name="period_times_label">Časy užívání</string>
+    <string name="dose_mode_units">V jednotkách</string>
+    <string name="dose_mode_strength">V síle</string>
+    <string name="dose_value_label">Dávka</string>
+    <string name="times_error">Přidejte alespoň jeden čas s dávkou větší než 0</string>
+    <string name="duration_days_error">Zadejte trvání alespoň 1 den</string>
+    <string name="specific_days_error">Vyberte alespoň jeden den v týdnu</string>
+    <string name="time_label">Čas</string>
+    <string name="new_time_label">Nový čas</string>
+    <string name="add_time_action">Přidat</string>
+
+    <string name="period_cycle_label">Cyklus</string>
+    <string name="cycle_daily">Denně</string>
+    <string name="cycle_every_other_day">Obden</string>
+    <string name="cycle_specific_days">Konkrétní dny</string>
+    <string name="cycle_days_on_off">Užívání / pauza</string>
+    <string name="cycle_days_on_off_label">%1$d dní užívání, %2$d dní pauza</string>
+    <string name="intake_days_label">Dní užívat</string>
+    <string name="break_days_label">Dní pauza</string>
+    <string name="days_on_off_error">Zadejte alespoň 1 den do obou polí</string>
+    <string name="cycle_custom">Vlastní</string>
+    <string name="cycle_custom_label">Popis</string>
+
+    <string name="stock_projection_remaining">%1$s zbyde po skončení všech období</string>
+    <string name="stock_projection_runs_out">Zásoba dojde %1$s</string>
+    <string name="stock_projection_sufficient">Současná zásoba pokryje blízkou budoucnost</string>
+    <string name="stock_projection_none">Žádná aktivní ani nadcházející období</string>
+    <string name="period_stock_at_start">Zásoba na začátku: %1$s</string>
+    <string name="period_stock_at_end">Zásoba na konci: %1$s</string>
+
+    <string name="or_word">nebo</string>
+    <string name="no_exact_combo">žádná přesná shoda z aktuálních zásob</string>
+
+    <string name="home_empty">Na tento den nejsou naplánovány žádné dávky.</string>
+    <string name="day_today">Dnes</string>
+    <string name="day_yesterday">Včera</string>
+    <string name="day_tomorrow">Zítra</string>
+    <string name="previous_day">Předchozí den</string>
+    <string name="next_day">Další den</string>
+
+    <string name="status_upcoming">Nadcházející</string>
+    <string name="status_overdue">Po termínu</string>
+    <string name="status_taken">Užito</string>
+    <string name="status_skipped">Vynecháno</string>
+    <string name="status_missed">Zmeškáno bez záznamu</string>
+
+    <string name="action_took_it">Užito</string>
+    <string name="action_skipped">Vynechat</string>
+    <string name="action_snooze">Připomenout později</string>
+
+    <string name="notification_channel_name">Připomenutí užívání léků</string>
+    <string name="notification_channel_description">Upozornění, kdy je čas užít naplánovanou dávku</string>
+
+    <string name="notification_low_stock_channel_name">Připomenutí o zásobě</string>
+    <string name="notification_low_stock_channel_description">Upozornění, když zásoba brzy dojde</string>
+    <string name="low_stock_notification_title">Docházející zásoba: %1$s</string>
+    <string name="low_stock_notification_text">Tato zásoba podle odhadu dojde přibližně %1$s</string>
+
+    <string name="low_stock_reminder_label">Připomenout N dní před dojitím</string>
+    <string name="low_stock_reminder_placeholder">např. 7 (ponechte prázdné pro vypnutí)</string>
+    <string name="low_stock_reminder_error">Zadejte celé číslo dní, nebo ponechte pole prázdné</string>
+
+    <string name="exact_alarm_rationale">Povolte přesné budíky, aby připomenutí užívání léků spouštěla přesně včas.</string>
+    <string name="exact_alarm_enable">Povolit</string>
+
+    <string name="reminders_section_title">Připomenutí</string>
+    <string name="snooze_minutes_label">Délka odložení</string>
+    <string name="snooze_minutes_value">%1$d min</string>
+
+    <string name="history_filter_all">Všechny léky</string>
+    <string name="history_empty">Zatím žádná historie.</string>
+    <string name="source_reminder">Připomenutí</string>
+    <string name="source_manual">Ručně</string>
+
+    <string name="delete_entry_title">Smazat záznam?</string>
+    <string name="delete_entry_body">Tento záznam historie bude trvale smazán.</string>
+
+    <string name="add_entry_title">Přidat záznam ručně</string>
+    <string name="edit_entry_title">Upravit záznam</string>
+    <string name="entry_drug_label">Lék</string>
+    <string name="entry_period_label">Období</string>
+    <string name="entry_time_label">Čas</string>
+    <string name="entry_occurrence_date_label">Datum</string>
+    <string name="entry_selection_error">Vyberte lék, období a čas</string>
+    <string name="entry_actual_section_title">Skutečnost</string>
+    <string name="entry_actual_date_label">Skutečné datum</string>
+    <string name="entry_actual_time_label">Skutečný čas</string>
+    <string name="entry_status_label">Stav</string>
+
+    <string name="backup_section_title">Záloha na Google Drive</string>
+    <string name="backup_not_connected">Připojte svůj účet Google pro zálohování a obnovu dat.</string>
+    <string name="backup_connect_action">Připojit účet Google</string>
+    <string name="backup_never_backed_up">Připojeno. Zatím žádná záloha.</string>
+    <string name="backup_last_backup">Poslední záloha: %1$s</string>
+    <string name="backup_now_action">Zálohovat nyní</string>
+    <string name="restore_action">Obnovit ze zálohy</string>
+    <string name="restore_confirm_title">Obnovit ze zálohy?</string>
+    <string name="restore_confirm_body">Tímto nahradíte všechny léky, zásoby, plány a historii v tomto zařízení daty z poslední zálohy na Google Drive. Tuto akci nelze vrátit zpět.</string>
+    <string name="backup_connected_toast">Připojeno ke Google Drive</string>
+    <string name="backup_complete_toast">Záloha dokončena</string>
+    <string name="restore_complete_toast">Obnova dokončena</string>
+    <string name="backup_error_generic">Něco se pokazilo. Zkuste to prosím znovu.</string>
+    <string name="restore_error_generic">Obnovení se nezdařilo. Zkuste to prosím znovu.</string>
+</resources>

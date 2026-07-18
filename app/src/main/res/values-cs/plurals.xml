@@ -1,0 +1,24 @@
+<resources>
+    <!-- Czech CLDR plural rule: one=1, few=2..4, many=fractional (e.g. 1.5), other=0 and 5+. -->
+    <plurals name="unit_tablet">
+        <item quantity="one">%1$s tableta</item>
+        <item quantity="few">%1$s tablety</item>
+        <item quantity="many">%1$s tablety</item>
+        <item quantity="other">%1$s tablet</item>
+    </plurals>
+    <plurals name="unit_capsule">
+        <item quantity="one">%1$s kapsle</item>
+        <item quantity="few">%1$s kapsle</item>
+        <item quantity="many">%1$s kapsle</item>
+        <item quantity="other">%1$s kapslí</item>
+    </plurals>
+    <plurals name="unit_drops">
+        <item quantity="one">%1$s kapka</item>
+        <item quantity="few">%1$s kapky</item>
+        <item quantity="many">%1$s kapky</item>
+        <item quantity="other">%1$s kapek</item>
+    </plurals>
+    <plurals name="unit_ml">
+        <item quantity="other">%1$s ml</item>
+    </plurals>
+</resources>

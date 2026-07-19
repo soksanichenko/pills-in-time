@@ -10,9 +10,12 @@ import app.zelgray.pills_in_time.data.local.entity.EndMode
 import app.zelgray.pills_in_time.data.repository.IntakeTimeInput
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
+import app.zelgray.pills_in_time.domain.model.DoseCombo
+import app.zelgray.pills_in_time.domain.model.DoseComboPiece
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.usecase.FindDoseCombosUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
+import app.zelgray.pills_in_time.domain.usecase.computeEndDateForOccurrences
 import app.zelgray.pills_in_time.ui.navigation.NavRoutes
 import app.zelgray.pills_in_time.util.formatPlainNumber
 import app.zelgray.pills_in_time.util.parseLocaleAwareDouble
@@ -35,6 +38,11 @@ data class TimeRowState(
     val timeOfDay: LocalTime,
     val doseMode: DoseMode = DoseMode.UNITS,
     val doseValueText: String = "1",
+    // Which strength combo this STRENGTH-mode dose is fixed to, chosen here
+    // (or defaulted to the top-ranked one) so logging never needs to guess
+    // which on-hand batches to decrement from. Null for UNITS mode, or when
+    // no exact combo exists for the entered dose.
+    val doseAllocation: List<DoseComboPiece>? = null,
 )
 
 data class AddEditPeriodUiState(
@@ -48,6 +56,7 @@ data class AddEditPeriodUiState(
     val endMode: EndMode = EndMode.DAYS,
     val endDate: LocalDate = LocalDate.now().plusDays(6),
     val durationDaysText: String = "7",
+    val durationOccurrencesText: String = "8",
     val cycleType: CycleType = CycleType.DAILY,
     val specificDays: Set<DayOfWeek> = emptySet(),
     val customCycleText: String = "",
@@ -59,6 +68,7 @@ data class AddEditPeriodUiState(
     val stockBatches: List<DrugStockBatch> = emptyList(),
     val timesError: Boolean = false,
     val durationDaysError: Boolean = false,
+    val durationOccurrencesError: Boolean = false,
     val specificDaysError: Boolean = false,
     val daysOnOffError: Boolean = false,
     val saved: Boolean = false,
@@ -73,11 +83,25 @@ data class AddEditPeriodUiState(
         }
 
     val durationDays: Int get() = durationDaysText.toIntOrNull()?.coerceAtLeast(1) ?: 1
+    val durationOccurrences: Int get() = durationOccurrencesText.toIntOrNull()?.coerceAtLeast(1) ?: 1
+
+    // Only non-DAILY/CUSTOM cycles have a meaningful "N occurrences" duration
+    // distinct from "N days" — for those two, every day is active, so the two
+    // modes would mean the same thing.
+    val occurrenceDurationAvailable: Boolean get() = cycleType != CycleType.DAILY && cycleType != CycleType.CUSTOM
 
     val computedEndDate: LocalDate?
         get() = when (endMode) {
             EndMode.DATE -> endDate
             EndMode.DAYS -> effectiveStartDate.plusDays((durationDays - 1).toLong())
+            EndMode.OCCURRENCES -> computeEndDateForOccurrences(
+                startDate = effectiveStartDate,
+                cycleType = cycleType,
+                specificDays = specificDays,
+                intakeDays = intakeDaysText.toIntOrNull(),
+                breakDays = breakDaysText.toIntOrNull(),
+                occurrences = durationOccurrences,
+            )
             EndMode.NONE -> null
         }
 
@@ -122,6 +146,7 @@ class AddEditPeriodViewModel @Inject constructor(
                             endMode = schedule.endMode,
                             endDate = schedule.endDate ?: schedule.startDate.plusDays(6),
                             durationDaysText = (schedule.durationDays ?: 7).toString(),
+                            durationOccurrencesText = (schedule.durationOccurrences ?: 8).toString(),
                             cycleType = schedule.cycleType,
                             specificDays = schedule.specificDays.orEmpty(),
                             customCycleText = schedule.customCycleText.orEmpty(),
@@ -134,6 +159,7 @@ class AddEditPeriodViewModel @Inject constructor(
                                     timeOfDay = t.timeOfDay,
                                     doseMode = t.doseMode,
                                     doseValueText = formatPlainNumber(t.doseValue),
+                                    doseAllocation = t.doseAllocation,
                                 )
                             }.ifEmpty { listOf(TimeRowState(rowKey = rowKeySeq++, timeOfDay = LocalTime.of(8, 0))) },
                             effectiveStrength = effectiveStrength,
@@ -169,8 +195,20 @@ class AddEditPeriodViewModel @Inject constructor(
 
     fun onDurationDaysChange(text: String) = _uiState.update { it.copy(durationDaysText = text, durationDaysError = false) }
 
-    fun onCycleTypeChange(type: CycleType) =
-        _uiState.update { it.copy(cycleType = type, specificDaysError = false, daysOnOffError = false) }
+    fun onDurationOccurrencesChange(text: String) =
+        _uiState.update { it.copy(durationOccurrencesText = text, durationOccurrencesError = false) }
+
+    fun onCycleTypeChange(type: CycleType) = _uiState.update { state ->
+        val occurrenceModeStillAvailable = type != CycleType.DAILY && type != CycleType.CUSTOM
+        state.copy(
+            cycleType = type,
+            // "N occurrences" isn't a meaningful distinct choice for DAILY/CUSTOM
+            // (every day is active), so fall back to "N days" if it was selected.
+            endMode = if (state.endMode == EndMode.OCCURRENCES && !occurrenceModeStillAvailable) EndMode.DAYS else state.endMode,
+            specificDaysError = false,
+            daysOnOffError = false,
+        )
+    }
 
     fun onToggleSpecificDay(day: DayOfWeek) = _uiState.update {
         val current = it.specificDays
@@ -217,15 +255,30 @@ class AddEditPeriodViewModel @Inject constructor(
     fun onTimeDoseModeChange(rowKey: Long, mode: DoseMode) {
         if (mode == DoseMode.STRENGTH && !_uiState.value.strengthModeAvailable) return
         _uiState.update { state ->
-            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(doseMode = mode) else it })
+            state.copy(
+                times = state.times.map { if (it.rowKey == rowKey) it.copy(doseMode = mode, doseAllocation = null) else it },
+            )
         }
     }
 
     fun onTimeDoseValueChange(rowKey: Long, text: String) {
         _uiState.update { state ->
-            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(doseValueText = text) else it })
+            state.copy(
+                times = state.times.map { if (it.rowKey == rowKey) it.copy(doseValueText = text, doseAllocation = null) else it },
+            )
         }
     }
+
+    /** Fixes which on-hand strength combo a STRENGTH-mode row's dose comes from. */
+    fun onComboSelected(rowKey: Long, combo: DoseCombo) {
+        _uiState.update { state ->
+            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(doseAllocation = combo.pieces) else it })
+        }
+    }
+
+    /** The combo to show as selected in the picker: the row's own choice, or the top-ranked one by default. */
+    fun selectedComboFor(row: TimeRowState, combos: List<DoseCombo>): DoseCombo? =
+        combos.find { it.pieces == row.doseAllocation } ?: combos.firstOrNull()
 
     fun dosePreviewFor(row: TimeRowState): DosePreview? {
         val state = _uiState.value
@@ -255,15 +308,18 @@ class AddEditPeriodViewModel @Inject constructor(
             state.times.any { (parseLocaleAwareDouble(it.doseValueText) ?: 0.0) <= 0 }
         val durationInvalid = state.endMode == EndMode.DAYS &&
             (state.durationDaysText.toIntOrNull() == null || state.durationDaysText.toIntOrNull()!! < 1)
+        val durationOccurrencesInvalid = state.endMode == EndMode.OCCURRENCES &&
+            (state.durationOccurrencesText.toIntOrNull() == null || state.durationOccurrencesText.toIntOrNull()!! < 1)
         val specificDaysInvalid = state.cycleType == CycleType.SPECIFIC_DAYS && state.specificDays.isEmpty()
         val daysOnOffInvalid = state.cycleType == CycleType.DAYS_ON_OFF &&
             ((state.intakeDaysText.toIntOrNull() ?: 0) < 1 || (state.breakDaysText.toIntOrNull() ?: 0) < 1)
 
-        if (timesInvalid || durationInvalid || specificDaysInvalid || daysOnOffInvalid) {
+        if (timesInvalid || durationInvalid || durationOccurrencesInvalid || specificDaysInvalid || daysOnOffInvalid) {
             _uiState.update {
                 it.copy(
                     timesError = timesInvalid,
                     durationDaysError = durationInvalid,
+                    durationOccurrencesError = durationOccurrencesInvalid,
                     specificDaysError = specificDaysInvalid,
                     daysOnOffError = daysOnOffInvalid,
                 )
@@ -271,12 +327,22 @@ class AddEditPeriodViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val timeInputs = state.times.map {
+            val timeInputs = state.times.map { row ->
+                val doseValue = parseLocaleAwareDouble(row.doseValueText) ?: 0.0
+                // Persist whichever combo the row ended up with — the user's
+                // explicit pick, or (if they never touched the picker, e.g. a
+                // single-option or untouched default case) the top-ranked one.
+                val allocation = if (row.doseMode == DoseMode.STRENGTH) {
+                    row.doseAllocation ?: findDoseCombos(state.stockBatches, doseValue).firstOrNull()?.pieces
+                } else {
+                    null
+                }
                 IntakeTimeInput(
-                    id = it.id,
-                    timeOfDay = it.timeOfDay,
-                    doseMode = it.doseMode,
-                    doseValue = parseLocaleAwareDouble(it.doseValueText) ?: 0.0,
+                    id = row.id,
+                    timeOfDay = row.timeOfDay,
+                    doseMode = row.doseMode,
+                    doseValue = doseValue,
+                    doseAllocation = allocation,
                 )
             }
             scheduleRepository.savePeriod(
@@ -286,6 +352,7 @@ class AddEditPeriodViewModel @Inject constructor(
                 endMode = state.endMode,
                 endDate = state.computedEndDate,
                 durationDays = if (state.endMode == EndMode.DAYS) state.durationDays else null,
+                durationOccurrences = if (state.endMode == EndMode.OCCURRENCES) state.durationOccurrences else null,
                 cycleType = state.cycleType,
                 specificDays = if (state.cycleType == CycleType.SPECIFIC_DAYS) state.specificDays else null,
                 customCycleText = if (state.cycleType == CycleType.CUSTOM) state.customCycleText.trim().takeIf { it.isNotBlank() } else null,

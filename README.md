@@ -5,30 +5,44 @@ An Android app for tracking medication schedules — dosing (in tablets/units or
 ## Features
 
 ### Drugs & supplies
-Add a drug with a form (tablet, capsule, drops, ml, or a custom text form). Track one or more stock batches per drug — each batch has its own quantity, strength (value + unit: mg/mcg/IU), and purchase date. Supply rows support a quick "+" action to add newly purchased quantity onto an existing batch without creating a duplicate batch row.
+Add a drug with a form (tablet, capsule, drops, ml, ampoule, sachet, or a custom text form) — this drives how quantities are labeled everywhere ("3 sachets", "12 drops", etc.), fully localized (English/Ukrainian/Russian/Czech, including proper plural forms).
+
+Track one or more stock batches ("supplies") per drug — each batch has its own **quantity**, **strength** (value + unit: mg/mcg/IU), and purchase date (`addedAt`, used to tell which batch is the "current"/most-recently-bought one). Strength is **optional**: leave it blank if you don't need dose-strength tracking for this drug. A drug with no strength is capped at a single supply, though — strength is what would justify (and let the app tell apart) more than one batch on hand at once. Supply rows support a quick **"+"** action to add newly purchased quantity onto an existing batch without creating a duplicate batch row (so partial refills of the same purchase don't fragment your stock history).
 
 ### Periods (schedules)
 Each drug can have multiple, possibly overlapping, time-bound periods:
+
 - **Start**: a custom date, or "continue previous" (starts the day after the drug's most recently ended period).
-- **End**: a fixed date, a duration in days, or open-ended ("ongoing").
-- **Cycle**: daily, every other day, specific days of the week, days-on/days-off (e.g. 3 days on, 4 days off), or a custom free-text description (treated as daily for scheduling purposes).
-- **Times of day**: any number of times, each with its own dose — specified either in units (tablets) or in active-substance strength, converted using the drug's most-recently-added stock batch.
+- **End** — four ways to bound (or not bound) a period:
+  - **Fixed date** — pick an explicit end date.
+  - **N days** — a literal calendar-day span (start + N − 1 days). For a daily cycle this is the same as "N doses"; for anything less frequent it isn't (see below).
+  - **N occurrences** — instead of a calendar span, ends after N actual active-cycle days have occurred. Only offered for cycles that aren't active every day (everything except Daily/Custom), since that's where it actually differs from "N days": e.g. a once-a-week cycle with "8 occurrences" spans about 8 weeks, not 8 calendar days.
+  - **Ongoing** — open-ended, no end date.
+- **Cycle** — how often within the period a dose is due:
+  - **Daily** — every day.
+  - **Every other day** — alternating, anchored to the period's own start date.
+  - **Specific days of the week** — pick one or more weekdays.
+  - **Days-on/days-off** — e.g. "3 days on, 4 days off", repeating from the period's start.
+  - **Custom** — a free-text description for your own reference; scheduling-wise it behaves like Daily.
+- **Times of day**: any number of times, each with its own dose — specified either as a plain **unit count** (e.g. "1 tablet") or as **active-substance strength** (e.g. "20 mg"). For a strength dose that could be made up of more than one combination of on-hand strengths (e.g. two 10 mg tablets vs. one 20 mg), you pick which combination it's fixed to right here, once — if there's only one possible combination, it's picked automatically and there's nothing to choose. That choice is what later drives real stock deduction (see below) — logging a dose never re-asks which tablets it came from.
 
 ### Home
-Shows the day's scheduled intakes (previous/today/next-day navigation) with live status: upcoming, overdue (past scheduled time + grace period), taken, skipped, or missed (a past occurrence with no recorded action). "Took it" / "Skipped" quick actions log the occurrence immediately.
+Shows the day's scheduled intakes (previous/today/next-day navigation, also reachable by swiping or tapping the date to open a calendar) with live status: upcoming, overdue (past scheduled time + grace period), taken, skipped, or missed (a past occurrence with no recorded action). "Took it" / "Skipped" quick actions log the occurrence immediately; re-opening an already-logged occurrence offers an "Undo" instead.
 
 ### History
 Day-grouped log of every taken/skipped occurrence, filterable by drug, with manual add/edit/delete for retroactive entries (distinguished from reminder-driven entries by source).
 
-### Stock projection & dose combos
-For each period, projects how much stock is left at the period's start and end by simulating day-by-day consumption from today. Also suggests which physical tablets/capsules on hand combine (in 0.5-unit steps, across up to 4 distinct strengths) to hit a target strength dose exactly, ranked by fewest total pieces.
+### Stock consumption & projection
+Marking a dose as taken really decrements the matching on-hand stock batch — by the exact combination fixed on the period for strength doses, or first-in-first-out (oldest supply first) for plain unit doses — not just a passive count. Editing or deleting a logged dose (or changing it from Taken back to Skipped) reverses that deduction exactly. If stock can't cover a dose, taking it is blocked everywhere (Home, notification, manual history entry) until you add more — nothing is ever force-deducted into the negative.
+
+For each period, the app also projects how much stock is left at its start and end, by simulating day-by-day consumption forward from today the same way real logging would (so the projection and reality never disagree). Once a drug has more than one supply, both the overall and per-period figures also break down each supply's own projected run-out date individually (or "sufficient" if it isn't expected to run out soon).
 
 ### Notifications
-- **Medication reminders**: exact alarms for the next few days, rescheduled automatically whenever a period/time changes, after a device reboot, and via a periodic background refresh. Each notification has Took it / Skipped / Remind later actions; snooze duration is configurable. Left unanswered, a reminder repeats every 5 minutes until you respond.
-- **Low-stock reminders**: a per-batch, optional "remind me N days before it runs out" alert based on the same stock projection.
+- **Medication reminders**: exact alarms for the next few days, rescheduled automatically whenever a period/time changes, after a device reboot, and via a periodic background refresh. Each notification has Took it / Skipped / Remind later actions; snooze duration is configurable. Left unanswered, a reminder repeats every 5 minutes until you respond — but logging the dose directly in the app dismisses it right away.
+- **Low-stock reminders**: a per-batch, optional "remind me N days before it runs out" alert based on the same stock projection. Tapping one opens that supply directly; a "Remind tomorrow" action postpones it a day.
 
-### Backup & restore (Google Drive)
-Connect a Google account (Drive `appdata` scope only) to back up all data as a single JSON file in the app's private Drive folder, and restore it later. Restore is a full wipe-and-replace of local data, followed by re-arming all notifications.
+### Backup & restore (Google Drive & local file)
+Connect a Google account (Drive `appdata` scope only) to back up all data — plus the snooze-duration setting — as a single JSON file in the app's private Drive folder, and restore it later. A local file (`pills-in-time-backup.json`) can be saved/restored the same way via the system file picker, no Google account needed. Restore is always a full wipe-and-replace of local data, followed by re-arming all notifications.
 
 ### Language
 English, Українська, Русский, and Čeština, switchable in-app (per-app language override) independent of the system language.
@@ -58,6 +72,17 @@ or open the project in Android Studio and run the `app` configuration on a devic
 ./gradlew test            # unit tests (domain use cases, util)
 ./gradlew connectedCheck  # instrumented tests (Hilt-backed DB, happy-path UI flow)
 ```
+
+## Release
+
+Release builds are signed via a gitignored `keystore.properties` (repo root) with `storeFile`/`storePassword`/`keyAlias`/`keyPassword` keys — without it, release builds are simply unsigned. Bump `versionCode` in `app/build.gradle.kts` before every new upload.
+
+```
+./gradlew bundleRelease          # produces app/build/outputs/bundle/release/app-release.aab
+./gradlew publishReleaseBundle   # builds + uploads straight to the Play Console internal testing track
+```
+
+`publishReleaseBundle` needs a gitignored `release-manager-key.json` (repo root) — a Google Cloud service account key with Play Console's "Manage testing releases" permission only.
 
 ## License
 

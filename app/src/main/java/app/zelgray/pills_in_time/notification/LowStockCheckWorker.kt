@@ -1,8 +1,6 @@
 package app.zelgray.pills_in_time.notification
 
 import android.content.Context
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -11,13 +9,11 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.model.LowStockAlert
 import app.zelgray.pills_in_time.domain.usecase.CheckLowStockRemindersUseCase
-import app.zelgray.pills_in_time.ui.common.localizedDatePlain
 import app.zelgray.pills_in_time.util.NowProvider
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -52,7 +48,7 @@ class LowStockCheckWorker @AssistedInject constructor(
 
         alerts.forEach { alert ->
             val drug = drugRepository.getById(alert.drugId) ?: return@forEach
-            postNotification(alert, drug.name)
+            LowStockNotifications.post(applicationContext, alert.drugId, alert.batchId, drug.name, alert.runOutDate)
 
             val batch = stockRepository.getById(alert.batchId) ?: return@forEach
             stockRepository.updateBatch(batch.copy(lowStockReminderFiredForRunOutDate = alert.runOutDate))
@@ -60,23 +56,6 @@ class LowStockCheckWorker @AssistedInject constructor(
 
         return Result.success()
     }
-
-    private fun postNotification(alert: LowStockAlert, drugName: String) {
-        val notification = NotificationCompat.Builder(applicationContext, NotificationChannels.LOW_STOCK_REMINDERS)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(applicationContext.getString(R.string.low_stock_notification_title, drugName))
-            .setContentText(
-                applicationContext.getString(R.string.low_stock_notification_text, localizedDatePlain(alert.runOutDate)),
-            )
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-            .build()
-        NotificationManagerCompat.from(applicationContext).notify(notificationIdFor(alert.batchId), notification)
-    }
-
-    // Distinct, negative range so these can never collide with the hash-derived
-    // dose-reminder notification ids (ScheduleAlarmsForWindowUseCase.computeRequestCode).
-    private fun notificationIdFor(batchId: Long): Int = (-1_000_000 - batchId).toInt()
 
     companion object {
         private const val PERIODIC_WORK_NAME = "low-stock-check"

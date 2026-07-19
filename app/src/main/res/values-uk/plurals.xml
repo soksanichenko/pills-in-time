@@ -20,4 +20,14 @@
     <plurals name="unit_ml">
         <item quantity="other">%1$s мл</item>
     </plurals>
+    <plurals name="unit_ampoule">
+        <item quantity="one">%1$s ампула</item>
+        <item quantity="few">%1$s ампули</item>
+        <item quantity="many">%1$s ампул</item>
+        <item quantity="other">%1$s ампули</item>
+    </plurals>
+    <plurals name="unit_sachet">
+        <!-- "саше" is indeclinable in Ukrainian, same form for any quantity. -->
+        <item quantity="other">%1$s саше</item>
+    </plurals>
 </resources>

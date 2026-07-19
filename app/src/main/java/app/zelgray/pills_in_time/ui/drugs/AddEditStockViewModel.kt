@@ -26,6 +26,10 @@ data class AddEditStockUiState(
     val quantityError: Boolean = false,
     val strengthError: Boolean = false,
     val lowStockReminderError: Boolean = false,
+    // Strength is optional — but a drug with a strength-less batch can only
+    // have a single supply, since strength is what would otherwise justify
+    // more than one. This fires when that rule would be violated.
+    val requiresStrengthError: Boolean = false,
 ) {
     val isEditing: Boolean get() = stockId != null
 }
@@ -50,8 +54,8 @@ class AddEditStockViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             quantity = formatPlainNumber(batch.quantity),
-                            strengthValue = formatPlainNumber(batch.strengthValue),
-                            strengthUnit = batch.strengthUnit,
+                            strengthValue = batch.strengthValue?.let(::formatPlainNumber).orEmpty(),
+                            strengthUnit = batch.strengthUnit ?: StrengthUnit.MG,
                             lowStockReminderDaysBefore = batch.lowStockReminderDaysBefore?.toString().orEmpty(),
                         )
                     }
@@ -65,7 +69,7 @@ class AddEditStockViewModel @Inject constructor(
     }
 
     fun onStrengthValueChange(value: String) {
-        _uiState.update { it.copy(strengthValue = value, strengthError = false) }
+        _uiState.update { it.copy(strengthValue = value, strengthError = false, requiresStrengthError = false) }
     }
 
     fun onStrengthUnitChange(value: StrengthUnit) {
@@ -79,22 +83,33 @@ class AddEditStockViewModel @Inject constructor(
     fun save(onSaved: () -> Unit) {
         val state = _uiState.value
         val quantity = ValidationUtils.parsePositiveDouble(state.quantity)
-        val strength = ValidationUtils.parsePositiveDouble(state.strengthValue)
+        val strengthText = state.strengthValue.trim()
+        // Strength is optional: a blank value means this batch doesn't track it.
+        val strength = strengthText.takeIf { it.isNotEmpty() }?.let { ValidationUtils.parsePositiveDouble(it) }
+        val strengthInvalid = strengthText.isNotEmpty() && strength == null
         val reminderText = state.lowStockReminderDaysBefore.trim()
         val reminderDaysBefore = if (reminderText.isEmpty()) null else reminderText.toIntOrNull()?.takeIf { it > 0 }
         val reminderInvalid = reminderText.isNotEmpty() && reminderDaysBefore == null
 
-        if (quantity == null || strength == null || reminderInvalid) {
+        if (quantity == null || strengthInvalid || reminderInvalid) {
             _uiState.update {
                 it.copy(
                     quantityError = quantity == null,
-                    strengthError = strength == null,
+                    strengthError = strengthInvalid,
                     lowStockReminderError = reminderInvalid,
                 )
             }
             return
         }
+
         viewModelScope.launch {
+            // A strength-less batch can only be this drug's one and only supply.
+            val otherBatches = stockRepository.getBatchesForDrugOnce(drugId).filter { it.id != state.stockId }
+            if (otherBatches.isNotEmpty() && (strength == null || otherBatches.any { it.strengthValue == null })) {
+                _uiState.update { it.copy(requiresStrengthError = true) }
+                return@launch
+            }
+
             if (state.stockId != null) {
                 val existing = stockRepository.getById(state.stockId)
                 if (existing != null) {
@@ -102,13 +117,19 @@ class AddEditStockViewModel @Inject constructor(
                         existing.copy(
                             quantity = quantity,
                             strengthValue = strength,
-                            strengthUnit = state.strengthUnit,
+                            strengthUnit = if (strength != null) state.strengthUnit else null,
                             lowStockReminderDaysBefore = reminderDaysBefore,
                         ),
                     )
                 }
             } else {
-                stockRepository.createBatch(drugId, quantity, strength, state.strengthUnit, reminderDaysBefore)
+                stockRepository.createBatch(
+                    drugId,
+                    quantity,
+                    strength,
+                    if (strength != null) state.strengthUnit else null,
+                    reminderDaysBefore,
+                )
             }
             onSaved()
         }

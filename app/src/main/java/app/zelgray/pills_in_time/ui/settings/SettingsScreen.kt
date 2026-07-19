@@ -2,6 +2,7 @@
 
 package app.zelgray.pills_in_time.ui.settings
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
+import app.zelgray.pills_in_time.data.repository.BackupRepository
 import app.zelgray.pills_in_time.ui.common.ChipOption
 import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
@@ -51,6 +53,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var showRestoreConfirm by remember { mutableStateOf(false) }
+    var showLocalRestoreConfirm by remember { mutableStateOf(false) }
     var selectedLanguage by remember { mutableStateOf(LanguageManager.current()) }
     var languageMenuExpanded by remember { mutableStateOf(false) }
 
@@ -59,6 +62,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     ) { result ->
         viewModel.onConsentResult(result.data)
     }
+
+    val localBackupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri: Uri? -> uri?.let(viewModel::onLocalBackupUriSelected) }
+
+    val localRestoreLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri: Uri? -> uri?.let(viewModel::onLocalRestoreUriSelected) }
 
     LaunchedEffect(state.pendingConsentIntent) {
         state.pendingConsentIntent?.let { pendingIntent ->
@@ -182,6 +193,32 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     }
                 }
             }
+
+            Text(
+                text = stringResource(R.string.local_backup_section_title),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 32.dp, bottom = 8.dp),
+            )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.padding(16.dp)) {
+                    Button(
+                        onClick = { localBackupLauncher.launch(BackupRepository.LOCAL_BACKUP_FILE_NAME) },
+                        enabled = !state.localBackupBusy && !state.localRestoreBusy,
+                    ) {
+                        if (state.localBackupBusy) {
+                            CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+                        }
+                        Text(stringResource(R.string.local_backup_save_action))
+                    }
+                    OutlinedButton(
+                        onClick = { showLocalRestoreConfirm = true },
+                        enabled = !state.localBackupBusy && !state.localRestoreBusy,
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Text(stringResource(R.string.local_backup_restore_action))
+                    }
+                }
+            }
         }
     }
 
@@ -194,6 +231,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 viewModel.onRestoreConfirmed()
             },
             onDismiss = { showRestoreConfirm = false },
+        )
+    }
+
+    if (showLocalRestoreConfirm) {
+        ConfirmDialog(
+            title = stringResource(R.string.local_restore_confirm_title),
+            body = stringResource(R.string.local_restore_confirm_body),
+            onConfirm = {
+                showLocalRestoreConfirm = false
+                localRestoreLauncher.launch(arrayOf("application/json"))
+            },
+            onDismiss = { showLocalRestoreConfirm = false },
         )
     }
 }

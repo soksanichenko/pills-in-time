@@ -2,6 +2,17 @@ package app.zelgray.pills_in_time.domain.model
 
 data class DoseComboPiece(val strength: Double, val count: Double)
 
+/** Encodes a fixed dose allocation for storage (Room column, backup JSON) as "strength:count;strength:count". */
+fun List<DoseComboPiece>.encodeToCsv(): String = joinToString(";") { "${it.strength}:${it.count}" }
+
+fun String?.decodeDoseAllocationCsv(): List<DoseComboPiece>? =
+    this?.takeIf { it.isNotEmpty() }
+        ?.split(";")
+        ?.map { piece ->
+            val (strength, count) = piece.split(":")
+            DoseComboPiece(strength.toDouble(), count.toDouble())
+        }
+
 data class DoseCombo(val pieces: List<DoseComboPiece>) {
     val totalPieces: Double get() = pieces.sumOf { it.count }
     val distinctStrengths: Int get() = pieces.size

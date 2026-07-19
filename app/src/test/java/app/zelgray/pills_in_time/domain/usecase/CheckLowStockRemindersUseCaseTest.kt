@@ -17,7 +17,7 @@ import java.time.LocalTime
 
 class CheckLowStockRemindersUseCaseTest {
 
-    private val useCase = CheckLowStockRemindersUseCase(ProjectDrugStockUseCase())
+    private val useCase = CheckLowStockRemindersUseCase(ProjectDrugStockUseCase(ResolveDoseConsumptionUseCase(FindDoseCombosUseCase())))
     private val today = LocalDate.of(2026, 7, 17)
 
     private fun batch(
@@ -27,13 +27,14 @@ class CheckLowStockRemindersUseCaseTest {
         strength: Double = 1.0,
         daysBefore: Int? = 3,
         firedFor: LocalDate? = null,
+        addedAt: Instant = Instant.EPOCH,
     ) = DrugStockBatch(
         id = id,
         drugId = drugId,
         quantity = quantity,
         strengthValue = strength,
         strengthUnit = StrengthUnit.MG,
-        addedAt = Instant.EPOCH,
+        addedAt = addedAt,
         lowStockReminderDaysBefore = daysBefore,
         lowStockReminderFiredForRunOutDate = firedFor,
     )
@@ -68,19 +69,19 @@ class CheckLowStockRemindersUseCaseTest {
 
     @Test
     fun `run-out within the notice window fires an alert`() {
-        // quantity=10, 1/day -> runs out on today+10; notice window is 3 days, not within range yet
+        // quantity=10, 1/day -> exhausts on today+9, notice window is 3 days, not within range yet
         val alertsFar = useCase(listOf(batch(quantity = 10.0, daysBefore = 3)), mapOf(1L to listOf(dailyPeriod())), today)
         assertTrue(alertsFar.isEmpty())
 
-        // quantity=2, 1/day -> runs out on today+2, within a 3-day notice window
+        // quantity=2, 1/day -> the batch's own quantity hits zero after today+1's dose, within a 3-day notice window
         val alertsNear = useCase(listOf(batch(id = 2, quantity = 2.0, daysBefore = 3)), mapOf(1L to listOf(dailyPeriod())), today)
         assertEquals(1, alertsNear.size)
-        assertEquals(today.plusDays(2), alertsNear.single().runOutDate)
+        assertEquals(today.plusDays(1), alertsNear.single().runOutDate)
     }
 
     @Test
     fun `already notified for this exact run-out date is not repeated`() {
-        val runOutDate = today.plusDays(2)
+        val runOutDate = today.plusDays(1)
         val alerts = useCase(
             listOf(batch(quantity = 2.0, daysBefore = 3, firedFor = runOutDate)),
             mapOf(1L to listOf(dailyPeriod())),
@@ -98,7 +99,7 @@ class CheckLowStockRemindersUseCaseTest {
             today,
         )
         assertEquals(1, alerts.size)
-        assertEquals(today.plusDays(2), alerts.single().runOutDate)
+        assertEquals(today.plusDays(1), alerts.single().runOutDate)
     }
 
     @Test
@@ -118,7 +119,9 @@ class CheckLowStockRemindersUseCaseTest {
     }
 
     @Test
-    fun `each batch is evaluated independently`() {
+    fun `each batch is evaluated within the drug's combined FIFO consumption`() {
+        // Same strength, same addedAt -> the older-in-list batch is consumed
+        // first by FIFO, so only it is projected to run low within the window.
         val alerts = useCase(
             listOf(
                 batch(id = 1, drugId = 1, quantity = 2.0, daysBefore = 3),

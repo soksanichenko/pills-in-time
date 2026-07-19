@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MedTracker</string>
+    <string name="app_name">Pills in time</string>
 
     <string name="coming_soon">Coming soon</string>
 
@@ -33,6 +33,8 @@
     <string name="drug_form_capsule">Capsule</string>
     <string name="drug_form_drops">Drops</string>
     <string name="drug_form_ml">ml</string>
+    <string name="drug_form_ampoule">Ampoule</string>
+    <string name="drug_form_sachet">Sachet</string>
     <string name="drug_form_other">Other</string>
     <string name="drug_form_other_label">Custom form</string>
     <string name="drug_form_other_placeholder">e.g. Patch</string>
@@ -48,6 +50,7 @@
     <string name="restock_title">Add to stock</string>
     <string name="restock_quantity_label">Quantity purchased</string>
     <string name="restock_quantity_error">Enter a quantity greater than 0</string>
+    <string name="insufficient_stock_error">Not enough stock on hand for this dose. Add more stock first.</string>
 
     <string name="delete_drug_title">Delete drug?</string>
     <string name="delete_drug_body_cascade">This drug has active periods or stock. Deleting it will also remove its periods, stock, and history.</string>
@@ -62,6 +65,8 @@
     <string name="strength_per_unit_label">Strength per unit</string>
     <string name="strength_value_label">Value</string>
     <string name="strength_error">Enter a value greater than 0</string>
+    <string name="strength_value_placeholder">Leave blank if not tracked</string>
+    <string name="batch_requires_strength_error">A supply without strength can\'t be combined with other supplies for this drug.</string>
     <string name="unit_mg">mg</string>
     <string name="unit_mcg">mcg</string>
     <string name="unit_iu">IU</string>
@@ -87,6 +92,7 @@
     <string name="period_end_label">End</string>
     <string name="end_mode_date">Date</string>
     <string name="end_mode_days">Days</string>
+    <string name="end_mode_occurrences">Occurrences</string>
     <string name="end_mode_none">Ongoing</string>
     <string name="end_mode_none_hint">No end date — this period continues indefinitely.</string>
     <string name="duration_days_label">Duration (days)</string>
@@ -98,6 +104,8 @@
     <string name="dose_value_label">Dose</string>
     <string name="times_error">Add at least one time with a dose greater than 0</string>
     <string name="duration_days_error">Enter a duration of at least 1 day</string>
+    <string name="duration_occurrences_label">Duration (occurrences)</string>
+    <string name="duration_occurrences_error">Enter at least 1 occurrence</string>
     <string name="specific_days_error">Select at least one day of the week</string>
     <string name="time_label">Time</string>
     <string name="new_time_label">New time</string>
@@ -118,6 +126,7 @@
     <string name="stock_projection_remaining">%1$s left once all periods end</string>
     <string name="stock_projection_runs_out">Supply runs out on %1$s</string>
     <string name="stock_projection_sufficient">Current supply covers the foreseeable future</string>
+    <string name="batch_sufficient_short">sufficient</string>
     <string name="stock_projection_none">No active or upcoming periods</string>
     <string name="period_stock_at_start">Stock at start: %1$s</string>
     <string name="period_stock_at_end">Stock at end: %1$s</string>
@@ -141,6 +150,7 @@
     <string name="action_took_it">Took it</string>
     <string name="action_skipped">Skipped</string>
     <string name="action_snooze">Remind later</string>
+    <string name="action_undo_status">Undo</string>
 
     <string name="notification_channel_name">Medication reminders</string>
     <string name="notification_channel_description">Alerts when it\'s time to take a scheduled dose</string>
@@ -149,6 +159,7 @@
     <string name="notification_low_stock_channel_description">Alerts when a supply is projected to run out soon</string>
     <string name="low_stock_notification_title">Low stock: %1$s</string>
     <string name="low_stock_notification_text">This supply is projected to run out around %1$s</string>
+    <string name="low_stock_snooze_action">Remind tomorrow</string>
 
     <string name="low_stock_reminder_label">Remind before running out (days)</string>
     <string name="low_stock_reminder_placeholder">e.g. 7 (leave empty to disable)</string>
@@ -195,4 +206,9 @@
     <string name="restore_complete_toast">Restore complete</string>
     <string name="backup_error_generic">Something went wrong. Please try again.</string>
     <string name="restore_error_generic">Restore failed. Please try again.</string>
+    <string name="local_backup_section_title">Local backup</string>
+    <string name="local_backup_save_action">Save to file</string>
+    <string name="local_backup_restore_action">Restore from file</string>
+    <string name="local_restore_confirm_title">Restore from file?</string>
+    <string name="local_restore_confirm_body">This replaces all drugs, stock, schedules, and history on this device with the data from the selected file. This cannot be undone.</string>
 </resources>

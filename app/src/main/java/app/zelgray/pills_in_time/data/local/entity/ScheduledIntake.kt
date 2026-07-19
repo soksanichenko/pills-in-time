@@ -27,6 +27,10 @@ data class ScheduledIntake(
     val endMode: EndMode,
     val endDate: LocalDate?,
     val durationDays: Int?,
+    // Only set when endMode == OCCURRENCES: the end date is computed by
+    // counting this many active-cycle days forward from startDate, instead
+    // of a literal calendar-day span (see durationDays).
+    val durationOccurrences: Int? = null,
     val cycleType: CycleType,
     val specificDays: Set<DayOfWeek>?,
     val customCycleText: String?,

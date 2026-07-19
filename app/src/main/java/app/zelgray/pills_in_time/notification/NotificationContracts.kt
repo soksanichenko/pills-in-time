@@ -19,6 +19,8 @@ object NotificationContracts {
     const val ACTION_SKIP = "app.zelgray.pills_in_time.action.SKIP"
     const val ACTION_SNOOZE = "app.zelgray.pills_in_time.action.SNOOZE"
     const val ACTION_VIEW_OCCURRENCE = "app.zelgray.pills_in_time.action.VIEW_OCCURRENCE"
+    const val ACTION_VIEW_STOCK = "app.zelgray.pills_in_time.action.VIEW_STOCK"
+    const val ACTION_SNOOZE_LOW_STOCK = "app.zelgray.pills_in_time.action.SNOOZE_LOW_STOCK"
 
     const val EXTRA_DRUG_ID = "extra_drug_id"
     const val EXTRA_SCHEDULED_INTAKE_ID = "extra_scheduled_intake_id"
@@ -29,6 +31,9 @@ object NotificationContracts {
     const val EXTRA_DOSE_MODE = "extra_dose_mode"
     const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
     const val EXTRA_STATUS = "extra_status"
+    const val EXTRA_STOCK_ID = "extra_stock_id"
+    const val EXTRA_DRUG_NAME = "extra_drug_name"
+    const val EXTRA_RUN_OUT_DATE_EPOCH_DAY = "extra_run_out_date_epoch_day"
 
     fun dataFromSpec(spec: AlarmSpec): Data = Data.Builder()
         .putLong(EXTRA_DRUG_ID, spec.drugId)
@@ -83,4 +88,15 @@ fun Intent.toOccurrenceRequestOrNull(): OccurrenceRequest? {
     val occurrenceDateEpochDay = getLongExtra(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, -1)
     if (drugId < 0 || scheduledIntakeId < 0 || intakeTimeId < 0 || occurrenceDateEpochDay < 0) return null
     return OccurrenceRequest(drugId, scheduledIntakeId, intakeTimeId, NotificationContracts.occurrenceDateOf(occurrenceDateEpochDay))
+}
+
+/** Identifies a stock batch to jump straight to (its edit screen) when the app is opened from a low-stock notification tap. */
+data class StockRequest(val drugId: Long, val stockId: Long)
+
+fun Intent.toStockRequestOrNull(): StockRequest? {
+    if (action != NotificationContracts.ACTION_VIEW_STOCK) return null
+    val drugId = getLongExtra(NotificationContracts.EXTRA_DRUG_ID, -1)
+    val stockId = getLongExtra(NotificationContracts.EXTRA_STOCK_ID, -1)
+    if (drugId < 0 || stockId < 0) return null
+    return StockRequest(drugId, stockId)
 }

@@ -1,16 +1,13 @@
 package app.zelgray.pills_in_time.domain.usecase
 
-import app.zelgray.pills_in_time.data.local.entity.CycleType
-import app.zelgray.pills_in_time.data.local.entity.DoseMode
-import app.zelgray.pills_in_time.data.local.entity.IntakeTime
-import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
+import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
+import app.zelgray.pills_in_time.domain.model.BatchDecrement
+import app.zelgray.pills_in_time.domain.model.DoseConsumptionResult
 import app.zelgray.pills_in_time.domain.model.DrugStockProjection
-import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
 import app.zelgray.pills_in_time.domain.model.StockOverallProjection
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 /**
@@ -19,15 +16,26 @@ import javax.inject.Inject
  * at its end, plus an overall figure for what's left once every bounded
  * period concludes (or when stock is projected to run out, if sooner).
  *
+ * Consumption is resolved the same way a real logged dose would be
+ * (ResolveDoseConsumptionUseCase — a pinned strength combo, or FIFO across
+ * whichever batches are on hand), against a scratch copy of the batches,
+ * so the projection stays consistent with what actually happens when doses
+ * get logged for real. This matters once a dose spans multiple distinct
+ * on-hand strengths: a single combined "total stock ÷ one reference
+ * strength" number can't represent that correctly. A day a dose can't be
+ * resolved consumes nothing that day (mirroring the real blocking behavior
+ * on insufficient stock) rather than force-draining the remainder.
+ *
  * Periods that already ended before today are excluded — there's no stock
  * ledger to reconstruct what the supply looked like back then.
  */
-class ProjectDrugStockUseCase @Inject constructor() {
+class ProjectDrugStockUseCase @Inject constructor(
+    private val resolveDoseConsumption: ResolveDoseConsumptionUseCase,
+) {
 
     operator fun invoke(
         periods: List<ScheduledIntakeWithTimes>,
-        totalStock: Double,
-        effectiveStrength: EffectiveStrength?,
+        batches: List<DrugStockBatch>,
         today: LocalDate,
     ): DrugStockProjection {
         val relevant = periods.filter { p ->
@@ -35,7 +43,7 @@ class ProjectDrugStockUseCase @Inject constructor() {
             end == null || !end.isBefore(today)
         }
         if (relevant.isEmpty()) {
-            return DrugStockProjection(emptyMap(), StockOverallProjection.NoActivePeriods)
+            return DrugStockProjection(emptyMap(), StockOverallProjection.NoActivePeriods, emptyMap())
         }
 
         val hasOpenEnded = relevant.any { it.scheduledIntake.endDate == null }
@@ -45,10 +53,13 @@ class ProjectDrugStockUseCase @Inject constructor() {
             relevant.mapNotNull { it.scheduledIntake.endDate }.max()
         }
 
-        var remaining = totalStock
+        var working = batches
         var runOutDate: LocalDate? = null
         val atStart = mutableMapOf<Long, Double>()
         val atEnd = mutableMapOf<Long, Double>()
+        val batchExhaustionDates = mutableMapOf<Long, LocalDate>()
+
+        fun totalRemaining() = working.sumOf { it.quantity }
 
         var date = today
         while (!date.isAfter(horizonEnd)) {
@@ -56,24 +67,29 @@ class ProjectDrugStockUseCase @Inject constructor() {
                 val sid = period.scheduledIntake.id
                 val effectiveStartDate = maxOf(period.scheduledIntake.startDate, today)
                 if (date == effectiveStartDate) {
-                    atStart[sid] = remaining
+                    atStart[sid] = totalRemaining()
                 }
             }
 
-            val consumedToday = relevant
-                .filter { isActiveOn(it.scheduledIntake, date) }
-                .sumOf { p -> p.times.sumOf { toUnits(it, effectiveStrength) } }
-
-            if (runOutDate == null && consumedToday > remaining) {
-                runOutDate = date
+            val activeTimes = relevant.filter { isPeriodActiveOn(it.scheduledIntake, date) }.flatMap { it.times }
+            for (time in activeTimes) {
+                when (val result = resolveDoseConsumption(time.doseMode, time.doseValue, time.doseAllocation, working)) {
+                    is DoseConsumptionResult.Resolved -> working = applyDecrements(working, result.decrements)
+                    DoseConsumptionResult.Insufficient -> if (runOutDate == null) runOutDate = date
+                }
             }
-            remaining = (remaining - consumedToday).coerceAtLeast(0.0)
+
+            working.forEach { batch ->
+                if (batch.quantity <= 0.0) {
+                    batchExhaustionDates.putIfAbsent(batch.id, date)
+                }
+            }
 
             for (period in relevant) {
                 val sid = period.scheduledIntake.id
                 val end = period.scheduledIntake.endDate
                 if (end != null && date == end) {
-                    atEnd[sid] = remaining
+                    atEnd[sid] = totalRemaining()
                 }
             }
 
@@ -82,49 +98,36 @@ class ProjectDrugStockUseCase @Inject constructor() {
 
         val periodProjections = relevant.associate { p ->
             val sid = p.scheduledIntake.id
-            val start = atStart[sid] ?: totalStock
+            val start = atStart[sid] ?: batches.sumOf { it.quantity }
             val end = atEnd[sid]
+            val periodEnd = p.scheduledIntake.endDate
+            // A drug-wide shortfall only counts against a period if it actually
+            // falls within that period's own active date range — an unrelated,
+            // separately-impossible period elsewhere shouldn't phantom-flag this one.
+            val runOutWithinPeriod = runOutDate != null &&
+                !runOutDate.isBefore(maxOf(p.scheduledIntake.startDate, today)) &&
+                (periodEnd == null || !runOutDate.isAfter(periodEnd))
             sid to PeriodStockProjection(
                 atStart = start,
                 atEnd = end,
-                stockDepleted = start <= 0.0 || (end != null && end <= 0.0) || (end == null && runOutDate != null),
+                stockDepleted = start <= 0.0 || (end != null && end <= 0.0) || runOutWithinPeriod,
             )
         }
 
         val overall = when {
             runOutDate != null -> StockOverallProjection.RunsOutOn(runOutDate)
             hasOpenEnded -> StockOverallProjection.SufficientLongTerm
-            else -> StockOverallProjection.RemainingAfterAllPeriods(remaining)
+            else -> StockOverallProjection.RemainingAfterAllPeriods(totalRemaining())
         }
 
-        return DrugStockProjection(periodProjections, overall)
+        return DrugStockProjection(periodProjections, overall, batchExhaustionDates)
     }
 
-    private fun toUnits(time: IntakeTime, effectiveStrength: EffectiveStrength?): Double =
-        when {
-            time.doseMode == DoseMode.UNITS -> time.doseValue
-            effectiveStrength != null && effectiveStrength.value > 0 -> time.doseValue / effectiveStrength.value
-            else -> 0.0
-        }
-
-    private fun isActiveOn(period: ScheduledIntake, date: LocalDate): Boolean {
-        if (date.isBefore(period.startDate)) return false
-        val end = period.endDate
-        if (end != null && date.isAfter(end)) return false
-        return when (period.cycleType) {
-            CycleType.DAILY, CycleType.CUSTOM -> true
-            CycleType.EVERY_OTHER_DAY -> ChronoUnit.DAYS.between(period.startDate, date) % 2 == 0L
-            CycleType.SPECIFIC_DAYS -> period.specificDays?.contains(date.dayOfWeek) == true
-            CycleType.DAYS_ON_OFF -> {
-                val on = period.intakeDays
-                val off = period.breakDays
-                if (on == null || off == null || on <= 0 || off <= 0) {
-                    false
-                } else {
-                    val daysSinceStart = ChronoUnit.DAYS.between(period.startDate, date)
-                    daysSinceStart % (on + off) < on
-                }
-            }
+    private fun applyDecrements(batches: List<DrugStockBatch>, decrements: List<BatchDecrement>): List<DrugStockBatch> {
+        val byId = decrements.associateBy { it.batchId }
+        return batches.map { batch ->
+            val decrement = byId[batch.id] ?: return@map batch
+            batch.copy(quantity = (batch.quantity - decrement.quantity).coerceAtLeast(0.0))
         }
     }
 

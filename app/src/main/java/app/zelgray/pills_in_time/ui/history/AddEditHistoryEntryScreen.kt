@@ -177,6 +177,15 @@ fun AddEditHistoryEntryScreen(
                 onSelect = viewModel::onStatusChange,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            if (state.insufficientStockError) {
+                Text(
+                    text = stringResource(R.string.insufficient_stock_error),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
         }
     }
 }

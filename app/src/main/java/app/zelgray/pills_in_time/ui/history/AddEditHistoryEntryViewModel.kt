@@ -1,8 +1,11 @@
 package app.zelgray.pills_in_time.ui.history
 
+import android.content.Context
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkManager
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
@@ -10,10 +13,14 @@ import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
+import app.zelgray.pills_in_time.domain.model.RecordLogResult
+import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
+import app.zelgray.pills_in_time.notification.NotificationContracts
 import app.zelgray.pills_in_time.ui.navigation.NavRoutes
 import app.zelgray.pills_in_time.util.formatPlainNumber
 import app.zelgray.pills_in_time.util.parseLocaleAwareDouble
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +51,7 @@ data class AddEditHistoryEntryUiState(
     val status: IntakeStatus = IntakeStatus.TAKEN,
     val selectionError: Boolean = false,
     val doseError: Boolean = false,
+    val insufficientStockError: Boolean = false,
     val saved: Boolean = false,
 ) {
     val isEditing: Boolean get() = logId != null
@@ -52,6 +60,7 @@ data class AddEditHistoryEntryUiState(
 
 @HiltViewModel
 class AddEditHistoryEntryViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val drugRepository: DrugRepository,
     private val scheduleRepository: ScheduleRepository,
@@ -145,8 +154,8 @@ class AddEditHistoryEntryViewModel @Inject constructor(
     fun onOccurrenceDateChange(date: LocalDate) = _uiState.update { it.copy(occurrenceDate = date) }
     fun onActualDateChange(date: LocalDate) = _uiState.update { it.copy(actualDate = date) }
     fun onActualTimeChange(time: LocalTime) = _uiState.update { it.copy(actualTime = time) }
-    fun onDoseValueChange(text: String) = _uiState.update { it.copy(doseValueText = text, doseError = false) }
-    fun onStatusChange(status: IntakeStatus) = _uiState.update { it.copy(status = status) }
+    fun onDoseValueChange(text: String) = _uiState.update { it.copy(doseValueText = text, doseError = false, insufficientStockError = false) }
+    fun onStatusChange(status: IntakeStatus) = _uiState.update { it.copy(status = status, insufficientStockError = false) }
 
     fun save(onSaved: () -> Unit) {
         val state = _uiState.value
@@ -162,7 +171,7 @@ class AddEditHistoryEntryViewModel @Inject constructor(
 
         viewModelScope.launch {
             val actualDateTime = ZonedDateTime.of(state.actualDate, state.actualTime, ZoneId.systemDefault()).toInstant()
-            if (state.isEditing) {
+            val result = if (state.isEditing) {
                 intakeRepository.updateLogDetails(
                     logId = state.logId!!,
                     actualDateTime = actualDateTime,
@@ -182,7 +191,25 @@ class AddEditHistoryEntryViewModel @Inject constructor(
                     status = state.status,
                 )
             }
-            onSaved()
+            if (result == RecordLogResult.InsufficientStock) {
+                _uiState.update { it.copy(insufficientStockError = true) }
+            } else {
+                cancelReminderNotification(state.selectedScheduleId!!, state.selectedTimeId!!, state.occurrenceDate)
+                onSaved()
+            }
         }
+    }
+
+    /**
+     * Dismisses the reminder notification (and its pending 5-minute repeat) for
+     * an occurrence that just got logged directly in-app — otherwise a stale
+     * notification would sit there even though the dose is already recorded.
+     * Mirrors what IntakeActionReceiver already does when acted on from the
+     * notification itself.
+     */
+    private fun cancelReminderNotification(scheduledIntakeId: Long, intakeTimeId: Long, occurrenceDate: LocalDate) {
+        val notificationId = ScheduleAlarmsForWindowUseCase.computeRequestCode(scheduledIntakeId, intakeTimeId, occurrenceDate)
+        NotificationManagerCompat.from(context).cancel(notificationId)
+        WorkManager.getInstance(context).cancelUniqueWork(NotificationContracts.repeatWorkName(notificationId))
     }
 }

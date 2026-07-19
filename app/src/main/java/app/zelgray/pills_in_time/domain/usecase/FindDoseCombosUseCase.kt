@@ -22,7 +22,7 @@ class FindDoseCombosUseCase @Inject constructor() {
     operator fun invoke(batches: List<DrugStockBatch>, targetDose: Double): List<DoseCombo> {
         val strengths = batches
             .filter { it.quantity > 0 }
-            .map { it.strengthValue }
+            .mapNotNull { it.strengthValue }
             .distinct()
             .sortedDescending()
             .take(MAX_DISTINCT_STRENGTHS)

@@ -85,6 +85,7 @@ class BackupRoundTripTest {
             intakeTimes = listOf(time),
             intakeLogs = listOf(log),
             exportedAt = Instant.ofEpochSecond(7_000),
+            snoozeMinutes = 15,
         )
 
         // Round-trip through actual JSON text, matching what really happens over the wire.
@@ -98,6 +99,7 @@ class BackupRoundTripTest {
         assertEquals(listOf(period), imported.scheduledIntakes)
         assertEquals(listOf(time), imported.intakeTimes)
         assertEquals(listOf(log), imported.intakeLogs)
+        assertEquals(15, imported.snoozeMinutes)
     }
 
     @Test
@@ -121,6 +123,7 @@ class BackupRoundTripTest {
             intakeTimes = emptyList(),
             intakeLogs = emptyList(),
             exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
         )
         val jsonText = json.encodeToString(payload)
         val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
@@ -152,6 +155,7 @@ class BackupRoundTripTest {
             intakeTimes = emptyList(),
             intakeLogs = emptyList(),
             exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
         )
         val jsonText = json.encodeToString(payload)
         val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
@@ -179,11 +183,87 @@ class BackupRoundTripTest {
             intakeTimes = emptyList(),
             intakeLogs = emptyList(),
             exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
         )
         val jsonText = json.encodeToString(payload)
         val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
         val imported = importUseCase(decoded)
 
         assertEquals(batch, imported.stockBatches.single())
+    }
+
+    @Test
+    fun `a batch with no strength survives round trip`() {
+        val batch = DrugStockBatch(
+            id = 5,
+            drugId = 1,
+            quantity = 3.0,
+            strengthValue = null,
+            strengthUnit = null,
+            addedAt = Instant.EPOCH,
+        )
+        val payload = exportUseCase(
+            drugs = emptyList(),
+            stockBatches = listOf(batch),
+            scheduledIntakes = emptyList(),
+            intakeTimes = emptyList(),
+            intakeLogs = emptyList(),
+            exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
+        )
+        val jsonText = json.encodeToString(payload)
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
+        val imported = importUseCase(decoded)
+
+        assertEquals(batch, imported.stockBatches.single())
+    }
+
+    @Test
+    fun `durationOccurrences survives round trip`() {
+        val period = ScheduledIntake(
+            id = 6,
+            drugId = 1,
+            startDate = LocalDate.of(2026, 1, 1),
+            endMode = EndMode.OCCURRENCES,
+            endDate = LocalDate.of(2026, 3, 1),
+            durationDays = null,
+            durationOccurrences = 8,
+            cycleType = CycleType.SPECIFIC_DAYS,
+            specificDays = setOf(DayOfWeek.MONDAY),
+            customCycleText = null,
+            createdAt = Instant.EPOCH,
+        )
+        val payload = exportUseCase(
+            drugs = emptyList(),
+            stockBatches = emptyList(),
+            scheduledIntakes = listOf(period),
+            intakeTimes = emptyList(),
+            intakeLogs = emptyList(),
+            exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
+        )
+        val jsonText = json.encodeToString(payload)
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
+        val imported = importUseCase(decoded)
+
+        assertEquals(period, imported.scheduledIntakes.single())
+    }
+
+    @Test
+    fun `backup JSON from before snoozeMinutes existed still decodes, with it null`() {
+        val legacyJson = """
+            {
+              "exportedAtEpochMilli": 0,
+              "drugs": [],
+              "stockBatches": [],
+              "scheduledIntakes": [],
+              "intakeTimes": [],
+              "intakeLogs": []
+            }
+        """.trimIndent()
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(legacyJson)
+        val imported = importUseCase(decoded)
+
+        assertEquals(null, imported.snoozeMinutes)
     }
 }

@@ -79,6 +79,20 @@ class FindDoseCombosUseCaseTest {
     }
 
     @Test
+    fun `a batch with no strength is excluded rather than crashing`() {
+        val noStrength = DrugStockBatch(
+            drugId = 1,
+            quantity = 10.0,
+            strengthValue = null,
+            strengthUnit = null,
+            addedAt = Instant.EPOCH,
+        )
+        val combos = useCase(listOf(noStrength, batch(10.0)), targetDose = 10.0)
+        assertEquals(1, combos.size)
+        assertEquals(10.0, combos.single().pieces.single().strength, 1e-9)
+    }
+
+    @Test
     fun `real-world combo - 16mg and 4mg tablets for a 20mg dose picks one of each, not five 4mg`() {
         val combos = useCase(listOf(batch(16.0), batch(4.0)), targetDose = 20.0)
         assertEquals(2.0, combos[0].totalPieces, 1e-9)

@@ -36,6 +36,10 @@ class LogIntakeActionWorker @AssistedInject constructor(
 
         if (drugId < 0 || scheduledIntakeId < 0 || intakeTimeId < 0 || occurrenceDateEpochDay < 0) return Result.failure()
 
+        // Result intentionally ignored: on InsufficientStock, nothing is written —
+        // the occurrence stays unresolved and PostNotificationWorker's existing
+        // repeat-every-5-minutes check (no log found yet) keeps re-alerting until
+        // the user tops up stock and logs it from the app.
         intakeRepository.recordQuickAction(
             drugId = drugId,
             scheduledIntakeId = scheduledIntakeId,

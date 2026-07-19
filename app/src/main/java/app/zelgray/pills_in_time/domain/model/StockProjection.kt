@@ -18,4 +18,8 @@ sealed interface StockOverallProjection {
 data class DrugStockProjection(
     val periodProjections: Map<Long, PeriodStockProjection>,
     val overall: StockOverallProjection,
+    // The date each on-hand batch's own quantity is simulated to hit zero,
+    // keyed by batch id — used for per-batch low-stock reminders. Absent
+    // means that batch isn't projected to deplete within the horizon.
+    val batchExhaustionDates: Map<Long, LocalDate> = emptyMap(),
 )

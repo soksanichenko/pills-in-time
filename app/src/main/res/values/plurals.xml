@@ -16,4 +16,12 @@
     <plurals name="unit_ml">
         <item quantity="other">%1$s ml</item>
     </plurals>
+    <plurals name="unit_ampoule">
+        <item quantity="one">%1$s ampoule</item>
+        <item quantity="other">%1$s ampoules</item>
+    </plurals>
+    <plurals name="unit_sachet">
+        <item quantity="one">%1$s sachet</item>
+        <item quantity="other">%1$s sachets</item>
+    </plurals>
 </resources>

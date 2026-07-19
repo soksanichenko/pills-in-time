@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.play.publisher)
 }
 
 // keystore.properties is gitignored — release signing is a no-op (falls back to
@@ -34,7 +35,7 @@ android {
         applicationId = "app.zelgray.pills_in_time"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
+        versionCode = 9
         versionName = "1.0"
 
         testInstrumentationRunner = "app.zelgray.pills_in_time.HiltTestRunner"
@@ -75,6 +76,14 @@ android {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+// release-manager-key.json is gitignored — a service account key scoped to
+// "Manage testing releases" only, so `./gradlew publishBundle` uploads the
+// release bundle straight to the internal testing track.
+play {
+    serviceAccountCredentials.set(rootProject.file("release-manager-key.json"))
+    track.set("internal")
 }
 
 dependencies {

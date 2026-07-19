@@ -15,6 +15,8 @@ data class ImportedBackupData(
     val scheduledIntakes: List<ScheduledIntake>,
     val intakeTimes: List<IntakeTime>,
     val intakeLogs: List<IntakeLog>,
+    // Null for backups made before this field existed.
+    val snoozeMinutes: Int?,
 )
 
 class ImportBackupUseCase @Inject constructor() {
@@ -25,5 +27,6 @@ class ImportBackupUseCase @Inject constructor() {
         scheduledIntakes = payload.scheduledIntakes.map { it.toEntity() },
         intakeTimes = payload.intakeTimes.map { it.toEntity() },
         intakeLogs = payload.intakeLogs.map { it.toEntity() },
+        snoozeMinutes = payload.snoozeMinutes,
     )
 }

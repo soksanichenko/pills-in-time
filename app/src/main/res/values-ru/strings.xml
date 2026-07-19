@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MedTracker</string>
+    <string name="app_name">Pills in time</string>
 
     <string name="coming_soon">Скоро появится</string>
 
@@ -33,6 +33,8 @@
     <string name="drug_form_capsule">Капсула</string>
     <string name="drug_form_drops">Капли</string>
     <string name="drug_form_ml">мл</string>
+    <string name="drug_form_ampoule">Ампула</string>
+    <string name="drug_form_sachet">Саше</string>
     <string name="drug_form_other">Другое</string>
     <string name="drug_form_other_label">Своя форма</string>
     <string name="drug_form_other_placeholder">напр. Пластырь</string>
@@ -48,6 +50,7 @@
     <string name="restock_title">Пополнить запас</string>
     <string name="restock_quantity_label">Приобретённое количество</string>
     <string name="restock_quantity_error">Введите количество больше 0</string>
+    <string name="insufficient_stock_error">Недостаточно запаса для этой дозы. Сначала пополните запас.</string>
 
     <string name="delete_drug_title">Удалить лекарство?</string>
     <string name="delete_drug_body_cascade">У этого лекарства есть активные периоды приёма или запасы. Удаление также удалит периоды, запасы и историю.</string>
@@ -62,6 +65,8 @@
     <string name="strength_per_unit_label">Дозировка на единицу</string>
     <string name="strength_value_label">Значение</string>
     <string name="strength_error">Введите значение больше 0</string>
+    <string name="strength_value_placeholder">Оставьте пустым, если не отслеживается</string>
+    <string name="batch_requires_strength_error">Запас без силы нельзя сочетать с другими запасами этого лекарства.</string>
     <string name="unit_mg">мг</string>
     <string name="unit_mcg">мкг</string>
     <string name="unit_iu">МЕ</string>
@@ -87,6 +92,7 @@
     <string name="period_end_label">Окончание</string>
     <string name="end_mode_date">Дата</string>
     <string name="end_mode_days">Дни</string>
+    <string name="end_mode_occurrences">Приёмы</string>
     <string name="end_mode_none">Бессрочно</string>
     <string name="end_mode_none_hint">Без даты окончания — этот период продолжается бессрочно.</string>
     <string name="duration_days_label">Длительность (дней)</string>
@@ -98,6 +104,8 @@
     <string name="dose_value_label">Доза</string>
     <string name="times_error">Добавьте хотя бы одно время с дозой больше 0</string>
     <string name="duration_days_error">Введите длительность не менее 1 дня</string>
+    <string name="duration_occurrences_label">Длительность (приёмов)</string>
+    <string name="duration_occurrences_error">Введите не менее 1 приёма</string>
     <string name="specific_days_error">Выберите хотя бы один день недели</string>
     <string name="time_label">Время</string>
     <string name="new_time_label">Новое время</string>
@@ -118,6 +126,7 @@
     <string name="stock_projection_remaining">%1$s останется после завершения всех периодов</string>
     <string name="stock_projection_runs_out">Запас закончится %1$s</string>
     <string name="stock_projection_sufficient">Текущего запаса хватит на ближайшее время</string>
+    <string name="batch_sufficient_short">хватает</string>
     <string name="stock_projection_none">Нет активных или предстоящих периодов</string>
     <string name="period_stock_at_start">Запас в начале: %1$s</string>
     <string name="period_stock_at_end">Запас в конце: %1$s</string>
@@ -141,6 +150,7 @@
     <string name="action_took_it">Принял(а)</string>
     <string name="action_skipped">Пропустить</string>
     <string name="action_snooze">Напомнить позже</string>
+    <string name="action_undo_status">Отменить</string>
 
     <string name="notification_channel_name">Напоминания о приёме лекарств</string>
     <string name="notification_channel_description">Уведомления о времени приёма запланированной дозы</string>
@@ -149,6 +159,7 @@
     <string name="notification_low_stock_channel_description">Уведомления, когда запас скоро закончится</string>
     <string name="low_stock_notification_title">Запас заканчивается: %1$s</string>
     <string name="low_stock_notification_text">Этот запас по прогнозу закончится примерно %1$s</string>
+    <string name="low_stock_snooze_action">Напомнить завтра</string>
 
     <string name="low_stock_reminder_label">Напомнить за N дней до окончания</string>
     <string name="low_stock_reminder_placeholder">напр. 7 (оставьте пустым, чтобы отключить)</string>
@@ -195,4 +206,9 @@
     <string name="restore_complete_toast">Восстановление завершено</string>
     <string name="backup_error_generic">Что-то пошло не так. Попробуйте ещё раз.</string>
     <string name="restore_error_generic">Не удалось восстановить данные. Попробуйте ещё раз.</string>
+    <string name="local_backup_section_title">Локальная резервная копия</string>
+    <string name="local_backup_save_action">Сохранить в файл</string>
+    <string name="local_backup_restore_action">Восстановить из файла</string>
+    <string name="local_restore_confirm_title">Восстановить из файла?</string>
+    <string name="local_restore_confirm_body">Это заменит все лекарства, запасы, расписания и историю на этом устройстве данными из выбранного файла. Отменить это действие нельзя.</string>
 </resources>

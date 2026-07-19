@@ -47,6 +47,7 @@ import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
+import app.zelgray.pills_in_time.domain.usecase.isPeriodActiveOn
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
 import app.zelgray.pills_in_time.util.ValidationUtils
@@ -191,7 +192,7 @@ fun DrugDetailScreen(
                     state.stockProjection?.let { projection ->
                         item {
                             Text(
-                                text = stockOverallProjectionText(projection.overall, state.drug!!),
+                                text = stockOverallProjectionText(projection.overall, state.drug!!, state.stockBatches, projection.batchExhaustionDates),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 8.dp),
@@ -206,6 +207,7 @@ fun DrugDetailScreen(
                             effectiveStrength = state.effectiveStrength,
                             stockProjection = state.stockProjection?.periodProjections
                                 ?.get(periodWithTimes.scheduledIntake.id),
+                            batchExhaustionDates = state.stockProjection?.batchExhaustionDates.orEmpty(),
                             onEdit = { onEditPeriod(drugId, periodWithTimes.scheduledIntake.id) },
                             onDelete = { periodPendingDelete = periodWithTimes },
                         )
@@ -279,12 +281,7 @@ private fun RestockDialog(batch: DrugStockBatch, drug: Drug, onConfirm: (Double)
         text = {
             Column {
                 Text(
-                    text = stringResource(
-                        R.string.stock_row_summary,
-                        pluralUnitText(drug.form, drug.customFormText, batch.quantity),
-                        formatPlainNumber(batch.strengthValue),
-                        batch.strengthUnit.name.lowercase(),
-                    ),
+                    text = stockRowSummaryText(batch, drug),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -325,6 +322,7 @@ private fun PeriodCard(
     stockBatches: List<DrugStockBatch>,
     effectiveStrength: EffectiveStrength?,
     stockProjection: PeriodStockProjection?,
+    batchExhaustionDates: Map<Long, LocalDate>,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -385,6 +383,14 @@ private fun PeriodCard(
                         color = stockTextColor,
                     )
                 }
+                perBatchExhaustionText(stockBatches, batchExhaustionDates)?.let { text ->
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = stockTextColor,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -410,12 +416,7 @@ private fun StockRow(batch: DrugStockBatch, drug: Drug, onRestock: () -> Unit, o
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(
-                        R.string.stock_row_summary,
-                        pluralUnitText(drug.form, drug.customFormText, batch.quantity),
-                        formatPlainNumber(batch.strengthValue),
-                        batch.strengthUnit.name.lowercase(),
-                    ),
+                    text = stockRowSummaryText(batch, drug),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }

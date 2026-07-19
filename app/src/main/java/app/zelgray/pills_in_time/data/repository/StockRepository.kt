@@ -32,8 +32,8 @@ class StockRepository @Inject constructor(
     suspend fun createBatch(
         drugId: Long,
         quantity: Double,
-        strengthValue: Double,
-        strengthUnit: StrengthUnit,
+        strengthValue: Double?,
+        strengthUnit: StrengthUnit?,
         lowStockReminderDaysBefore: Int? = null,
     ): Long {
         val id = stockBatchDao.insert(

@@ -43,6 +43,7 @@ import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.DatePickerField
 import app.zelgray.pills_in_time.ui.common.TimePickerField
 import app.zelgray.pills_in_time.ui.common.localizedDate
+import app.zelgray.pills_in_time.ui.common.strengthUnitAbbreviation
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.util.Locale
@@ -159,11 +160,16 @@ private fun StartDateSection(state: AddEditPeriodUiState, viewModel: AddEditPeri
 @Composable
 private fun EndSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodViewModel) {
     ChipSelector(
-        options = listOf(
-            ChipOption(EndMode.DATE, stringResource(R.string.end_mode_date)),
-            ChipOption(EndMode.DAYS, stringResource(R.string.end_mode_days)),
-            ChipOption(EndMode.NONE, stringResource(R.string.end_mode_none)),
-        ),
+        options = buildList {
+            add(ChipOption(EndMode.DATE, stringResource(R.string.end_mode_date)))
+            add(ChipOption(EndMode.DAYS, stringResource(R.string.end_mode_days)))
+            // "N occurrences" only means something different from "N days" for
+            // a cycle that isn't active every day.
+            if (state.occurrenceDurationAvailable) {
+                add(ChipOption(EndMode.OCCURRENCES, stringResource(R.string.end_mode_occurrences)))
+            }
+            add(ChipOption(EndMode.NONE, stringResource(R.string.end_mode_none)))
+        },
         selected = state.endMode,
         onSelect = viewModel::onEndModeChange,
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
@@ -184,6 +190,28 @@ private fun EndSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodView
                 isError = state.durationDaysError,
                 supportingText = {
                     if (state.durationDaysError) Text(stringResource(R.string.duration_days_error))
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            state.computedEndDate?.let {
+                Text(
+                    text = stringResource(R.string.period_ends_on, localizedDate(it)),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+        EndMode.OCCURRENCES -> Column {
+            OutlinedTextField(
+                value = state.durationOccurrencesText,
+                onValueChange = viewModel::onDurationOccurrencesChange,
+                label = { Text(stringResource(R.string.duration_occurrences_label)) },
+                isError = state.durationOccurrencesError,
+                supportingText = {
+                    if (state.durationOccurrencesError) Text(stringResource(R.string.duration_occurrences_error))
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -257,6 +285,20 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp),
                         )
+
+                        // Only ask when the dose is genuinely ambiguous — more
+                        // than one combo of on-hand strengths satisfies it.
+                        if (preview is DosePreview.ExactCombos && preview.combos.size > 1) {
+                            val unitSuffix = " " + strengthUnitAbbreviation(preview.unit)
+                            ChipSelector(
+                                options = preview.combos.map { combo ->
+                                    ChipOption(combo, formatCombo(combo, unitSuffix))
+                                },
+                                selected = viewModel.selectedComboFor(row, preview.combos) ?: preview.combos.first(),
+                                onSelect = { combo -> viewModel.onComboSelected(row.rowKey, combo) },
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            )
+                        }
                     }
                 }
             }

@@ -11,12 +11,12 @@ class ResolveEffectiveStrengthUseCaseTest {
 
     private val useCase = ResolveEffectiveStrengthUseCase()
 
-    private fun batch(strength: Double, addedAt: Instant) =
+    private fun batch(strength: Double?, addedAt: Instant) =
         DrugStockBatch(
             drugId = 1,
             quantity = 10.0,
             strengthValue = strength,
-            strengthUnit = StrengthUnit.MG,
+            strengthUnit = strength?.let { StrengthUnit.MG },
             addedAt = addedAt,
         )
 
@@ -32,5 +32,11 @@ class ResolveEffectiveStrengthUseCaseTest {
         // deliberately out of chronological order in the input list
         val result = useCase(listOf(newer, older))
         assertEquals(5.0, result!!.value, 1e-9)
+    }
+
+    @Test
+    fun `most recent batch with no strength yields null (drug doesn't track strength)`() {
+        val result = useCase(listOf(batch(null, Instant.ofEpochSecond(100))))
+        assertNull(result)
     }
 }

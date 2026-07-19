@@ -21,4 +21,16 @@
     <plurals name="unit_ml">
         <item quantity="other">%1$s ml</item>
     </plurals>
+    <plurals name="unit_ampoule">
+        <item quantity="one">%1$s ampule</item>
+        <item quantity="few">%1$s ampule</item>
+        <item quantity="many">%1$s ampule</item>
+        <item quantity="other">%1$s ampulí</item>
+    </plurals>
+    <plurals name="unit_sachet">
+        <item quantity="one">%1$s sáček</item>
+        <item quantity="few">%1$s sáčky</item>
+        <item quantity="many">%1$s sáčku</item>
+        <item quantity="other">%1$s sáčků</item>
+    </plurals>
 </resources>

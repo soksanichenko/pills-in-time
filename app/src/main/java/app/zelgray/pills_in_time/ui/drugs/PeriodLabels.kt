@@ -20,10 +20,10 @@ import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
 import app.zelgray.pills_in_time.domain.model.StockOverallProjection
 import app.zelgray.pills_in_time.ui.common.localizedDate
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
+import app.zelgray.pills_in_time.util.formatPlainNumber
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 @Composable
@@ -81,14 +81,47 @@ fun PeriodTimesList(
 }
 
 @Composable
-fun stockOverallProjectionText(overall: StockOverallProjection, drug: Drug): String = when (overall) {
-    is StockOverallProjection.RemainingAfterAllPeriods -> stringResource(
-        R.string.stock_projection_remaining,
-        pluralUnitText(drug.form, drug.customFormText, overall.amount),
-    )
-    is StockOverallProjection.RunsOutOn -> stringResource(R.string.stock_projection_runs_out, localizedDate(overall.date))
-    StockOverallProjection.SufficientLongTerm -> stringResource(R.string.stock_projection_sufficient)
-    StockOverallProjection.NoActivePeriods -> stringResource(R.string.stock_projection_none)
+fun stockOverallProjectionText(
+    overall: StockOverallProjection,
+    drug: Drug,
+    batches: List<DrugStockBatch>,
+    batchExhaustionDates: Map<Long, LocalDate>,
+): String {
+    val base = when (overall) {
+        is StockOverallProjection.RemainingAfterAllPeriods -> stringResource(
+            R.string.stock_projection_remaining,
+            pluralUnitText(drug.form, drug.customFormText, overall.amount),
+        )
+        is StockOverallProjection.RunsOutOn -> stringResource(R.string.stock_projection_runs_out, localizedDate(overall.date))
+        StockOverallProjection.SufficientLongTerm -> stringResource(R.string.stock_projection_sufficient)
+        StockOverallProjection.NoActivePeriods -> stringResource(R.string.stock_projection_none)
+    }
+    val breakdown = perBatchExhaustionText(batches, batchExhaustionDates)
+    return if (breakdown != null) "$base ($breakdown)" else base
+}
+
+/**
+ * "4 mg: sufficient, 16 mg: 23 Jul" — each on-hand batch's own projected
+ * exhaustion date (or a "sufficient" placeholder if it isn't projected to
+ * run out within the horizon), shown only when there's more than one supply
+ * — with a single batch the overall figure already says everything there is
+ * to say.
+ */
+@Composable
+fun perBatchExhaustionText(batches: List<DrugStockBatch>, batchExhaustionDates: Map<Long, LocalDate>): String? {
+    if (batches.size <= 1) return null
+    val sufficientLabel = stringResource(R.string.batch_sufficient_short)
+    // A strength-less batch can only ever be a drug's sole supply (see
+    // AddEditStockViewModel), so every batch reaching this point (more than
+    // one on hand) is guaranteed to have a strength — the fallback below is
+    // just to satisfy the compiler, not an expected real case.
+    val entries = batches.map { batch ->
+        val strengthLabel = batch.strengthValue?.let { "${formatPlainNumber(it)} ${batch.strengthUnit?.name?.lowercase()}" }
+            ?: formatPlainNumber(batch.quantity)
+        val statusText = batchExhaustionDates[batch.id]?.let { localizedDate(it) } ?: sufficientLabel
+        "$strengthLabel: $statusText"
+    }
+    return entries.joinToString(", ")
 }
 
 @Composable
@@ -100,24 +133,4 @@ fun periodStockAtStartText(projection: PeriodStockProjection, drug: Drug): Strin
 @Composable
 fun periodStockAtEndText(projection: PeriodStockProjection, drug: Drug): String? = projection.atEnd?.let {
     stringResource(R.string.period_stock_at_end, pluralUnitText(drug.form, drug.customFormText, it))
-}
-
-fun isPeriodActiveOn(period: ScheduledIntake, date: LocalDate): Boolean {
-    if (date.isBefore(period.startDate)) return false
-    val end = period.endDate
-    if (end != null && date.isAfter(end)) return false
-    return when (period.cycleType) {
-        CycleType.DAILY, CycleType.CUSTOM -> true
-        CycleType.EVERY_OTHER_DAY -> ChronoUnit.DAYS.between(period.startDate, date) % 2 == 0L
-        CycleType.SPECIFIC_DAYS -> period.specificDays?.contains(date.dayOfWeek) == true
-        CycleType.DAYS_ON_OFF -> {
-            val on = period.intakeDays
-            val off = period.breakDays
-            if (on == null || off == null || on <= 0 || off <= 0) {
-                false
-            } else {
-                ChronoUnit.DAYS.between(period.startDate, date) % (on + off) < on
-            }
-        }
-    }
 }

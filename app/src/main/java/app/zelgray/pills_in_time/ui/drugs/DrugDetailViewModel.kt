@@ -57,8 +57,7 @@ class DrugDetailViewModel @Inject constructor(
             effectiveStrength = effectiveStrength,
             stockProjection = projectDrugStock(
                 periods = periods,
-                totalStock = batches.sumOf { it.quantity },
-                effectiveStrength = effectiveStrength,
+                batches = batches,
                 today = LocalDate.now(),
             ),
             isLoading = false,

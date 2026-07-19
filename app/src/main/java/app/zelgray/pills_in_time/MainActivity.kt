@@ -21,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import app.zelgray.pills_in_time.notification.OccurrenceRequest
+import app.zelgray.pills_in_time.notification.StockRequest
 import app.zelgray.pills_in_time.notification.toOccurrenceRequestOrNull
+import app.zelgray.pills_in_time.notification.toStockRequestOrNull
 import app.zelgray.pills_in_time.ui.navigation.MedTrackerNavHost
 import app.zelgray.pills_in_time.ui.theme.MedTrackerTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -36,11 +38,13 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private var pendingOccurrenceRequest by mutableStateOf<OccurrenceRequest?>(null)
+    private var pendingStockRequest by mutableStateOf<StockRequest?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingOccurrenceRequest = intent?.toOccurrenceRequestOrNull()
+        pendingStockRequest = intent?.toStockRequestOrNull()
         setContent {
             MedTrackerTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -48,6 +52,8 @@ class MainActivity : AppCompatActivity() {
                     MedTrackerNavHost(
                         pendingOccurrenceRequest = pendingOccurrenceRequest,
                         onPendingOccurrenceConsumed = { pendingOccurrenceRequest = null },
+                        pendingStockRequest = pendingStockRequest,
+                        onPendingStockConsumed = { pendingStockRequest = null },
                     )
                 }
             }
@@ -58,6 +64,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingOccurrenceRequest = intent.toOccurrenceRequestOrNull()
+        pendingStockRequest = intent.toStockRequestOrNull()
     }
 }
 

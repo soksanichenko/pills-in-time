@@ -19,6 +19,7 @@ class ExportBackupUseCase @Inject constructor() {
         intakeTimes: List<IntakeTime>,
         intakeLogs: List<IntakeLog>,
         exportedAt: Instant,
+        snoozeMinutes: Int,
     ): BackupPayload = BackupPayload(
         exportedAtEpochMilli = exportedAt.toEpochMilli(),
         drugs = drugs.map { it.toDto() },
@@ -26,5 +27,6 @@ class ExportBackupUseCase @Inject constructor() {
         scheduledIntakes = scheduledIntakes.map { it.toDto() },
         intakeTimes = intakeTimes.map { it.toDto() },
         intakeLogs = intakeLogs.map { it.toDto() },
+        snoozeMinutes = snoozeMinutes,
     )
 }

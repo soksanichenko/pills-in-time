@@ -28,6 +28,8 @@ fun pluralUnitText(form: DrugForm, customFormText: String?, value: Double): Stri
         DrugForm.CAPSULE -> pluralStringResource(R.plurals.unit_capsule, categoryCount, formatted)
         DrugForm.DROPS -> pluralStringResource(R.plurals.unit_drops, categoryCount, formatted)
         DrugForm.ML -> pluralStringResource(R.plurals.unit_ml, categoryCount, formatted)
+        DrugForm.AMPOULE -> pluralStringResource(R.plurals.unit_ampoule, categoryCount, formatted)
+        DrugForm.SACHET -> pluralStringResource(R.plurals.unit_sachet, categoryCount, formatted)
         DrugForm.OTHER -> "$formatted ${customFormText?.takeIf { it.isNotBlank() } ?: stringResource(R.string.drug_form_other)}"
     }
 }
@@ -48,6 +50,8 @@ fun pluralUnitTextPlain(context: Context, form: DrugForm, customFormText: String
         DrugForm.CAPSULE -> context.resources.getQuantityString(R.plurals.unit_capsule, categoryCount, formatted)
         DrugForm.DROPS -> context.resources.getQuantityString(R.plurals.unit_drops, categoryCount, formatted)
         DrugForm.ML -> context.resources.getQuantityString(R.plurals.unit_ml, categoryCount, formatted)
+        DrugForm.AMPOULE -> context.resources.getQuantityString(R.plurals.unit_ampoule, categoryCount, formatted)
+        DrugForm.SACHET -> context.resources.getQuantityString(R.plurals.unit_sachet, categoryCount, formatted)
         DrugForm.OTHER -> "$formatted ${customFormText?.takeIf { it.isNotBlank() } ?: context.getString(R.string.drug_form_other)}"
     }
 }

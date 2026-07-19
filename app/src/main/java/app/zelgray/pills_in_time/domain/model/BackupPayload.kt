@@ -34,9 +34,11 @@ data class BackupPayload(
     val scheduledIntakes: List<ScheduledIntakeDto>,
     val intakeTimes: List<IntakeTimeDto>,
     val intakeLogs: List<IntakeLogDto>,
+    // Absent on backups made before this field existed.
+    val snoozeMinutes: Int? = null,
 ) {
     companion object {
-        const val SCHEMA_VERSION = 3
+        const val SCHEMA_VERSION = 6
     }
 }
 
@@ -54,8 +56,8 @@ data class StockBatchDto(
     val id: Long,
     val drugId: Long,
     val quantity: Double,
-    val strengthValue: Double,
-    val strengthUnit: String,
+    val strengthValue: Double? = null,
+    val strengthUnit: String? = null,
     val addedAtEpochMilli: Long,
     val lowStockReminderDaysBefore: Int? = null,
     val lowStockReminderFiredForRunOutDateEpochDay: Long? = null,
@@ -74,6 +76,7 @@ data class ScheduledIntakeDto(
     val customCycleText: String? = null,
     val intakeDays: Int? = null,
     val breakDays: Int? = null,
+    val durationOccurrences: Int? = null,
     val createdAtEpochMilli: Long,
 )
 
@@ -84,6 +87,7 @@ data class IntakeTimeDto(
     val timeOfDaySecond: Int,
     val doseMode: String,
     val doseValue: Double,
+    val doseAllocationCsv: String? = null,
 )
 
 @Serializable
@@ -123,7 +127,7 @@ fun DrugStockBatch.toDto() = StockBatchDto(
     drugId = drugId,
     quantity = quantity,
     strengthValue = strengthValue,
-    strengthUnit = strengthUnit.name,
+    strengthUnit = strengthUnit?.name,
     addedAtEpochMilli = addedAt.toEpochMilli(),
     lowStockReminderDaysBefore = lowStockReminderDaysBefore,
     lowStockReminderFiredForRunOutDateEpochDay = lowStockReminderFiredForRunOutDate?.toEpochDay(),
@@ -134,7 +138,7 @@ fun StockBatchDto.toEntity() = DrugStockBatch(
     drugId = drugId,
     quantity = quantity,
     strengthValue = strengthValue,
-    strengthUnit = StrengthUnit.valueOf(strengthUnit),
+    strengthUnit = strengthUnit?.let { StrengthUnit.valueOf(it) },
     addedAt = Instant.ofEpochMilli(addedAtEpochMilli),
     lowStockReminderDaysBefore = lowStockReminderDaysBefore,
     lowStockReminderFiredForRunOutDate = lowStockReminderFiredForRunOutDateEpochDay?.let { LocalDate.ofEpochDay(it) },
@@ -152,6 +156,7 @@ fun ScheduledIntake.toDto() = ScheduledIntakeDto(
     customCycleText = customCycleText,
     intakeDays = intakeDays,
     breakDays = breakDays,
+    durationOccurrences = durationOccurrences,
     createdAtEpochMilli = createdAt.toEpochMilli(),
 )
 
@@ -167,6 +172,7 @@ fun ScheduledIntakeDto.toEntity() = ScheduledIntake(
     customCycleText = customCycleText,
     intakeDays = intakeDays,
     breakDays = breakDays,
+    durationOccurrences = durationOccurrences,
     createdAt = Instant.ofEpochMilli(createdAtEpochMilli),
 )
 
@@ -176,6 +182,7 @@ fun IntakeTime.toDto() = IntakeTimeDto(
     timeOfDaySecond = timeOfDay.toSecondOfDay(),
     doseMode = doseMode.name,
     doseValue = doseValue,
+    doseAllocationCsv = doseAllocation?.encodeToCsv(),
 )
 
 fun IntakeTimeDto.toEntity() = IntakeTime(
@@ -184,6 +191,7 @@ fun IntakeTimeDto.toEntity() = IntakeTime(
     timeOfDay = LocalTime.ofSecondOfDay(timeOfDaySecond.toLong()),
     doseMode = DoseMode.valueOf(doseMode),
     doseValue = doseValue,
+    doseAllocation = doseAllocationCsv.decodeDoseAllocationCsv(),
 )
 
 fun IntakeLog.toDto() = IntakeLogDto(

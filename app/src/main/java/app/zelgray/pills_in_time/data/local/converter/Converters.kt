@@ -8,6 +8,9 @@ import app.zelgray.pills_in_time.data.local.entity.EndMode
 import app.zelgray.pills_in_time.data.local.entity.IntakeSource
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import app.zelgray.pills_in_time.data.local.entity.StrengthUnit
+import app.zelgray.pills_in_time.domain.model.DoseComboPiece
+import app.zelgray.pills_in_time.domain.model.decodeDoseAllocationCsv
+import app.zelgray.pills_in_time.domain.model.encodeToCsv
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -85,4 +88,10 @@ class Converters {
 
     @TypeConverter
     fun intakeSourceToString(source: IntakeSource?): String? = source?.name
+
+    @TypeConverter
+    fun fromDoseAllocationCsv(value: String?): List<DoseComboPiece>? = value.decodeDoseAllocationCsv()
+
+    @TypeConverter
+    fun doseAllocationToCsv(pieces: List<DoseComboPiece>?): String? = pieces?.encodeToCsv()
 }

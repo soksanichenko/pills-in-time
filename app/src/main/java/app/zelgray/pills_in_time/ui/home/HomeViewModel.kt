@@ -3,10 +3,12 @@
 package app.zelgray.pills_in_time.ui.home
 
 import android.content.Context
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
@@ -18,8 +20,10 @@ import app.zelgray.pills_in_time.data.repository.SettingsRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.Occurrence
+import app.zelgray.pills_in_time.domain.model.RecordLogResult
 import app.zelgray.pills_in_time.domain.usecase.GenerateOccurrencesForDateUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
+import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
 import app.zelgray.pills_in_time.notification.NotificationContracts
 import app.zelgray.pills_in_time.notification.PostNotificationWorker
 import app.zelgray.pills_in_time.util.NowProvider
@@ -29,6 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -116,6 +121,13 @@ class HomeViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState(isLoading = true))
 
+    private val _toastMessageRes = MutableStateFlow<Int?>(null)
+    val toastMessageRes: StateFlow<Int?> = _toastMessageRes.asStateFlow()
+
+    fun consumeToast() {
+        _toastMessageRes.value = null
+    }
+
     fun onPrevDay() = dayOffset.update { it - 1 }
     fun onNextDay() = dayOffset.update { it + 1 }
     fun onGoToToday() {
@@ -128,6 +140,14 @@ class HomeViewModel @Inject constructor(
 
     fun onTookIt(item: HomeListItem) = recordAction(item, IntakeStatus.TAKEN)
     fun onSkipped(item: HomeListItem) = recordAction(item, IntakeStatus.SKIPPED)
+
+    /** Reverts an already-logged occurrence back to unlogged (reversing any stock consumption). */
+    fun onCancelStatus(item: HomeListItem) {
+        val logId = item.occurrence.logId ?: return
+        viewModelScope.launch {
+            intakeRepository.getById(logId)?.let { intakeRepository.deleteLog(it) }
+        }
+    }
 
     /**
      * Re-posts a real notification after the configured snooze delay, same as
@@ -150,7 +170,7 @@ class HomeViewModel @Inject constructor(
 
     private fun recordAction(item: HomeListItem, status: IntakeStatus) {
         viewModelScope.launch {
-            intakeRepository.recordQuickAction(
+            val result = intakeRepository.recordQuickAction(
                 drugId = item.occurrence.drugId,
                 scheduledIntakeId = item.occurrence.scheduledIntakeId,
                 intakeTimeId = item.occurrence.intakeTimeId,
@@ -159,6 +179,24 @@ class HomeViewModel @Inject constructor(
                 doseMode = item.occurrence.doseMode,
                 status = status,
             )
+            if (result == RecordLogResult.InsufficientStock) {
+                _toastMessageRes.value = R.string.insufficient_stock_error
+            } else {
+                cancelReminderNotification(item.occurrence.scheduledIntakeId, item.occurrence.intakeTimeId, item.occurrence.occurrenceDate)
+            }
         }
+    }
+
+    /**
+     * Dismisses the reminder notification (and its pending 5-minute repeat) for
+     * an occurrence that just got logged directly in-app — otherwise a stale
+     * notification would sit there even though the dose is already recorded.
+     * Mirrors what IntakeActionReceiver already does when acted on from the
+     * notification itself.
+     */
+    private fun cancelReminderNotification(scheduledIntakeId: Long, intakeTimeId: Long, occurrenceDate: LocalDate) {
+        val notificationId = ScheduleAlarmsForWindowUseCase.computeRequestCode(scheduledIntakeId, intakeTimeId, occurrenceDate)
+        NotificationManagerCompat.from(context).cancel(notificationId)
+        WorkManager.getInstance(context).cancelUniqueWork(NotificationContracts.repeatWorkName(notificationId))
     }
 }

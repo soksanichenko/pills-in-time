@@ -1,10 +1,10 @@
 package app.zelgray.pills_in_time.data.local.entity
 
-enum class DrugForm { TABLET, CAPSULE, DROPS, ML, OTHER }
+enum class DrugForm { TABLET, CAPSULE, DROPS, ML, AMPOULE, SACHET, OTHER }
 
 enum class StrengthUnit { MG, MCG, IU }
 
-enum class EndMode { DATE, DAYS, NONE }
+enum class EndMode { DATE, DAYS, OCCURRENCES, NONE }
 
 enum class CycleType { DAILY, EVERY_OTHER_DAY, SPECIFIC_DAYS, DAYS_ON_OFF, CUSTOM }
 

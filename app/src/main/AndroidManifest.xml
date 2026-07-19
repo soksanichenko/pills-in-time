@@ -46,6 +46,10 @@
             android:name=".notification.IntakeActionReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".notification.LowStockActionReceiver"
+            android:exported="false" />
+
         <!-- Makes AppCompatDelegate.setApplicationLocales() persist the chosen
              per-app language across restarts on API < 33 (API 33+ persistence
              is handled natively by the system LocaleManager). -->

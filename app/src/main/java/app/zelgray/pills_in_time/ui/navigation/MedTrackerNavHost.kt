@@ -26,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.notification.OccurrenceRequest
+import app.zelgray.pills_in_time.notification.StockRequest
 import app.zelgray.pills_in_time.ui.drugs.AddEditDrugScreen
 import app.zelgray.pills_in_time.ui.drugs.AddEditPeriodScreen
 import app.zelgray.pills_in_time.ui.drugs.AddEditStockScreen
@@ -54,6 +55,8 @@ fun MedTrackerNavHost(
     navController: NavHostController = rememberNavController(),
     pendingOccurrenceRequest: OccurrenceRequest? = null,
     onPendingOccurrenceConsumed: () -> Unit = {},
+    pendingStockRequest: StockRequest? = null,
+    onPendingStockConsumed: () -> Unit = {},
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -66,6 +69,13 @@ fun MedTrackerNavHost(
                 launchSingleTop = true
                 restoreState = true
             }
+        }
+    }
+
+    LaunchedEffect(pendingStockRequest) {
+        if (pendingStockRequest != null) {
+            navController.navigate(NavRoutes.editStock(pendingStockRequest.drugId, pendingStockRequest.stockId))
+            onPendingStockConsumed()
         }
     }
 

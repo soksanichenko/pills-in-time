@@ -11,6 +11,7 @@ import app.zelgray.pills_in_time.data.local.entity.EndMode
 import app.zelgray.pills_in_time.data.local.entity.IntakeTime
 import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
+import app.zelgray.pills_in_time.domain.model.DoseComboPiece
 import app.zelgray.pills_in_time.notification.DailyRescheduleWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +32,7 @@ data class IntakeTimeInput(
     val timeOfDay: LocalTime,
     val doseMode: DoseMode,
     val doseValue: Double,
+    val doseAllocation: List<DoseComboPiece>? = null,
 )
 
 class ScheduleRepository @Inject constructor(
@@ -67,6 +69,7 @@ class ScheduleRepository @Inject constructor(
         endMode: EndMode,
         endDate: LocalDate?,
         durationDays: Int?,
+        durationOccurrences: Int? = null,
         cycleType: CycleType,
         specificDays: Set<DayOfWeek>?,
         customCycleText: String?,
@@ -84,6 +87,7 @@ class ScheduleRepository @Inject constructor(
                             endMode = endMode,
                             endDate = endDate,
                             durationDays = durationDays,
+                            durationOccurrences = durationOccurrences,
                             cycleType = cycleType,
                             specificDays = specificDays,
                             customCycleText = customCycleText,
@@ -101,6 +105,7 @@ class ScheduleRepository @Inject constructor(
                         endMode = endMode,
                         endDate = endDate,
                         durationDays = durationDays,
+                        durationOccurrences = durationOccurrences,
                         cycleType = cycleType,
                         specificDays = specificDays,
                         customCycleText = customCycleText,
@@ -124,6 +129,7 @@ class ScheduleRepository @Inject constructor(
                             timeOfDay = input.timeOfDay,
                             doseMode = input.doseMode,
                             doseValue = input.doseValue,
+                            doseAllocation = input.doseAllocation,
                         ),
                     )
                 } else {
@@ -133,6 +139,7 @@ class ScheduleRepository @Inject constructor(
                             timeOfDay = input.timeOfDay,
                             doseMode = input.doseMode,
                             doseValue = input.doseValue,
+                            doseAllocation = input.doseAllocation,
                         ),
                     )
                 }

@@ -2,6 +2,7 @@ package app.zelgray.pills_in_time.ui.settings
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.zelgray.pills_in_time.R
@@ -25,6 +26,8 @@ data class SettingsUiState(
     val connectBusy: Boolean = false,
     val backupBusy: Boolean = false,
     val restoreBusy: Boolean = false,
+    val localBackupBusy: Boolean = false,
+    val localRestoreBusy: Boolean = false,
     val pendingConsentIntent: PendingIntent? = null,
     val toastMessageRes: Int? = null,
 )
@@ -80,6 +83,34 @@ class SettingsViewModel @Inject constructor(
 
     fun consumeToast() {
         _uiState.update { it.copy(toastMessageRes = null) }
+    }
+
+    fun onLocalBackupUriSelected(uri: Uri) {
+        _uiState.update { it.copy(localBackupBusy = true) }
+        viewModelScope.launch {
+            try {
+                backupRepository.backupToFile(uri)
+                showToast(R.string.backup_complete_toast)
+            } catch (e: Exception) {
+                showToast(R.string.backup_error_generic)
+            } finally {
+                _uiState.update { it.copy(localBackupBusy = false) }
+            }
+        }
+    }
+
+    fun onLocalRestoreUriSelected(uri: Uri) {
+        _uiState.update { it.copy(localRestoreBusy = true) }
+        viewModelScope.launch {
+            try {
+                backupRepository.restoreFromFile(uri)
+                showToast(R.string.restore_complete_toast)
+            } catch (e: Exception) {
+                showToast(R.string.restore_error_generic)
+            } finally {
+                _uiState.update { it.copy(localRestoreBusy = false) }
+            }
+        }
     }
 
     private fun performDriveAction(action: PendingDriveAction) {

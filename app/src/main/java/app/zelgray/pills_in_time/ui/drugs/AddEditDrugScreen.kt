@@ -93,6 +93,8 @@ fun AddEditDrugScreen(
                     ChipOption(DrugForm.CAPSULE, stringResource(R.string.drug_form_capsule)),
                     ChipOption(DrugForm.DROPS, stringResource(R.string.drug_form_drops)),
                     ChipOption(DrugForm.ML, stringResource(R.string.drug_form_ml)),
+                    ChipOption(DrugForm.AMPOULE, stringResource(R.string.drug_form_ampoule)),
+                    ChipOption(DrugForm.SACHET, stringResource(R.string.drug_form_sachet)),
                     ChipOption(DrugForm.OTHER, stringResource(R.string.drug_form_other)),
                 ),
                 selected = state.form,

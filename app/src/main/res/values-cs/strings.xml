@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MedTracker</string>
+    <string name="app_name">Pills in time</string>
 
     <string name="coming_soon">Již brzy</string>
 
@@ -33,6 +33,8 @@
     <string name="drug_form_capsule">Kapsle</string>
     <string name="drug_form_drops">Kapky</string>
     <string name="drug_form_ml">ml</string>
+    <string name="drug_form_ampoule">Ampule</string>
+    <string name="drug_form_sachet">Sáček</string>
     <string name="drug_form_other">Jiné</string>
     <string name="drug_form_other_label">Vlastní forma</string>
     <string name="drug_form_other_placeholder">např. Náplast</string>
@@ -48,6 +50,7 @@
     <string name="restock_title">Doplnit zásobu</string>
     <string name="restock_quantity_label">Zakoupené množství</string>
     <string name="restock_quantity_error">Zadejte množství větší než 0</string>
+    <string name="insufficient_stock_error">Nedostatek zásoby pro tuto dávku. Nejprve doplňte zásobu.</string>
 
     <string name="delete_drug_title">Smazat lék?</string>
     <string name="delete_drug_body_cascade">Tento lék má aktivní období užívání nebo zásoby. Smazáním se odstraní i jeho období, zásoby a historie.</string>
@@ -62,6 +65,8 @@
     <string name="strength_per_unit_label">Síla na jednotku</string>
     <string name="strength_value_label">Hodnota</string>
     <string name="strength_error">Zadejte hodnotu větší než 0</string>
+    <string name="strength_value_placeholder">Nechte prázdné, pokud se nesleduje</string>
+    <string name="batch_requires_strength_error">Zásobu bez síly nelze kombinovat s jinými zásobami tohoto léku.</string>
     <string name="unit_mg">mg</string>
     <string name="unit_mcg">mcg</string>
     <string name="unit_iu">IU</string>
@@ -87,6 +92,7 @@
     <string name="period_end_label">Konec</string>
     <string name="end_mode_date">Datum</string>
     <string name="end_mode_days">Dny</string>
+    <string name="end_mode_occurrences">Dávky</string>
     <string name="end_mode_none">Bez omezení</string>
     <string name="end_mode_none_hint">Bez data ukončení — toto období pokračuje bez omezení.</string>
     <string name="duration_days_label">Trvání (dní)</string>
@@ -98,6 +104,8 @@
     <string name="dose_value_label">Dávka</string>
     <string name="times_error">Přidejte alespoň jeden čas s dávkou větší než 0</string>
     <string name="duration_days_error">Zadejte trvání alespoň 1 den</string>
+    <string name="duration_occurrences_label">Trvání (dávek)</string>
+    <string name="duration_occurrences_error">Zadejte alespoň 1 dávku</string>
     <string name="specific_days_error">Vyberte alespoň jeden den v týdnu</string>
     <string name="time_label">Čas</string>
     <string name="new_time_label">Nový čas</string>
@@ -118,6 +126,7 @@
     <string name="stock_projection_remaining">%1$s zbyde po skončení všech období</string>
     <string name="stock_projection_runs_out">Zásoba dojde %1$s</string>
     <string name="stock_projection_sufficient">Současná zásoba pokryje blízkou budoucnost</string>
+    <string name="batch_sufficient_short">postačuje</string>
     <string name="stock_projection_none">Žádná aktivní ani nadcházející období</string>
     <string name="period_stock_at_start">Zásoba na začátku: %1$s</string>
     <string name="period_stock_at_end">Zásoba na konci: %1$s</string>
@@ -141,6 +150,7 @@
     <string name="action_took_it">Užito</string>
     <string name="action_skipped">Vynechat</string>
     <string name="action_snooze">Připomenout později</string>
+    <string name="action_undo_status">Zrušit</string>
 
     <string name="notification_channel_name">Připomenutí užívání léků</string>
     <string name="notification_channel_description">Upozornění, kdy je čas užít naplánovanou dávku</string>
@@ -149,6 +159,7 @@
     <string name="notification_low_stock_channel_description">Upozornění, když zásoba brzy dojde</string>
     <string name="low_stock_notification_title">Docházející zásoba: %1$s</string>
     <string name="low_stock_notification_text">Tato zásoba podle odhadu dojde přibližně %1$s</string>
+    <string name="low_stock_snooze_action">Připomenout zítra</string>
 
     <string name="low_stock_reminder_label">Připomenout N dní před dojitím</string>
     <string name="low_stock_reminder_placeholder">např. 7 (ponechte prázdné pro vypnutí)</string>
@@ -195,4 +206,9 @@
     <string name="restore_complete_toast">Obnova dokončena</string>
     <string name="backup_error_generic">Něco se pokazilo. Zkuste to prosím znovu.</string>
     <string name="restore_error_generic">Obnovení se nezdařilo. Zkuste to prosím znovu.</string>
+    <string name="local_backup_section_title">Místní záloha</string>
+    <string name="local_backup_save_action">Uložit do souboru</string>
+    <string name="local_backup_restore_action">Obnovit ze souboru</string>
+    <string name="local_restore_confirm_title">Obnovit ze souboru?</string>
+    <string name="local_restore_confirm_body">Tímto nahradíte všechny léky, zásoby, plány a historii v tomto zařízení daty z vybraného souboru. Tuto akci nelze vrátit zpět.</string>
 </resources>

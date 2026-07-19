@@ -98,6 +98,7 @@ fun AddEditStockScreen(
                     value = state.strengthValue,
                     onValueChange = viewModel::onStrengthValueChange,
                     label = { Text(stringResource(R.string.strength_value_label)) },
+                    placeholder = { Text(stringResource(R.string.strength_value_placeholder)) },
                     isError = state.strengthError,
                     supportingText = {
                         if (state.strengthError) Text(stringResource(R.string.strength_error))
@@ -105,6 +106,15 @@ fun AddEditStockScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
+                )
+            }
+
+            if (state.requiresStrengthError) {
+                Text(
+                    text = stringResource(R.string.batch_requires_strength_error),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
 

@@ -23,8 +23,11 @@ data class DrugStockBatch(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val drugId: Long,
     val quantity: Double,
-    val strengthValue: Double,
-    val strengthUnit: StrengthUnit,
+    // Null means this drug doesn't track dose strength at all — in that case
+    // the drug is capped at a single supply (see AddEditStockViewModel),
+    // since strength is what distinguishes/justifies more than one batch.
+    val strengthValue: Double?,
+    val strengthUnit: StrengthUnit?,
     val addedAt: Instant,
     // null = no low-stock reminder configured for this batch.
     val lowStockReminderDaysBefore: Int? = null,

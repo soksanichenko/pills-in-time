@@ -1,6 +1,7 @@
 package app.zelgray.pills_in_time.data.repository
 
 import android.content.Context
+import android.net.Uri
 import androidx.room.withTransaction
 import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
@@ -40,6 +41,7 @@ class BackupRepository @Inject constructor(
     private val driveApi: DriveApi,
     private val exportBackupUseCase: ExportBackupUseCase,
     private val importBackupUseCase: ImportBackupUseCase,
+    private val settingsRepository: SettingsRepository,
     private val json: Json,
 ) {
     suspend fun requestAuthorization() = driveAuthManager.requestAuthorization()
@@ -47,15 +49,7 @@ class BackupRepository @Inject constructor(
     fun resultFromIntent(data: android.content.Intent?) = driveAuthManager.resultFromIntent(data)
 
     suspend fun backup(accessToken: String) {
-        val payload = exportBackupUseCase(
-            drugs = drugDao.getAllOnce(),
-            stockBatches = stockBatchDao.getAllOnce(),
-            scheduledIntakes = scheduleDao.getAllOnce(),
-            intakeTimes = intakeTimeDao.getAllOnce(),
-            intakeLogs = intakeLogDao.getAllLogsOnce(),
-            exportedAt = Instant.now(),
-        )
-        val jsonText = json.encodeToString(BackupPayload.serializer(), payload)
+        val jsonText = buildBackupJson()
         val authHeader = "Bearer $accessToken"
         val existingFileId = findExistingBackupFileId(authHeader)
 
@@ -87,6 +81,35 @@ class BackupRepository @Inject constructor(
         val authHeader = "Bearer $accessToken"
         val fileId = findExistingBackupFileId(authHeader) ?: error("No backup file found in Google Drive")
         val jsonText = driveApi.downloadFile(authHeader, fileId).use { it.string() }
+        restoreFromJson(jsonText)
+    }
+
+    suspend fun backupToFile(uri: Uri) {
+        val jsonText = buildBackupJson()
+        context.contentResolver.openOutputStream(uri)?.use { it.write(jsonText.toByteArray()) }
+            ?: error("Unable to open output stream for backup file")
+    }
+
+    suspend fun restoreFromFile(uri: Uri) {
+        val jsonText = context.contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() }
+            ?: error("Unable to open input stream for backup file")
+        restoreFromJson(jsonText)
+    }
+
+    private suspend fun buildBackupJson(): String {
+        val payload = exportBackupUseCase(
+            drugs = drugDao.getAllOnce(),
+            stockBatches = stockBatchDao.getAllOnce(),
+            scheduledIntakes = scheduleDao.getAllOnce(),
+            intakeTimes = intakeTimeDao.getAllOnce(),
+            intakeLogs = intakeLogDao.getAllLogsOnce(),
+            exportedAt = Instant.now(),
+            snoozeMinutes = settingsRepository.getSnoozeMinutesOnce(),
+        )
+        return json.encodeToString(BackupPayload.serializer(), payload)
+    }
+
+    private suspend fun restoreFromJson(jsonText: String) {
         val payload = json.decodeFromString(BackupPayload.serializer(), jsonText)
         val imported = importBackupUseCase(payload)
 
@@ -110,11 +133,19 @@ class BackupRepository @Inject constructor(
             intakeLogDao.insertAll(imported.intakeLogs)
         }
 
+        settingsRepository.setSnoozeMinutes(imported.snoozeMinutes ?: SettingsRepository.DEFAULT_SNOOZE_MINUTES)
         DailyRescheduleWorker.enqueueNow(context)
     }
 
     private suspend fun findExistingBackupFileId(authHeader: String): String? {
         val response = driveApi.listAppDataFiles(authHeader, query = "name='$BACKUP_FILE_NAME'")
         return response.files.firstOrNull()?.id
+    }
+
+    companion object {
+        // Deliberately independent of BACKUP_FILE_NAME (the Google Drive backup's
+        // file name) — changing this must never affect what's searched for/created
+        // on Drive.
+        const val LOCAL_BACKUP_FILE_NAME = "pills-in-time-backup.json"
     }
 }

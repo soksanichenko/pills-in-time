@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.room.Room
 import app.zelgray.pills_in_time.data.local.MIGRATION_1_2
 import app.zelgray.pills_in_time.data.local.MIGRATION_2_3
+import app.zelgray.pills_in_time.data.local.MIGRATION_3_4
+import app.zelgray.pills_in_time.data.local.MIGRATION_4_5
 import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
+import app.zelgray.pills_in_time.data.local.dao.IntakeLogConsumptionDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
@@ -26,7 +29,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): MedTrackerDatabase =
         Room.databaseBuilder(context, MedTrackerDatabase::class.java, MedTrackerDatabase.DATABASE_NAME)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
 
     @Provides
@@ -47,4 +50,8 @@ object DatabaseModule {
     @Provides
     fun provideScheduledAlarmDao(database: MedTrackerDatabase): ScheduledAlarmDao =
         database.scheduledAlarmDao()
+
+    @Provides
+    fun provideIntakeLogConsumptionDao(database: MedTrackerDatabase): IntakeLogConsumptionDao =
+        database.intakeLogConsumptionDao()
 }

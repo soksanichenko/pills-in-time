@@ -19,6 +19,7 @@
     <string name="action_edit">Редагувати</string>
     <string name="action_delete">Видалити</string>
     <string name="action_cancel">Скасувати</string>
+    <string name="action_ok">Гаразд</string>
     <string name="action_save">Зберегти</string>
 
     <string name="drugs_empty">Ще немає ліків. Натисніть +, щоб додати.</string>
@@ -48,6 +49,8 @@
 
     <string name="restock_action">Поповнити запас</string>
     <string name="restock_title">Поповнити запас</string>
+    <string name="shortfall_action">Що докупити</string>
+    <string name="shortfall_title">Потрібно докупити</string>
     <string name="restock_quantity_label">Придбана кількість</string>
     <string name="restock_quantity_error">Введіть кількість більше 0</string>
     <string name="insufficient_stock_error">Недостатньо запасу для цієї дози. Спочатку поповніть запас.</string>
@@ -158,12 +161,20 @@
     <string name="notification_low_stock_channel_name">Нагадування про запас</string>
     <string name="notification_low_stock_channel_description">Сповіщення, коли запас скоро закінчиться</string>
     <string name="low_stock_notification_title">Запас закінчується: %1$s</string>
-    <string name="low_stock_notification_text">Цей запас за прогнозом закінчиться приблизно %1$s</string>
+    <string name="low_stock_notification_text">Залишилось %1$s — закінчиться приблизно %2$s</string>
+    <string name="low_stock_notification_text_with_supply">%1$s: залишилось %2$s — закінчиться приблизно %3$s</string>
+    <string name="low_stock_notification_text_no_date">Залишилось %1$s</string>
+    <string name="low_stock_notification_text_with_supply_no_date">%1$s: залишилось %2$s</string>
     <string name="low_stock_snooze_action">Нагадати завтра</string>
 
+    <string name="low_stock_reminder_mode_days">Днів до закінчення</string>
+    <string name="low_stock_reminder_mode_units">Залишок одиниць</string>
     <string name="low_stock_reminder_label">Нагадати за N днів до закінчення</string>
     <string name="low_stock_reminder_placeholder">напр. 7 (залиште порожнім, щоб вимкнути)</string>
     <string name="low_stock_reminder_error">Введіть ціле число днів або залиште порожнім</string>
+    <string name="low_stock_reminder_units_label">Нагадати, коли залишиться стільки</string>
+    <string name="low_stock_reminder_units_placeholder">напр. 5 (залиште порожнім, щоб вимкнути)</string>
+    <string name="low_stock_reminder_units_error">Введіть додатне число або залиште порожнім</string>
 
     <string name="exact_alarm_rationale">Увімкніть точні будильники, щоб нагадування про прийом ліків спрацьовували вчасно.</string>
     <string name="exact_alarm_enable">Увімкнути</string>

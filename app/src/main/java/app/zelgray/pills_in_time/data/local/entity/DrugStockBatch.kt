@@ -29,11 +29,17 @@ data class DrugStockBatch(
     val strengthValue: Double?,
     val strengthUnit: StrengthUnit?,
     val addedAt: Instant,
-    // null = no low-stock reminder configured for this batch.
+    // A low-stock reminder is configured via exactly one of these two
+    // (mutually exclusive in the UI) — null on both means none configured.
     val lowStockReminderDaysBefore: Int? = null,
-    // The projected run-out date we last fired a notification for, so the
-    // daily check doesn't re-notify on every run while the forecast is
+    val lowStockReminderUnitsBefore: Double? = null,
+    // The projected run-out date we last fired a days-before reminder for, so
+    // the daily check doesn't re-notify on every run while the forecast is
     // unchanged. Re-fires automatically if the forecast shifts (e.g. the
     // drug's periods change) since that produces a different date.
     val lowStockReminderFiredForRunOutDate: LocalDate? = null,
+    // Same dedup purpose as above but for a units-before reminder, which has
+    // no forecast date to key off — reset to false once quantity rises back
+    // above the threshold (e.g. a restock), so it can fire again next time.
+    val lowStockReminderUnitsAlreadyFired: Boolean = false,
 )

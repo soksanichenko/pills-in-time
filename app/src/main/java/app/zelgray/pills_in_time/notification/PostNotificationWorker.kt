@@ -16,6 +16,7 @@ import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
+import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
@@ -32,6 +33,7 @@ class PostNotificationWorker @AssistedInject constructor(
     private val drugRepository: DrugRepository,
     private val stockRepository: StockRepository,
     private val intakeRepository: IntakeRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val resolveEffectiveStrength: ResolveEffectiveStrengthUseCase,
 ) : CoroutineWorker(appContext, params) {
 
@@ -61,7 +63,8 @@ class PostNotificationWorker @AssistedInject constructor(
 
         val batches = stockRepository.getBatchesForDrugOnce(drugId)
         val strength = resolveEffectiveStrength(batches)
-        val doseText = doseTextPlain(applicationContext, doseValue, doseMode, drug, batches, strength)
+        val doseAllocation = scheduleRepository.getTimeById(intakeTimeId)?.doseAllocation
+        val doseText = doseTextPlain(applicationContext, doseValue, doseMode, drug, batches, strength, doseAllocation)
         val timeText = "%02d:%02d".format(timeOfDay.hour, timeOfDay.minute)
 
         val takeIntent = actionIntent(NotificationContracts.ACTION_TAKE, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)

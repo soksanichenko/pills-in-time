@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import app.zelgray.pills_in_time.data.repository.DrugRepository
+import app.zelgray.pills_in_time.data.repository.StockRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.LocalDate
@@ -13,23 +15,22 @@ import java.time.LocalDate
 class SnoozeLowStockReminderWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
+    private val drugRepository: DrugRepository,
+    private val stockRepository: StockRepository,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
         val drugId = inputData.getLong(NotificationContracts.EXTRA_DRUG_ID, -1)
         val batchId = inputData.getLong(NotificationContracts.EXTRA_STOCK_ID, -1)
-        val drugName = inputData.getString(NotificationContracts.EXTRA_DRUG_NAME)
         val runOutDateEpochDay = inputData.getLong(NotificationContracts.EXTRA_RUN_OUT_DATE_EPOCH_DAY, -1)
 
-        if (drugId < 0 || batchId < 0 || drugName == null || runOutDateEpochDay < 0) return Result.failure()
+        if (drugId < 0 || batchId < 0) return Result.failure()
 
-        LowStockNotifications.post(
-            applicationContext,
-            drugId,
-            batchId,
-            drugName,
-            LocalDate.ofEpochDay(runOutDateEpochDay),
-        )
+        val drug = drugRepository.getById(drugId) ?: return Result.failure()
+        val batch = stockRepository.getById(batchId) ?: return Result.failure()
+        val runOutDate = runOutDateEpochDay.takeIf { it >= 0 }?.let(LocalDate::ofEpochDay)
+
+        LowStockNotifications.post(applicationContext, drug, batch, runOutDate)
         return Result.success()
     }
 }

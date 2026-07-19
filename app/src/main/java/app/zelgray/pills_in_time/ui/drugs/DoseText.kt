@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
+import app.zelgray.pills_in_time.domain.model.DoseCombo
+import app.zelgray.pills_in_time.domain.model.DoseComboPiece
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.usecase.FindDoseCombosUseCase
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
@@ -30,13 +32,14 @@ fun doseText(
     drug: Drug,
     stockBatches: List<DrugStockBatch>,
     effectiveStrength: EffectiveStrength?,
+    doseAllocation: List<DoseComboPiece>? = null,
 ): String {
     if (doseMode == DoseMode.UNITS) return pluralUnitText(drug.form, drug.customFormText, doseValue)
     val strength = effectiveStrength ?: return formatPlainNumber(doseValue)
     val strengthText = "${formatPlainNumber(doseValue)} ${strengthUnitAbbreviation(strength.unit)}"
-    val bestCombo = findDoseCombos(stockBatches, doseValue).firstOrNull()
-    if (bestCombo != null) {
-        return "$strengthText (${formatCombo(bestCombo, " " + strengthUnitAbbreviation(strength.unit))})"
+    val combo = doseAllocation?.let { DoseCombo(it) } ?: findDoseCombos(stockBatches, doseValue).firstOrNull()
+    if (combo != null) {
+        return "$strengthText (${formatCombo(combo, " " + strengthUnitAbbreviation(strength.unit))})"
     }
     if (strength.value <= 0) return strengthText
     val tabletCount = doseValue / strength.value
@@ -51,13 +54,14 @@ fun doseTextPlain(
     drug: Drug,
     stockBatches: List<DrugStockBatch>,
     effectiveStrength: EffectiveStrength?,
+    doseAllocation: List<DoseComboPiece>? = null,
 ): String {
     if (doseMode == DoseMode.UNITS) return pluralUnitTextPlain(context, drug.form, drug.customFormText, doseValue)
     val strength = effectiveStrength ?: return formatPlainNumber(doseValue)
     val strengthText = "${formatPlainNumber(doseValue)} ${strengthUnitAbbreviationPlain(context, strength.unit)}"
-    val bestCombo = findDoseCombos(stockBatches, doseValue).firstOrNull()
-    if (bestCombo != null) {
-        return "$strengthText (${formatCombo(bestCombo, " " + strengthUnitAbbreviationPlain(context, strength.unit))})"
+    val combo = doseAllocation?.let { DoseCombo(it) } ?: findDoseCombos(stockBatches, doseValue).firstOrNull()
+    if (combo != null) {
+        return "$strengthText (${formatCombo(combo, " " + strengthUnitAbbreviationPlain(context, strength.unit))})"
     }
     if (strength.value <= 0) return strengthText
     val tabletCount = doseValue / strength.value

@@ -336,7 +336,14 @@ private fun HomeActionSheetContent(
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             text = item.occurrence.timeOfDay.format(DateTimeFormatter.ofPattern("HH:mm")) + " · " + item.drug.name + " · " +
-                doseText(item.occurrence.doseValue, item.occurrence.doseMode, item.drug, item.stockBatches, item.effectiveStrength),
+                doseText(
+                    item.occurrence.doseValue,
+                    item.occurrence.doseMode,
+                    item.drug,
+                    item.stockBatches,
+                    item.effectiveStrength,
+                    item.occurrence.doseAllocation,
+                ),
             style = MaterialTheme.typography.titleLarge,
         )
         Column(modifier = Modifier.padding(top = 16.dp)) {

@@ -37,9 +37,11 @@ Marking a dose as taken really decrements the matching on-hand stock batch — b
 
 For each period, the app also projects how much stock is left at its start and end, by simulating day-by-day consumption forward from today the same way real logging would (so the projection and reality never disagree). Once a drug has more than one supply, both the overall and per-period figures also break down each supply's own projected run-out date individually (or "sufficient" if it isn't expected to run out soon).
 
+A shopping-cart icon appears — next to a period with a defined end (fixed date / N days / N occurrences), and once overall covering every such period at once — whenever there isn't enough on hand to cover every remaining dose through that end date; tapping it opens a popup listing exactly what's short (by strength, or a plain count for unit-dosed drugs). An open-ended period has no course to "complete", so it never shows one.
+
 ### Notifications
 - **Medication reminders**: exact alarms for the next few days, rescheduled automatically whenever a period/time changes, after a device reboot, and via a periodic background refresh. Each notification has Took it / Skipped / Remind later actions; snooze duration is configurable. Left unanswered, a reminder repeats every 5 minutes until you respond — but logging the dose directly in the app dismisses it right away.
-- **Low-stock reminders**: a per-batch, optional "remind me N days before it runs out" alert based on the same stock projection. Tapping one opens that supply directly; a "Remind tomorrow" action postpones it a day.
+- **Low-stock reminders**: a per-batch, optional alert configured either as "remind me N days before it runs out" (based on the same stock projection) or "remind me when only N units remain" (checked directly against current quantity, no forecast needed). The notification names the specific supply and how much of it remains (plus the projected run-out date, for the days-before mode). Tapping one opens that drug's detail screen; a "Remind tomorrow" action postpones it a day.
 
 ### Backup & restore (Google Drive & local file)
 Connect a Google account (Drive `appdata` scope only) to back up all data — plus the snooze-duration setting — as a single JSON file in the app's private Drive folder, and restore it later. A local file (`pills-in-time-backup.json`) can be saved/restored the same way via the system file picker, no Google account needed. Restore is always a full wipe-and-replace of local data, followed by re-arming all notifications.

@@ -12,6 +12,7 @@ data class Occurrence(
     val timeOfDay: LocalTime,
     val doseValue: Double,
     val doseMode: DoseMode,
+    val doseAllocation: List<DoseComboPiece>?,
     val status: OccurrenceStatus,
     val logId: Long?,
 )

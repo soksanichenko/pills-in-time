@@ -38,7 +38,8 @@ class LowStockCheckWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val today = nowProvider.currentLocalDate()
-        val batches = stockRepository.getAllBatchesOnce().filter { it.lowStockReminderDaysBefore != null }
+        val batches = stockRepository.getAllBatchesOnce()
+            .filter { it.lowStockReminderDaysBefore != null || it.lowStockReminderUnitsBefore != null }
         if (batches.isEmpty()) return Result.success()
 
         val periodsByDrugId = batches.map { it.drugId }.distinct()
@@ -48,11 +49,25 @@ class LowStockCheckWorker @AssistedInject constructor(
 
         alerts.forEach { alert ->
             val drug = drugRepository.getById(alert.drugId) ?: return@forEach
-            LowStockNotifications.post(applicationContext, alert.drugId, alert.batchId, drug.name, alert.runOutDate)
-
             val batch = stockRepository.getById(alert.batchId) ?: return@forEach
-            stockRepository.updateBatch(batch.copy(lowStockReminderFiredForRunOutDate = alert.runOutDate))
+            LowStockNotifications.post(applicationContext, drug, batch, alert.runOutDate)
+            val updated = if (batch.lowStockReminderDaysBefore != null) {
+                batch.copy(lowStockReminderFiredForRunOutDate = alert.runOutDate)
+            } else {
+                batch.copy(lowStockReminderUnitsAlreadyFired = true)
+            }
+            stockRepository.updateBatch(updated)
         }
+
+        // A units-before reminder that already fired resets once quantity
+        // recovers above its threshold (e.g. a restock), so it can fire again
+        // next time it dips low — days-before reminders need no such reset
+        // since their dedup key (the forecast date) already changes on its own.
+        batches.filter { batch ->
+            batch.lowStockReminderUnitsBefore != null &&
+                batch.lowStockReminderUnitsAlreadyFired &&
+                batch.quantity > batch.lowStockReminderUnitsBefore
+        }.forEach { stockRepository.updateBatch(it.copy(lowStockReminderUnitsAlreadyFired = false)) }
 
         return Result.success()
     }

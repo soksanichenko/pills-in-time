@@ -86,3 +86,16 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         db.execSQL("ALTER TABLE scheduled_intakes ADD COLUMN durationOccurrences INTEGER")
     }
 }
+
+/**
+ * Adds a units-remaining alternative to the existing days-before-run-out
+ * low-stock reminder (mutually exclusive in the UI) — lowStockReminderUnitsBefore
+ * plus its own dedup flag (lowStockReminderUnitsAlreadyFired), since a units
+ * threshold has no forecast date to key a dedup off of.
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE drug_stock_batches ADD COLUMN lowStockReminderUnitsBefore REAL")
+        db.execSQL("ALTER TABLE drug_stock_batches ADD COLUMN lowStockReminderUnitsAlreadyFired INTEGER NOT NULL DEFAULT 0")
+    }
+}

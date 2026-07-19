@@ -20,6 +20,7 @@ import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
 import app.zelgray.pills_in_time.domain.model.StockOverallProjection
 import app.zelgray.pills_in_time.ui.common.localizedDate
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
+import app.zelgray.pills_in_time.ui.common.strengthUnitAbbreviation
 import app.zelgray.pills_in_time.util.formatPlainNumber
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -72,7 +73,7 @@ fun PeriodTimesList(
                 Text(text = "•  ", style = MaterialTheme.typography.bodyLarge)
                 Text(
                     text = "${time.timeOfDay.format(timeFormatter)} — " +
-                        doseText(time.doseValue, time.doseMode, drug, stockBatches, effectiveStrength),
+                        doseText(time.doseValue, time.doseMode, drug, stockBatches, effectiveStrength, time.doseAllocation),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
@@ -116,7 +117,9 @@ fun perBatchExhaustionText(batches: List<DrugStockBatch>, batchExhaustionDates: 
     // one on hand) is guaranteed to have a strength — the fallback below is
     // just to satisfy the compiler, not an expected real case.
     val entries = batches.map { batch ->
-        val strengthLabel = batch.strengthValue?.let { "${formatPlainNumber(it)} ${batch.strengthUnit?.name?.lowercase()}" }
+        val strengthLabel = batch.strengthValue?.let { value ->
+            batch.strengthUnit?.let { unit -> "${formatPlainNumber(value)} ${strengthUnitAbbreviation(unit)}" }
+        }
             ?: formatPlainNumber(batch.quantity)
         val statusText = batchExhaustionDates[batch.id]?.let { localizedDate(it) } ?: sufficientLabel
         "$strengthLabel: $statusText"

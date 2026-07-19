@@ -16,13 +16,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Which of the two mutually exclusive low-stock reminder thresholds is configured. */
+enum class LowStockReminderMode { DAYS_BEFORE, UNITS_BEFORE }
+
 data class AddEditStockUiState(
     val drugId: Long = 0,
     val stockId: Long? = null,
     val quantity: String = "",
     val strengthValue: String = "",
     val strengthUnit: StrengthUnit = StrengthUnit.MG,
-    val lowStockReminderDaysBefore: String = "",
+    val lowStockReminderMode: LowStockReminderMode = LowStockReminderMode.DAYS_BEFORE,
+    val lowStockReminderValue: String = "",
     val quantityError: Boolean = false,
     val strengthError: Boolean = false,
     val lowStockReminderError: Boolean = false,
@@ -51,12 +55,20 @@ class AddEditStockViewModel @Inject constructor(
             viewModelScope.launch {
                 val batch = stockRepository.getById(id)
                 if (batch != null) {
+                    val (mode, value) = when {
+                        batch.lowStockReminderUnitsBefore != null ->
+                            LowStockReminderMode.UNITS_BEFORE to formatPlainNumber(batch.lowStockReminderUnitsBefore)
+                        batch.lowStockReminderDaysBefore != null ->
+                            LowStockReminderMode.DAYS_BEFORE to batch.lowStockReminderDaysBefore.toString()
+                        else -> LowStockReminderMode.DAYS_BEFORE to ""
+                    }
                     _uiState.update {
                         it.copy(
                             quantity = formatPlainNumber(batch.quantity),
                             strengthValue = batch.strengthValue?.let(::formatPlainNumber).orEmpty(),
                             strengthUnit = batch.strengthUnit ?: StrengthUnit.MG,
-                            lowStockReminderDaysBefore = batch.lowStockReminderDaysBefore?.toString().orEmpty(),
+                            lowStockReminderMode = mode,
+                            lowStockReminderValue = value,
                         )
                     }
                 }
@@ -76,8 +88,12 @@ class AddEditStockViewModel @Inject constructor(
         _uiState.update { it.copy(strengthUnit = value) }
     }
 
-    fun onLowStockReminderDaysBeforeChange(value: String) {
-        _uiState.update { it.copy(lowStockReminderDaysBefore = value, lowStockReminderError = false) }
+    fun onLowStockReminderModeChange(mode: LowStockReminderMode) {
+        _uiState.update { it.copy(lowStockReminderMode = mode, lowStockReminderValue = "", lowStockReminderError = false) }
+    }
+
+    fun onLowStockReminderValueChange(value: String) {
+        _uiState.update { it.copy(lowStockReminderValue = value, lowStockReminderError = false) }
     }
 
     fun save(onSaved: () -> Unit) {
@@ -87,9 +103,18 @@ class AddEditStockViewModel @Inject constructor(
         // Strength is optional: a blank value means this batch doesn't track it.
         val strength = strengthText.takeIf { it.isNotEmpty() }?.let { ValidationUtils.parsePositiveDouble(it) }
         val strengthInvalid = strengthText.isNotEmpty() && strength == null
-        val reminderText = state.lowStockReminderDaysBefore.trim()
-        val reminderDaysBefore = if (reminderText.isEmpty()) null else reminderText.toIntOrNull()?.takeIf { it > 0 }
-        val reminderInvalid = reminderText.isNotEmpty() && reminderDaysBefore == null
+        val reminderText = state.lowStockReminderValue.trim()
+        val reminderDaysBefore = if (reminderText.isEmpty() || state.lowStockReminderMode != LowStockReminderMode.DAYS_BEFORE) {
+            null
+        } else {
+            reminderText.toIntOrNull()?.takeIf { it > 0 }
+        }
+        val reminderUnitsBefore = if (reminderText.isEmpty() || state.lowStockReminderMode != LowStockReminderMode.UNITS_BEFORE) {
+            null
+        } else {
+            ValidationUtils.parsePositiveDouble(reminderText)
+        }
+        val reminderInvalid = reminderText.isNotEmpty() && reminderDaysBefore == null && reminderUnitsBefore == null
 
         if (quantity == null || strengthInvalid || reminderInvalid) {
             _uiState.update {
@@ -119,6 +144,9 @@ class AddEditStockViewModel @Inject constructor(
                             strengthValue = strength,
                             strengthUnit = if (strength != null) state.strengthUnit else null,
                             lowStockReminderDaysBefore = reminderDaysBefore,
+                            lowStockReminderUnitsBefore = reminderUnitsBefore,
+                            lowStockReminderFiredForRunOutDate = if (reminderDaysBefore != null) existing.lowStockReminderFiredForRunOutDate else null,
+                            lowStockReminderUnitsAlreadyFired = if (reminderUnitsBefore != null) existing.lowStockReminderUnitsAlreadyFired else false,
                         ),
                     )
                 }
@@ -129,6 +157,7 @@ class AddEditStockViewModel @Inject constructor(
                     strength,
                     if (strength != null) state.strengthUnit else null,
                     reminderDaysBefore,
+                    reminderUnitsBefore,
                 )
             }
             onSaved()

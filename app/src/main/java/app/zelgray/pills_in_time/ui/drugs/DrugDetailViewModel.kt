@@ -11,6 +11,8 @@ import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.model.DrugStockProjection
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
+import app.zelgray.pills_in_time.domain.model.StockShortfall
+import app.zelgray.pills_in_time.domain.usecase.ComputeStockShortfallUseCase
 import app.zelgray.pills_in_time.domain.usecase.ProjectDrugStockUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.ui.navigation.NavRoutes
@@ -29,6 +31,10 @@ data class DrugDetailUiState(
     val periods: List<ScheduledIntakeWithTimes> = emptyList(),
     val effectiveStrength: EffectiveStrength? = null,
     val stockProjection: DrugStockProjection? = null,
+    // Only bounded periods (fixed date / N days / N occurrences) get a
+    // shortfall entry here — an open-ended period has no course to complete.
+    val shortfallByPeriodId: Map<Long, StockShortfall> = emptyMap(),
+    val overallShortfall: StockShortfall? = null,
     val isLoading: Boolean = true,
 )
 
@@ -40,6 +46,7 @@ class DrugDetailViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val resolveEffectiveStrength: ResolveEffectiveStrengthUseCase,
     private val projectDrugStock: ProjectDrugStockUseCase,
+    private val computeStockShortfall: ComputeStockShortfallUseCase,
 ) : ViewModel() {
 
     private val drugId: Long = checkNotNull(savedStateHandle[NavRoutes.ARG_DRUG_ID])
@@ -50,6 +57,18 @@ class DrugDetailViewModel @Inject constructor(
         scheduleRepository.observePeriodsForDrug(drugId),
     ) { drug, batches, periods ->
         val effectiveStrength = resolveEffectiveStrength(batches)
+        val today = LocalDate.now()
+
+        val boundedEndDates = periods.mapNotNull { it.scheduledIntake.endDate }
+        val shortfallByPeriodId = periods.mapNotNull { period ->
+            val endDate = period.scheduledIntake.endDate ?: return@mapNotNull null
+            val shortfall = computeStockShortfall(periods, endDate, batches, today)
+            if (shortfall.isEmpty) null else period.scheduledIntake.id to shortfall
+        }.toMap()
+        val overallShortfall = boundedEndDates.maxOrNull()?.let { latestEnd ->
+            computeStockShortfall(periods, latestEnd, batches, today).takeUnless { it.isEmpty }
+        }
+
         DrugDetailUiState(
             drug = drug,
             stockBatches = batches,
@@ -58,8 +77,10 @@ class DrugDetailViewModel @Inject constructor(
             stockProjection = projectDrugStock(
                 periods = periods,
                 batches = batches,
-                today = LocalDate.now(),
+                today = today,
             ),
+            shortfallByPeriodId = shortfallByPeriodId,
+            overallShortfall = overallShortfall,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrugDetailUiState())

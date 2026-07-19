@@ -47,6 +47,7 @@ class GenerateOccurrencesForDateUseCase @Inject constructor() {
                         timeOfDay = time.timeOfDay,
                         doseValue = log?.actualDoseValue ?: time.doseValue,
                         doseMode = log?.actualDoseMode ?: time.doseMode,
+                        doseAllocation = time.doseAllocation,
                         status = resolveStatus(log, date, today, time.timeOfDay, now, graceMinutes),
                         logId = log?.id,
                     )

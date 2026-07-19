@@ -129,17 +129,46 @@ fun AddEditStockScreen(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             )
 
+            ChipSelector(
+                options = listOf(
+                    ChipOption(LowStockReminderMode.DAYS_BEFORE, stringResource(R.string.low_stock_reminder_mode_days)),
+                    ChipOption(LowStockReminderMode.UNITS_BEFORE, stringResource(R.string.low_stock_reminder_mode_units)),
+                ),
+                selected = state.lowStockReminderMode,
+                onSelect = viewModel::onLowStockReminderModeChange,
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+            )
+
+            val isUnitsMode = state.lowStockReminderMode == LowStockReminderMode.UNITS_BEFORE
             OutlinedTextField(
-                value = state.lowStockReminderDaysBefore,
-                onValueChange = viewModel::onLowStockReminderDaysBeforeChange,
-                label = { Text(stringResource(R.string.low_stock_reminder_label)) },
-                placeholder = { Text(stringResource(R.string.low_stock_reminder_placeholder)) },
+                value = state.lowStockReminderValue,
+                onValueChange = viewModel::onLowStockReminderValueChange,
+                label = {
+                    Text(
+                        stringResource(
+                            if (isUnitsMode) R.string.low_stock_reminder_units_label else R.string.low_stock_reminder_label,
+                        ),
+                    )
+                },
+                placeholder = {
+                    Text(
+                        stringResource(
+                            if (isUnitsMode) R.string.low_stock_reminder_units_placeholder else R.string.low_stock_reminder_placeholder,
+                        ),
+                    )
+                },
                 isError = state.lowStockReminderError,
                 supportingText = {
-                    if (state.lowStockReminderError) Text(stringResource(R.string.low_stock_reminder_error))
+                    if (state.lowStockReminderError) {
+                        Text(
+                            stringResource(
+                                if (isUnitsMode) R.string.low_stock_reminder_units_error else R.string.low_stock_reminder_error,
+                            ),
+                        )
+                    }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = if (isUnitsMode) KeyboardType.Decimal else KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 singleLine = true,
             )
         }

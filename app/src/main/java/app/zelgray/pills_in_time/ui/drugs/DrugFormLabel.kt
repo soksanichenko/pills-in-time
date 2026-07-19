@@ -8,6 +8,7 @@ import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugForm
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
+import app.zelgray.pills_in_time.ui.common.strengthUnitAbbreviation
 import app.zelgray.pills_in_time.util.formatPlainNumber
 
 @Composable
@@ -33,7 +34,7 @@ fun stockRowSummaryText(batch: DrugStockBatch, drug: Drug): String {
     val strengthValue = batch.strengthValue
     val strengthUnit = batch.strengthUnit
     return if (strengthValue != null && strengthUnit != null) {
-        stringResource(R.string.stock_row_summary, quantityText, formatPlainNumber(strengthValue), strengthUnit.name.lowercase())
+        stringResource(R.string.stock_row_summary, quantityText, formatPlainNumber(strengthValue), strengthUnitAbbreviation(strengthUnit))
     } else {
         quantityText
     }

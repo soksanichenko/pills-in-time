@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,6 +48,7 @@ import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
+import app.zelgray.pills_in_time.domain.model.StockShortfall
 import app.zelgray.pills_in_time.domain.usecase.isPeriodActiveOn
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
@@ -75,6 +77,7 @@ fun DrugDetailScreen(
     var stockPendingDelete by remember { mutableStateOf<DrugStockBatch?>(null) }
     var periodPendingDelete by remember { mutableStateOf<ScheduledIntakeWithTimes?>(null) }
     var restockBatch by remember { mutableStateOf<DrugStockBatch?>(null) }
+    var shortfallToShow by remember { mutableStateOf<StockShortfall?>(null) }
 
     Scaffold(
         topBar = {
@@ -191,12 +194,22 @@ fun DrugDetailScreen(
                 } else {
                     state.stockProjection?.let { projection ->
                         item {
-                            Text(
-                                text = stockOverallProjectionText(projection.overall, state.drug!!, state.stockBatches, projection.batchExhaustionDates),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 8.dp),
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stockOverallProjectionText(projection.overall, state.drug!!, state.stockBatches, projection.batchExhaustionDates),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                state.overallShortfall?.let { shortfall ->
+                                    IconButton(onClick = { shortfallToShow = shortfall }) {
+                                        Icon(Icons.Filled.ShoppingCart, contentDescription = stringResource(R.string.shortfall_action))
+                                    }
+                                }
+                            }
                         }
                     }
                     items(state.periods, key = { "period_${it.scheduledIntake.id}" }) { periodWithTimes ->
@@ -208,8 +221,10 @@ fun DrugDetailScreen(
                             stockProjection = state.stockProjection?.periodProjections
                                 ?.get(periodWithTimes.scheduledIntake.id),
                             batchExhaustionDates = state.stockProjection?.batchExhaustionDates.orEmpty(),
+                            shortfall = state.shortfallByPeriodId[periodWithTimes.scheduledIntake.id],
                             onEdit = { onEditPeriod(drugId, periodWithTimes.scheduledIntake.id) },
                             onDelete = { periodPendingDelete = periodWithTimes },
+                            onShowShortfall = { shortfallToShow = it },
                         )
                     }
                 }
@@ -268,6 +283,17 @@ fun DrugDetailScreen(
             onDismiss = { restockBatch = null },
         )
     }
+
+    shortfallToShow?.let { shortfall ->
+        AlertDialog(
+            onDismissRequest = { shortfallToShow = null },
+            title = { Text(stringResource(R.string.shortfall_title)) },
+            text = { Text(shortfallText(shortfall, state.drug!!)) },
+            confirmButton = {
+                TextButton(onClick = { shortfallToShow = null }) { Text(stringResource(R.string.action_ok)) }
+            },
+        )
+    }
 }
 
 @Composable
@@ -323,8 +349,10 @@ private fun PeriodCard(
     effectiveStrength: EffectiveStrength?,
     stockProjection: PeriodStockProjection?,
     batchExhaustionDates: Map<Long, LocalDate>,
+    shortfall: StockShortfall?,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onShowShortfall: (StockShortfall) -> Unit,
 ) {
     val period = periodWithTimes.scheduledIntake
     val depleted = stockProjection?.stockDepleted == true
@@ -396,6 +424,11 @@ private fun PeriodCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
             ) {
+                shortfall?.let {
+                    IconButton(onClick = { onShowShortfall(it) }) {
+                        Icon(Icons.Filled.ShoppingCart, contentDescription = stringResource(R.string.shortfall_action))
+                    }
+                }
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
                 }

@@ -32,7 +32,6 @@ object NotificationContracts {
     const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
     const val EXTRA_STATUS = "extra_status"
     const val EXTRA_STOCK_ID = "extra_stock_id"
-    const val EXTRA_DRUG_NAME = "extra_drug_name"
     const val EXTRA_RUN_OUT_DATE_EPOCH_DAY = "extra_run_out_date_epoch_day"
 
     fun dataFromSpec(spec: AlarmSpec): Data = Data.Builder()
@@ -90,13 +89,13 @@ fun Intent.toOccurrenceRequestOrNull(): OccurrenceRequest? {
     return OccurrenceRequest(drugId, scheduledIntakeId, intakeTimeId, NotificationContracts.occurrenceDateOf(occurrenceDateEpochDay))
 }
 
-/** Identifies a stock batch to jump straight to (its edit screen) when the app is opened from a low-stock notification tap. */
-data class StockRequest(val drugId: Long, val stockId: Long)
+/** Identifies a drug to jump straight to its detail screen when opened from a low-stock notification tap. */
+data class StockRequest(val drugId: Long)
 
 fun Intent.toStockRequestOrNull(): StockRequest? {
     if (action != NotificationContracts.ACTION_VIEW_STOCK) return null
     val drugId = getLongExtra(NotificationContracts.EXTRA_DRUG_ID, -1)
     val stockId = getLongExtra(NotificationContracts.EXTRA_STOCK_ID, -1)
     if (drugId < 0 || stockId < 0) return null
-    return StockRequest(drugId, stockId)
+    return StockRequest(drugId)
 }

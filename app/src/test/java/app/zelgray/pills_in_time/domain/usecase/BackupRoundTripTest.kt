@@ -219,6 +219,34 @@ class BackupRoundTripTest {
     }
 
     @Test
+    fun `units-before low-stock reminder fields survive round trip`() {
+        val batch = DrugStockBatch(
+            id = 7,
+            drugId = 1,
+            quantity = 4.0,
+            strengthValue = 5.0,
+            strengthUnit = StrengthUnit.MG,
+            addedAt = Instant.EPOCH,
+            lowStockReminderUnitsBefore = 5.0,
+            lowStockReminderUnitsAlreadyFired = true,
+        )
+        val payload = exportUseCase(
+            drugs = emptyList(),
+            stockBatches = listOf(batch),
+            scheduledIntakes = emptyList(),
+            intakeTimes = emptyList(),
+            intakeLogs = emptyList(),
+            exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
+        )
+        val jsonText = json.encodeToString(payload)
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
+        val imported = importUseCase(decoded)
+
+        assertEquals(batch, imported.stockBatches.single())
+    }
+
+    @Test
     fun `durationOccurrences survives round trip`() {
         val period = ScheduledIntake(
             id = 6,

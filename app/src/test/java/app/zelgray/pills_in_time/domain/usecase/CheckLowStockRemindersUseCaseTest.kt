@@ -27,6 +27,8 @@ class CheckLowStockRemindersUseCaseTest {
         strength: Double = 1.0,
         daysBefore: Int? = 3,
         firedFor: LocalDate? = null,
+        unitsBefore: Double? = null,
+        unitsAlreadyFired: Boolean = false,
         addedAt: Instant = Instant.EPOCH,
     ) = DrugStockBatch(
         id = id,
@@ -37,6 +39,8 @@ class CheckLowStockRemindersUseCaseTest {
         addedAt = addedAt,
         lowStockReminderDaysBefore = daysBefore,
         lowStockReminderFiredForRunOutDate = firedFor,
+        lowStockReminderUnitsBefore = unitsBefore,
+        lowStockReminderUnitsAlreadyFired = unitsAlreadyFired,
     )
 
     private fun dailyPeriod(drugId: Long = 1, dosePerDay: Double = 1.0) = ScheduledIntakeWithTimes(
@@ -132,5 +136,44 @@ class CheckLowStockRemindersUseCaseTest {
         )
         assertEquals(1, alerts.size)
         assertEquals(1L, alerts.single().batchId)
+    }
+
+    @Test
+    fun `units-before reminder fires once quantity drops to or below the threshold`() {
+        val above = useCase(
+            listOf(batch(quantity = 10.0, daysBefore = null, unitsBefore = 5.0)),
+            mapOf(1L to listOf(dailyPeriod())),
+            today,
+        )
+        assertTrue(above.isEmpty())
+
+        val atThreshold = useCase(
+            listOf(batch(quantity = 5.0, daysBefore = null, unitsBefore = 5.0)),
+            mapOf(1L to listOf(dailyPeriod())),
+            today,
+        )
+        assertEquals(1, atThreshold.size)
+        assertEquals(1L, atThreshold.single().batchId)
+    }
+
+    @Test
+    fun `units-before reminder does not repeat once already fired`() {
+        val alerts = useCase(
+            listOf(batch(quantity = 2.0, daysBefore = null, unitsBefore = 5.0, unitsAlreadyFired = true)),
+            mapOf(1L to listOf(dailyPeriod())),
+            today,
+        )
+        assertTrue(alerts.isEmpty())
+    }
+
+    @Test
+    fun `units-before reminder fires even without an active period to forecast against`() {
+        val alerts = useCase(
+            listOf(batch(quantity = 2.0, daysBefore = null, unitsBefore = 5.0)),
+            emptyMap(),
+            today,
+        )
+        assertEquals(1, alerts.size)
+        assertEquals(null, alerts.single().runOutDate)
     }
 }

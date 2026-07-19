@@ -19,6 +19,7 @@
     <string name="action_edit">Upravit</string>
     <string name="action_delete">Smazat</string>
     <string name="action_cancel">Zrušit</string>
+    <string name="action_ok">OK</string>
     <string name="action_save">Uložit</string>
 
     <string name="drugs_empty">Zatím žádné léky. Klepnutím na + jeden přidáte.</string>
@@ -48,6 +49,8 @@
 
     <string name="restock_action">Doplnit zásobu</string>
     <string name="restock_title">Doplnit zásobu</string>
+    <string name="shortfall_action">Co dokoupit</string>
+    <string name="shortfall_title">Je potřeba dokoupit</string>
     <string name="restock_quantity_label">Zakoupené množství</string>
     <string name="restock_quantity_error">Zadejte množství větší než 0</string>
     <string name="insufficient_stock_error">Nedostatek zásoby pro tuto dávku. Nejprve doplňte zásobu.</string>
@@ -158,12 +161,20 @@
     <string name="notification_low_stock_channel_name">Připomenutí o zásobě</string>
     <string name="notification_low_stock_channel_description">Upozornění, když zásoba brzy dojde</string>
     <string name="low_stock_notification_title">Docházející zásoba: %1$s</string>
-    <string name="low_stock_notification_text">Tato zásoba podle odhadu dojde přibližně %1$s</string>
+    <string name="low_stock_notification_text">Zbývá %1$s — dojde přibližně %2$s</string>
+    <string name="low_stock_notification_text_with_supply">%1$s: zbývá %2$s — dojde přibližně %3$s</string>
+    <string name="low_stock_notification_text_no_date">Zbývá %1$s</string>
+    <string name="low_stock_notification_text_with_supply_no_date">%1$s: zbývá %2$s</string>
     <string name="low_stock_snooze_action">Připomenout zítra</string>
 
+    <string name="low_stock_reminder_mode_days">Dní předem</string>
+    <string name="low_stock_reminder_mode_units">Zbývající množství</string>
     <string name="low_stock_reminder_label">Připomenout N dní před dojitím</string>
     <string name="low_stock_reminder_placeholder">např. 7 (ponechte prázdné pro vypnutí)</string>
     <string name="low_stock_reminder_error">Zadejte celé číslo dní, nebo ponechte pole prázdné</string>
+    <string name="low_stock_reminder_units_label">Připomenout při tomto zbývajícím množství</string>
+    <string name="low_stock_reminder_units_placeholder">např. 5 (ponechte prázdné pro vypnutí)</string>
+    <string name="low_stock_reminder_units_error">Zadejte kladné číslo, nebo ponechte pole prázdné</string>
 
     <string name="exact_alarm_rationale">Povolte přesné budíky, aby připomenutí užívání léků spouštěla přesně včas.</string>
     <string name="exact_alarm_enable">Povolit</string>

@@ -29,7 +29,7 @@ import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
         ScheduledAlarm::class,
         IntakeLogConsumption::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

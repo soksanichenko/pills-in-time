@@ -74,7 +74,7 @@ fun MedTrackerNavHost(
 
     LaunchedEffect(pendingStockRequest) {
         if (pendingStockRequest != null) {
-            navController.navigate(NavRoutes.editStock(pendingStockRequest.drugId, pendingStockRequest.stockId))
+            navController.navigate(NavRoutes.drugDetail(pendingStockRequest.drugId))
             onPendingStockConsumed()
         }
     }

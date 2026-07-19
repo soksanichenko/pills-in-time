@@ -38,7 +38,7 @@ data class BackupPayload(
     val snoozeMinutes: Int? = null,
 ) {
     companion object {
-        const val SCHEMA_VERSION = 6
+        const val SCHEMA_VERSION = 7
     }
 }
 
@@ -61,6 +61,8 @@ data class StockBatchDto(
     val addedAtEpochMilli: Long,
     val lowStockReminderDaysBefore: Int? = null,
     val lowStockReminderFiredForRunOutDateEpochDay: Long? = null,
+    val lowStockReminderUnitsBefore: Double? = null,
+    val lowStockReminderUnitsAlreadyFired: Boolean = false,
 )
 
 @Serializable
@@ -131,6 +133,8 @@ fun DrugStockBatch.toDto() = StockBatchDto(
     addedAtEpochMilli = addedAt.toEpochMilli(),
     lowStockReminderDaysBefore = lowStockReminderDaysBefore,
     lowStockReminderFiredForRunOutDateEpochDay = lowStockReminderFiredForRunOutDate?.toEpochDay(),
+    lowStockReminderUnitsBefore = lowStockReminderUnitsBefore,
+    lowStockReminderUnitsAlreadyFired = lowStockReminderUnitsAlreadyFired,
 )
 
 fun StockBatchDto.toEntity() = DrugStockBatch(
@@ -142,6 +146,8 @@ fun StockBatchDto.toEntity() = DrugStockBatch(
     addedAt = Instant.ofEpochMilli(addedAtEpochMilli),
     lowStockReminderDaysBefore = lowStockReminderDaysBefore,
     lowStockReminderFiredForRunOutDate = lowStockReminderFiredForRunOutDateEpochDay?.let { LocalDate.ofEpochDay(it) },
+    lowStockReminderUnitsBefore = lowStockReminderUnitsBefore,
+    lowStockReminderUnitsAlreadyFired = lowStockReminderUnitsAlreadyFired,
 )
 
 fun ScheduledIntake.toDto() = ScheduledIntakeDto(

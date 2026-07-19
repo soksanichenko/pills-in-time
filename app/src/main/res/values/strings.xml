@@ -19,6 +19,7 @@
     <string name="action_edit">Edit</string>
     <string name="action_delete">Delete</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
     <string name="action_save">Save</string>
 
     <string name="drugs_empty">No drugs yet. Tap + to add one.</string>
@@ -48,6 +49,8 @@
 
     <string name="restock_action">Add to stock</string>
     <string name="restock_title">Add to stock</string>
+    <string name="shortfall_action">What to buy</string>
+    <string name="shortfall_title">Need to buy</string>
     <string name="restock_quantity_label">Quantity purchased</string>
     <string name="restock_quantity_error">Enter a quantity greater than 0</string>
     <string name="insufficient_stock_error">Not enough stock on hand for this dose. Add more stock first.</string>
@@ -158,12 +161,20 @@
     <string name="notification_low_stock_channel_name">Low stock reminders</string>
     <string name="notification_low_stock_channel_description">Alerts when a supply is projected to run out soon</string>
     <string name="low_stock_notification_title">Low stock: %1$s</string>
-    <string name="low_stock_notification_text">This supply is projected to run out around %1$s</string>
+    <string name="low_stock_notification_text">%1$s left — runs out around %2$s</string>
+    <string name="low_stock_notification_text_with_supply">%1$s: %2$s left — runs out around %3$s</string>
+    <string name="low_stock_notification_text_no_date">%1$s left</string>
+    <string name="low_stock_notification_text_with_supply_no_date">%1$s: %2$s left</string>
     <string name="low_stock_snooze_action">Remind tomorrow</string>
 
+    <string name="low_stock_reminder_mode_days">Days before</string>
+    <string name="low_stock_reminder_mode_units">Units remaining</string>
     <string name="low_stock_reminder_label">Remind before running out (days)</string>
     <string name="low_stock_reminder_placeholder">e.g. 7 (leave empty to disable)</string>
     <string name="low_stock_reminder_error">Enter a whole number of days, or leave empty</string>
+    <string name="low_stock_reminder_units_label">Remind when this many remain</string>
+    <string name="low_stock_reminder_units_placeholder">e.g. 5 (leave empty to disable)</string>
+    <string name="low_stock_reminder_units_error">Enter a positive number, or leave empty</string>
 
     <string name="exact_alarm_rationale">Enable exact alarms so medication reminders fire right on time.</string>
     <string name="exact_alarm_enable">Enable</string>

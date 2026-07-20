@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Pills in Time</title>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --text: #1a1c25;
+    --text-muted: #5b6072;
+    --text-faint: #878d9f;
+    --accent: #33418c;
+    --accent-strong: #232e6e;
+    --accent-soft: #e7e9f7;
+    --border: #e1e3ec;
+    --shadow: 0 1px 2px rgba(26, 28, 37, 0.04), 0 8px 24px -12px rgba(26, 28, 37, 0.10);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13141b;
+      --surface: #1b1d27;
+      --text: #e7e8f0;
+      --text-muted: #9ba0b7;
+      --text-faint: #6c7186;
+      --accent: #8891e6;
+      --accent-strong: #aab1f2;
+      --accent-soft: #262a47;
+      --border: #2a2d3b;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 2rem) 5rem;
+  }
+
+  .mast {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding-bottom: 2.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2.25rem;
+  }
+
+  .mast-eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-weight: 600;
+    font-size: clamp(1.9rem, 4.5vw, 2.5rem);
+    line-height: 1.15;
+    margin: 0;
+    text-wrap: balance;
+    color: var(--text);
+  }
+
+  .mast-sub {
+    color: var(--text-muted);
+    font-size: 1.02rem;
+    max-width: 46ch;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+  }
+
+  .chip {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border-radius: 5px;
+    padding: 0.3rem 0.6rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.25rem 1.4rem;
+    margin-bottom: 2.75rem;
+    box-shadow: var(--shadow);
+  }
+
+  .summary-label {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.6rem;
+  }
+
+  .summary ul {
+    margin: 0;
+    padding-left: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .summary li { color: var(--text); }
+  .summary li::marker { color: var(--accent); }
+
+  section {
+    padding: 1.9rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section:last-of-type { border-bottom: none; }
+
+  h2 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    font-weight: 600;
+    font-size: 1.35rem;
+    margin: 0 0 0.85rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    color: var(--text);
+  }
+
+  h2 .num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.85rem;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+
+  h3 {
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin: 1.1rem 0 0.4rem;
+    color: var(--text);
+  }
+
+  p { margin: 0 0 0.9rem; color: var(--text); max-width: 66ch; }
+  p:last-child { margin-bottom: 0; }
+
+  ul, ol {
+    margin: 0 0 0.9rem;
+    padding-left: 1.25rem;
+    max-width: 64ch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  li { color: var(--text); }
+
+  strong { font-weight: 600; }
+
+  a {
+    color: var(--accent);
+    text-decoration-color: var(--border);
+    text-underline-offset: 2px;
+  }
+  a:hover { text-decoration-color: currentColor; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.88em;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+  }
+
+  .table-wrap { overflow-x: auto; margin: 0.9rem 0; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 480px;
+    font-size: 0.92rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  th {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 500;
+  }
+
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-faint);
+    font-size: 0.85rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    justify-content: space-between;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a { transition: text-decoration-color 0.15s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="mast">
+    <span class="mast-eyebrow">Privacy Policy</span>
+    <h1>Pills in Time</h1>
+    <p class="mast-sub">A plain explanation of what the app stores, where it goes, and what stays entirely on your device.</p>
+    <div class="chips">
+      <span class="chip">Effective 2026-07-20</span>
+      <span class="chip">v1.0</span>
+      <span class="chip">app.zelgray.pills_in_time</span>
+    </div>
+  </header>
+
+  <div class="summary">
+    <span class="summary-label">In short</span>
+    <ul>
+      <li>Your medication data stays <strong>on your device</strong> unless you explicitly turn on backup.</li>
+      <li>Backup, if you enable it, goes to <strong>your own</strong> Google Drive or a file you choose — never to our servers, because we don't run any.</li>
+      <li>No ads, no analytics, no trackers, no data sold to anyone.</li>
+      <li>Uninstalling the app deletes everything it stored locally.</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2><span class="num">1</span>Overview</h2>
+    <p>
+      Pills in Time ("the app") is a medication‑tracking app for Android. This policy explains what
+      information the app handles, why, and the choices you have — written for the app as it actually
+      works, not as boilerplate.
+    </p>
+    <p>
+      The short version: the app was built to work entirely offline. Everything you enter — drug names,
+      dosages, schedules, stock levels, intake history — is written to a private database on your own
+      device and is never transmitted anywhere by default. The only data that ever leaves your device
+      does so because you chose a specific, optional feature (cloud backup) and only goes to a
+      destination you control (your own Google Drive account, or a file you save yourself).
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">2</span>Information the app stores</h2>
+    <p>To do its job, the app stores the information you give it directly:</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Examples</th><th>Where it lives</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Medication details</td><td>Drug name, form, strength, stock quantity</td><td>On‑device database</td></tr>
+          <tr><td>Schedules</td><td>Dosing times, cycle pattern, start/end dates</td><td>On‑device database</td></tr>
+          <tr><td>Intake history</td><td>Taken/skipped status, timestamps, doses logged</td><td>On‑device database</td></tr>
+          <tr><td>App settings</td><td>Language, snooze duration, backup connection state</td><td>On‑device preferences</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      None of this is health data in the sense of a medical record tied to your identity — there's no
+      account, no name, no date of birth collected by the app itself. It's simply whatever you choose to
+      type in. We don't collect analytics events, usage statistics, advertising identifiers, device
+      fingerprints, or diagnostic reports of any kind.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">3</span>Optional Google Drive backup</h2>
+    <p>
+      If you turn this on from Settings, the app asks Google to authorize access to a single, narrow
+      scope: <code>drive.appdata</code>. This is a hidden folder inside your own Google Drive that:
+    </p>
+    <ul>
+      <li>only this app can read or write to — not other apps, not your visible Drive files;</li>
+      <li>we (the developer) cannot see or access — it lives entirely under your Google account;</li>
+      <li>holds a single JSON export of your medication data, replaced each time you back up.</li>
+    </ul>
+    <p>
+      Authorization is handled by Google's own Play Services Authorization API — your Google credentials
+      are never seen or stored by this app. You can revoke access at any time from your Google Account's
+      permissions page, which also removes the backup file. Turning the feature off in the app disconnects
+      it but does not, by itself, delete a backup already sitting in your Drive — use your Google Account
+      settings to remove it fully.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">4</span>Optional local file backup</h2>
+    <p>
+      As an alternative to Google Drive, you can export the same data to a file you choose yourself, using
+      Android's standard file picker. That file is saved wherever you tell it to — on your device, an SD
+      card, or a cloud folder you already sync — and the app has no further involvement with it once
+      written.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">5</span>Notifications and permissions</h2>
+    <p>The app requests a small number of Android permissions, all used strictly for local functionality:</p>
+    <ul>
+      <li><strong>Notifications</strong> — to show medication reminders and low‑stock alerts.</li>
+      <li><strong>Exact alarms</strong> — so reminders fire at the precise time you scheduled, not "roughly around" it.</li>
+      <li><strong>Run at device startup</strong> — so reminders survive a phone restart.</li>
+    </ul>
+    <p>None of these permissions send information off your device — they exist purely to schedule and display local notifications.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">6</span>Data retention and deletion</h2>
+    <p>You're always in control of your own data:</p>
+    <ul>
+      <li>Delete a medication, stock entry, or history record any time from within the app.</li>
+      <li>Uninstalling the app permanently deletes its local database — there is no server copy to remain behind.</li>
+      <li>If you used Google Drive backup, remove the stored backup by revoking the app's access from your Google Account, which deletes its <code>appdata</code> folder.</li>
+      <li>A local backup file you exported is yours to delete like any other file on your device.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2><span class="num">7</span>Third‑party services</h2>
+    <p>
+      The only third party involved at all is Google, and only if you opt into Drive backup — through the
+      Play Services Authorization API and the Drive API, both governed by
+      <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google's own Privacy Policy</a>.
+      The app includes no advertising networks, analytics SDKs, or crash‑reporting services from any other
+      third party.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">8</span>Children's privacy</h2>
+    <p>
+      Pills in Time isn't directed at children and isn't intended for use without adult supervision. We
+      don't knowingly collect information from children, and given the app collects nothing beyond what's
+      typed in locally, there is no data of any kind transmitted about any user, child or otherwise.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">9</span>Changes to this policy</h2>
+    <p>
+      If this policy changes in a way that matters — for example, if a future feature introduces new data
+      handling — the "Effective" date above will be updated and, for material changes, noted on the app's
+      Play Store listing.
+    </p>
+  </section>
+
+  <section>
+    <h2><span class="num">10</span>Contact</h2>
+    <p>
+      Questions about this policy or how the app handles your data can be sent to
+      <a href="mailto:zel.gray@gmail.com">zel.gray@gmail.com</a>.
+    </p>
+  </section>
+
+  <footer>
+    <span>Pills in Time — Privacy Policy</span>
+    <span>Last updated 2026-07-20</span>
+  </footer>
+
+</div>
+</body>
+</html>

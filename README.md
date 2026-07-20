@@ -1,5 +1,7 @@
 # MedTracker
 
+![MedTracker icon](pills-in-time.png)
+
 An Android app for tracking medication schedules — dosing (in tablets/units or active-substance strength), tapering/titration across multiple time-bound periods per drug, stock-on-hand tracking, and reminders.
 
 ## Features

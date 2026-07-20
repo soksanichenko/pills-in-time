@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
+import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.local.entity.IntakeSource
@@ -22,6 +23,7 @@ class IntakeRepository @Inject constructor(
     private val database: MedTrackerDatabase,
     private val intakeLogDao: IntakeLogDao,
     private val intakeTimeDao: IntakeTimeDao,
+    private val scheduleDao: ScheduleDao,
     private val stockConsumptionRepository: StockConsumptionRepository,
 ) {
     fun observeLogsForDate(date: LocalDate): Flow<List<IntakeLog>> = intakeLogDao.observeLogsForDate(date)
@@ -173,7 +175,14 @@ class IntakeRepository @Inject constructor(
                 val allocation = intakeTime
                     ?.takeIf { it.doseMode == doseMode && it.doseValue == doseValue }
                     ?.doseAllocation
-                val decrements = when (val result = stockConsumptionRepository.resolve(drugId, doseMode, doseValue, allocation)) {
+                val pinnedBatchId = if (doseMode == DoseMode.UNITS) {
+                    scheduleDao.getById(scheduledIntakeId)?.pinnedBatchId
+                } else {
+                    null
+                }
+                val decrements = when (
+                    val result = stockConsumptionRepository.resolve(drugId, doseMode, doseValue, allocation, pinnedBatchId)
+                ) {
                     is DoseConsumptionResult.Resolved -> result.decrements
                     DoseConsumptionResult.Insufficient -> throw InsufficientStockException()
                 }

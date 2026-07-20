@@ -60,6 +60,11 @@ class ProjectDrugStockUseCase @Inject constructor(
         val batchExhaustionDates = mutableMapOf<Long, LocalDate>()
 
         fun totalRemaining() = working.sumOf { it.quantity }
+        // A period pinned to one specific supply cares about that batch's own
+        // quantity, not the drug-wide total — so its "runs out" reflects only
+        // that supply, per period, instead of the aggregate across every batch.
+        fun remainingFor(pinnedBatchId: Long?) =
+            pinnedBatchId?.let { id -> working.firstOrNull { it.id == id }?.quantity ?: 0.0 } ?: totalRemaining()
 
         var date = today
         while (!date.isAfter(horizonEnd)) {
@@ -67,15 +72,25 @@ class ProjectDrugStockUseCase @Inject constructor(
                 val sid = period.scheduledIntake.id
                 val effectiveStartDate = maxOf(period.scheduledIntake.startDate, today)
                 if (date == effectiveStartDate) {
-                    atStart[sid] = totalRemaining()
+                    atStart[sid] = remainingFor(period.scheduledIntake.pinnedBatchId)
                 }
             }
 
-            val activeTimes = relevant.filter { isPeriodActiveOn(it.scheduledIntake, date) }.flatMap { it.times }
-            for (time in activeTimes) {
-                when (val result = resolveDoseConsumption(time.doseMode, time.doseValue, time.doseAllocation, working)) {
-                    is DoseConsumptionResult.Resolved -> working = applyDecrements(working, result.decrements)
-                    DoseConsumptionResult.Insufficient -> if (runOutDate == null) runOutDate = date
+            val activePeriods = relevant.filter { isPeriodActiveOn(it.scheduledIntake, date) }
+            for (period in activePeriods) {
+                for (time in period.times) {
+                    when (
+                        val result = resolveDoseConsumption(
+                            time.doseMode,
+                            time.doseValue,
+                            time.doseAllocation,
+                            working,
+                            period.scheduledIntake.pinnedBatchId,
+                        )
+                    ) {
+                        is DoseConsumptionResult.Resolved -> working = applyDecrements(working, result.decrements)
+                        DoseConsumptionResult.Insufficient -> if (runOutDate == null) runOutDate = date
+                    }
                 }
             }
 
@@ -89,7 +104,7 @@ class ProjectDrugStockUseCase @Inject constructor(
                 val sid = period.scheduledIntake.id
                 val end = period.scheduledIntake.endDate
                 if (end != null && date == end) {
-                    atEnd[sid] = totalRemaining()
+                    atEnd[sid] = remainingFor(period.scheduledIntake.pinnedBatchId)
                 }
             }
 
@@ -98,19 +113,22 @@ class ProjectDrugStockUseCase @Inject constructor(
 
         val periodProjections = relevant.associate { p ->
             val sid = p.scheduledIntake.id
+            val pinnedBatchId = p.scheduledIntake.pinnedBatchId
             val start = atStart[sid] ?: batches.sumOf { it.quantity }
             val end = atEnd[sid]
             val periodEnd = p.scheduledIntake.endDate
-            // A drug-wide shortfall only counts against a period if it actually
-            // falls within that period's own active date range — an unrelated,
+            val periodStart = maxOf(p.scheduledIntake.startDate, today)
+            val depletionDate = if (pinnedBatchId != null) batchExhaustionDates[pinnedBatchId] else runOutDate
+            // A shortfall only counts against a period if it actually falls
+            // within that period's own active date range — an unrelated,
             // separately-impossible period elsewhere shouldn't phantom-flag this one.
-            val runOutWithinPeriod = runOutDate != null &&
-                !runOutDate.isBefore(maxOf(p.scheduledIntake.startDate, today)) &&
-                (periodEnd == null || !runOutDate.isAfter(periodEnd))
+            val depletionWithinPeriod = depletionDate != null &&
+                !depletionDate.isBefore(periodStart) &&
+                (periodEnd == null || !depletionDate.isAfter(periodEnd))
             sid to PeriodStockProjection(
                 atStart = start,
                 atEnd = end,
-                stockDepleted = start <= 0.0 || (end != null && end <= 0.0) || runOutWithinPeriod,
+                stockDepleted = start <= 0.0 || (end != null && end <= 0.0) || depletionWithinPeriod,
             )
         }
 

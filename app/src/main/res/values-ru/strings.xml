@@ -21,6 +21,11 @@
     <string name="action_cancel">Отмена</string>
     <string name="action_ok">ОК</string>
     <string name="action_save">Сохранить</string>
+    <string name="action_discard">Отклонить</string>
+    <string name="action_keep_editing">Продолжить редактирование</string>
+
+    <string name="unsaved_changes_title">Отклонить изменения?</string>
+    <string name="unsaved_changes_body">У вас есть несохранённые изменения, которые будут потеряны.</string>
 
     <string name="drugs_empty">Пока нет лекарств. Нажмите +, чтобы добавить.</string>
 
@@ -102,6 +107,8 @@
     <string name="period_ends_on">Заканчивается %1$s</string>
 
     <string name="period_times_label">Время приёма</string>
+    <string name="period_supply_label">Запас</string>
+    <string name="period_supply_any">Любой запас (FIFO)</string>
     <string name="dose_mode_units">В единицах</string>
     <string name="dose_mode_strength">В дозировке</string>
     <string name="dose_value_label">Доза</string>
@@ -133,6 +140,7 @@
     <string name="stock_projection_none">Нет активных или предстоящих периодов</string>
     <string name="period_stock_at_start">Запас в начале: %1$s</string>
     <string name="period_stock_at_end">Запас в конце: %1$s</string>
+    <string name="period_pinned_supply">Запас: %1$s</string>
 
     <string name="or_word">или</string>
     <string name="no_exact_combo">точного совпадения из текущих запасов не найдено</string>

@@ -50,6 +50,11 @@ class AddEditStockViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AddEditStockUiState(drugId = drugId, stockId = editingStockId))
     val uiState: StateFlow<AddEditStockUiState> = _uiState.asStateFlow()
 
+    // Snapshot to diff against for the unsaved-changes prompt on exit —
+    // taken once loading (if any) settles, so it reflects what was actually
+    // loaded rather than the transient pre-load defaults.
+    private var initialSnapshot = _uiState.value
+
     init {
         editingStockId?.let { id ->
             viewModelScope.launch {
@@ -72,8 +77,20 @@ class AddEditStockViewModel @Inject constructor(
                         )
                     }
                 }
+                initialSnapshot = _uiState.value
             }
         }
+    }
+
+    /** Whether the form differs from what was last loaded/saved — drives the unsaved-changes exit prompt. */
+    fun isDirty(): Boolean {
+        val current = _uiState.value
+        return current.copy(
+            quantityError = initialSnapshot.quantityError,
+            strengthError = initialSnapshot.strengthError,
+            lowStockReminderError = initialSnapshot.lowStockReminderError,
+            requiresStrengthError = initialSnapshot.requiresStrengthError,
+        ) != initialSnapshot
     }
 
     fun onQuantityChange(value: String) {

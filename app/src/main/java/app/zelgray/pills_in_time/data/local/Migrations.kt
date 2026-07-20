@@ -99,3 +99,15 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
         db.execSQL("ALTER TABLE drug_stock_batches ADD COLUMN lowStockReminderUnitsAlreadyFired INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+/**
+ * Lets a UNITS-mode period pin its whole consumption to one specific supply
+ * instead of FIFO across every batch the drug has (pinnedBatchId, nullable —
+ * null keeps the old FIFO behavior).
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE scheduled_intakes ADD COLUMN pinnedBatchId INTEGER REFERENCES drug_stock_batches(id) ON DELETE SET NULL")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_scheduled_intakes_pinnedBatchId ON scheduled_intakes(pinnedBatchId)")
+    }
+}

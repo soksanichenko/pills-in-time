@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.zelgray.pills_in_time.data.local.entity.CycleType
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
+import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.EndMode
+import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeTimeInput
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
@@ -66,6 +68,10 @@ data class AddEditPeriodUiState(
     val newTimeInput: LocalTime = LocalTime.of(8, 0),
     val effectiveStrength: EffectiveStrength? = null,
     val stockBatches: List<DrugStockBatch> = emptyList(),
+    val drug: Drug? = null,
+    // Only meaningful for UNITS-mode doses: fixes this whole period's
+    // consumption to one specific supply instead of FIFO across every batch.
+    val pinnedBatchId: Long? = null,
     val timesError: Boolean = false,
     val durationDaysError: Boolean = false,
     val durationOccurrencesError: Boolean = false,
@@ -106,6 +112,11 @@ data class AddEditPeriodUiState(
         }
 
     val strengthModeAvailable: Boolean get() = effectiveStrength != null
+
+    // A pinned supply only means something when there's more than one batch
+    // to choose between, and at least one time actually consumes in units
+    // (STRENGTH-mode times keep resolving via their own combo, pin or not).
+    val pinnedSupplyAvailable: Boolean get() = stockBatches.size > 1 && times.any { it.doseMode == DoseMode.UNITS }
 }
 
 @HiltViewModel
@@ -113,6 +124,7 @@ class AddEditPeriodViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val scheduleRepository: ScheduleRepository,
     private val stockRepository: StockRepository,
+    private val drugRepository: DrugRepository,
     private val resolveEffectiveStrength: ResolveEffectiveStrengthUseCase,
     private val findDoseCombos: FindDoseCombosUseCase,
 ) : ViewModel() {
@@ -125,10 +137,16 @@ class AddEditPeriodViewModel @Inject constructor(
 
     private var rowKeySeq = 1L
 
+    // Snapshot to diff against for the unsaved-changes prompt on exit —
+    // taken once loading settles, so it reflects what was actually loaded
+    // rather than the transient pre-load defaults.
+    private var initialSnapshot = _uiState.value
+
     init {
         viewModelScope.launch {
             val allBatches = stockRepository.getBatchesForDrugOnce(drugId)
             val effectiveStrength = resolveEffectiveStrength(allBatches)
+            val drug = drugRepository.getById(drugId)
 
             val latest = scheduleRepository.getLatestPeriodByStartDate(drugId, excludeId = editingScheduleId ?: -1)
             val hasPrev = latest?.endDate != null
@@ -164,6 +182,8 @@ class AddEditPeriodViewModel @Inject constructor(
                             }.ifEmpty { listOf(TimeRowState(rowKey = rowKeySeq++, timeOfDay = LocalTime.of(8, 0))) },
                             effectiveStrength = effectiveStrength,
                             stockBatches = allBatches,
+                            drug = drug,
+                            pinnedBatchId = schedule.pinnedBatchId,
                             isLoading = false,
                         )
                     }
@@ -178,11 +198,27 @@ class AddEditPeriodViewModel @Inject constructor(
                         times = listOf(TimeRowState(rowKey = rowKeySeq++, timeOfDay = LocalTime.of(8, 0))),
                         effectiveStrength = effectiveStrength,
                         stockBatches = allBatches,
+                        drug = drug,
                         isLoading = false,
                     )
                 }
             }
+            initialSnapshot = _uiState.value
         }
+    }
+
+    /** Whether the form differs from what was last loaded/saved — drives the unsaved-changes exit prompt. */
+    fun isDirty(): Boolean {
+        val current = _uiState.value
+        return current.copy(
+            isLoading = initialSnapshot.isLoading,
+            timesError = initialSnapshot.timesError,
+            durationDaysError = initialSnapshot.durationDaysError,
+            durationOccurrencesError = initialSnapshot.durationOccurrencesError,
+            specificDaysError = initialSnapshot.specificDaysError,
+            daysOnOffError = initialSnapshot.daysOnOffError,
+            saved = initialSnapshot.saved,
+        ) != initialSnapshot
     }
 
     fun onStartModeChange(mode: StartMode) = _uiState.update { it.copy(startMode = mode) }
@@ -252,6 +288,8 @@ class AddEditPeriodViewModel @Inject constructor(
         }
     }
 
+    fun onPinnedBatchChange(batchId: Long?) = _uiState.update { it.copy(pinnedBatchId = batchId) }
+
     fun onTimeDoseModeChange(rowKey: Long, mode: DoseMode) {
         if (mode == DoseMode.STRENGTH && !_uiState.value.strengthModeAvailable) return
         _uiState.update { state ->
@@ -283,10 +321,10 @@ class AddEditPeriodViewModel @Inject constructor(
     fun dosePreviewFor(row: TimeRowState): DosePreview? {
         val state = _uiState.value
         val doseValue = parseLocaleAwareDouble(row.doseValueText) ?: return null
-        val strength = state.effectiveStrength ?: return if (row.doseMode == DoseMode.STRENGTH) null else null
 
         return when (row.doseMode) {
             DoseMode.STRENGTH -> {
+                val strength = state.effectiveStrength ?: return null
                 val combos = findDoseCombos(state.stockBatches, doseValue)
                 if (combos.isNotEmpty()) {
                     DosePreview.ExactCombos(combos, strength.unit)
@@ -296,6 +334,15 @@ class AddEditPeriodViewModel @Inject constructor(
                 }
             }
             DoseMode.UNITS -> {
+                // A pinned supply's own strength drives the preview, not the
+                // drug-wide "most recently added batch" heuristic — otherwise
+                // the shown mg/mcg/IU figure wouldn't match what's actually
+                // pinned for this period.
+                val pinnedStrength = state.pinnedBatchId
+                    ?.let { id -> state.stockBatches.firstOrNull { it.id == id } }
+                    ?.takeIf { it.strengthValue != null && it.strengthUnit != null }
+                    ?.let { EffectiveStrength(it.strengthValue!!, it.strengthUnit!!) }
+                val strength = pinnedStrength ?: state.effectiveStrength ?: return null
                 val computedStrength = doseValue * strength.value
                 DosePreview.UnitsToStrength(formatPlainNumber(computedStrength), strength.unit)
             }
@@ -358,6 +405,7 @@ class AddEditPeriodViewModel @Inject constructor(
                 customCycleText = if (state.cycleType == CycleType.CUSTOM) state.customCycleText.trim().takeIf { it.isNotBlank() } else null,
                 intakeDays = if (state.cycleType == CycleType.DAYS_ON_OFF) state.intakeDaysText.toInt() else null,
                 breakDays = if (state.cycleType == CycleType.DAYS_ON_OFF) state.breakDaysText.toInt() else null,
+                pinnedBatchId = if (state.pinnedSupplyAvailable) state.pinnedBatchId else null,
                 times = timeInputs,
             )
             onSaved()

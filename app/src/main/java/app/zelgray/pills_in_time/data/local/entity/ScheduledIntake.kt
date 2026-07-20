@@ -17,8 +17,14 @@ import java.time.LocalDate
             childColumns = ["drugId"],
             onDelete = ForeignKey.CASCADE,
         ),
+        ForeignKey(
+            entity = DrugStockBatch::class,
+            parentColumns = ["id"],
+            childColumns = ["pinnedBatchId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
-    indices = [Index("drugId")],
+    indices = [Index("drugId"), Index("pinnedBatchId")],
 )
 data class ScheduledIntake(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -40,4 +46,10 @@ data class ScheduledIntake(
     val intakeDays: Int? = null,
     val breakDays: Int? = null,
     val createdAt: Instant,
+    // Only meaningful for UNITS-mode doses: fixes this whole period's
+    // consumption to one specific supply instead of FIFO across every batch
+    // the drug has. Null (the default) keeps the old FIFO-across-everything
+    // behavior. SET_NULL on delete: removing the pinned batch just falls the
+    // period back to unpinned rather than orphaning the reference.
+    val pinnedBatchId: Long? = null,
 )

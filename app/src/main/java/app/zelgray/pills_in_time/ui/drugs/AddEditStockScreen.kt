@@ -2,6 +2,7 @@
 
 package app.zelgray.pills_in_time.ui.drugs
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -32,6 +36,7 @@ import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.StrengthUnit
 import app.zelgray.pills_in_time.ui.common.ChipOption
 import app.zelgray.pills_in_time.ui.common.ChipSelector
+import app.zelgray.pills_in_time.ui.common.ConfirmDialog
 
 @Composable
 fun AddEditStockScreen(
@@ -42,6 +47,20 @@ fun AddEditStockScreen(
     viewModel: AddEditStockViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showDiscardDialog by remember { mutableStateOf(false) }
+    val requestBack = { if (viewModel.isDirty()) showDiscardDialog = true else onBack() }
+    BackHandler(onBack = requestBack)
+
+    if (showDiscardDialog) {
+        ConfirmDialog(
+            title = stringResource(R.string.unsaved_changes_title),
+            body = stringResource(R.string.unsaved_changes_body),
+            confirmLabel = stringResource(R.string.action_discard),
+            dismissLabel = stringResource(R.string.action_keep_editing),
+            onConfirm = { showDiscardDialog = false; onBack() },
+            onDismiss = { showDiscardDialog = false },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -54,7 +73,7 @@ fun AddEditStockScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = requestBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },

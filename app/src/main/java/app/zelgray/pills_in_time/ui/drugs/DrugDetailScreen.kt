@@ -392,6 +392,15 @@ private fun PeriodCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
+            val pinnedBatch = period.pinnedBatchId?.let { id -> stockBatches.firstOrNull { it.id == id } }
+            if (pinnedBatch != null) {
+                Text(
+                    text = stringResource(R.string.period_pinned_supply, stockRowSummaryText(pinnedBatch, drug)),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
             if (stockProjection != null) {
                 val stockTextColor = if (depleted) {
                     MaterialTheme.colorScheme.onErrorContainer
@@ -411,13 +420,18 @@ private fun PeriodCard(
                         color = stockTextColor,
                     )
                 }
-                perBatchExhaustionText(stockBatches, batchExhaustionDates)?.let { text ->
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = stockTextColor,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
+                // A pinned period's atStart/atEnd above already reflect that one
+                // supply specifically — the drug-wide multi-batch breakdown
+                // would be redundant (and possibly confusing) alongside it.
+                if (pinnedBatch == null) {
+                    perBatchExhaustionText(stockBatches, batchExhaustionDates)?.let { text ->
+                        Text(
+                            text = text,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = stockTextColor,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
                 }
             }
             Row(

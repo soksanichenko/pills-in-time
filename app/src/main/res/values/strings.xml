@@ -21,6 +21,11 @@
     <string name="action_cancel">Cancel</string>
     <string name="action_ok">OK</string>
     <string name="action_save">Save</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_keep_editing">Keep editing</string>
+
+    <string name="unsaved_changes_title">Discard changes?</string>
+    <string name="unsaved_changes_body">You have unsaved changes that will be lost.</string>
 
     <string name="drugs_empty">No drugs yet. Tap + to add one.</string>
 
@@ -102,6 +107,8 @@
     <string name="period_ends_on">Ends on %1$s</string>
 
     <string name="period_times_label">Times of day</string>
+    <string name="period_supply_label">Supply</string>
+    <string name="period_supply_any">Any supply (FIFO)</string>
     <string name="dose_mode_units">In units</string>
     <string name="dose_mode_strength">In strength</string>
     <string name="dose_value_label">Dose</string>
@@ -133,6 +140,7 @@
     <string name="stock_projection_none">No active or upcoming periods</string>
     <string name="period_stock_at_start">Stock at start: %1$s</string>
     <string name="period_stock_at_end">Stock at end: %1$s</string>
+    <string name="period_pinned_supply">Supply: %1$s</string>
 
     <string name="or_word">or</string>
     <string name="no_exact_combo">no exact match from current supplies</string>

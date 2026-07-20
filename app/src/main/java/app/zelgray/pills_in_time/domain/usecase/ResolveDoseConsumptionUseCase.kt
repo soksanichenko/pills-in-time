@@ -23,8 +23,18 @@ class ResolveDoseConsumptionUseCase @Inject constructor(
         doseValue: Double,
         doseAllocation: List<DoseComboPiece>?,
         batches: List<DrugStockBatch>,
+        pinnedBatchId: Long? = null,
     ): DoseConsumptionResult {
         if (doseMode == DoseMode.UNITS) {
+            // A period pinned to one specific supply never draws from any
+            // other batch, even if this one runs dry — mirrors the pinned
+            // STRENGTH-combo behavior below rather than silently falling
+            // back to FIFO across the rest.
+            if (pinnedBatchId != null) {
+                val pinned = batches.firstOrNull { it.id == pinnedBatchId } ?: return DoseConsumptionResult.Insufficient
+                if (pinned.quantity + EPSILON < doseValue) return DoseConsumptionResult.Insufficient
+                return DoseConsumptionResult.Resolved(listOf(BatchDecrement(pinned.id, doseValue)))
+            }
             return resolveByFifo(doseValue, batches)
         }
 

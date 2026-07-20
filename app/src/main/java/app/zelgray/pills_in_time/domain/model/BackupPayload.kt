@@ -38,7 +38,7 @@ data class BackupPayload(
     val snoozeMinutes: Int? = null,
 ) {
     companion object {
-        const val SCHEMA_VERSION = 7
+        const val SCHEMA_VERSION = 8
     }
 }
 
@@ -80,6 +80,8 @@ data class ScheduledIntakeDto(
     val breakDays: Int? = null,
     val durationOccurrences: Int? = null,
     val createdAtEpochMilli: Long,
+    // Absent on backups made before this field existed.
+    val pinnedBatchId: Long? = null,
 )
 
 @Serializable
@@ -164,6 +166,7 @@ fun ScheduledIntake.toDto() = ScheduledIntakeDto(
     breakDays = breakDays,
     durationOccurrences = durationOccurrences,
     createdAtEpochMilli = createdAt.toEpochMilli(),
+    pinnedBatchId = pinnedBatchId,
 )
 
 fun ScheduledIntakeDto.toEntity() = ScheduledIntake(
@@ -180,6 +183,7 @@ fun ScheduledIntakeDto.toEntity() = ScheduledIntake(
     breakDays = breakDays,
     durationOccurrences = durationOccurrences,
     createdAt = Instant.ofEpochMilli(createdAtEpochMilli),
+    pinnedBatchId = pinnedBatchId,
 )
 
 fun IntakeTime.toDto() = IntakeTimeDto(

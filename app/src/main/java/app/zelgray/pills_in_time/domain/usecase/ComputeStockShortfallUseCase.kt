@@ -40,31 +40,54 @@ class ComputeStockShortfallUseCase @Inject constructor(
 
         val strengthDemand = mutableMapOf<Double, Double>()
         var unitsDemand = 0.0
+        // UNITS-mode demand from a period pinned to one specific supply is
+        // matched only against that batch, not the shared pool — consistent
+        // with how it's actually resolved (ResolveDoseConsumptionUseCase/
+        // ProjectDrugStockUseCase never let a pinned period draw from any
+        // other batch).
+        val pinnedUnitsDemand = mutableMapOf<Long, Double>()
 
         var date = today
         while (!date.isAfter(windowEnd)) {
-            relevant.filter { isPeriodActiveOn(it.scheduledIntake, date) }.flatMap { it.times }.forEach { time ->
-                if (time.doseMode == DoseMode.UNITS) {
-                    unitsDemand += time.doseValue
-                } else {
-                    val pieces = time.doseAllocation ?: findDoseCombos(batches, time.doseValue).firstOrNull()?.pieces
-                    if (pieces == null) {
-                        unitsDemand += time.doseValue
+            relevant.filter { isPeriodActiveOn(it.scheduledIntake, date) }.forEach { period ->
+                val pinnedBatchId = period.scheduledIntake.pinnedBatchId
+                period.times.forEach { time ->
+                    if (time.doseMode == DoseMode.UNITS) {
+                        if (pinnedBatchId != null) {
+                            pinnedUnitsDemand[pinnedBatchId] = (pinnedUnitsDemand[pinnedBatchId] ?: 0.0) + time.doseValue
+                        } else {
+                            unitsDemand += time.doseValue
+                        }
                     } else {
-                        pieces.forEach { piece -> strengthDemand[piece.strength] = (strengthDemand[piece.strength] ?: 0.0) + piece.count }
+                        val pieces = time.doseAllocation ?: findDoseCombos(batches, time.doseValue).firstOrNull()?.pieces
+                        if (pieces == null) {
+                            unitsDemand += time.doseValue
+                        } else {
+                            pieces.forEach { piece -> strengthDemand[piece.strength] = (strengthDemand[piece.strength] ?: 0.0) + piece.count }
+                        }
                     }
                 }
             }
             date = date.plusDays(1)
         }
 
-        if (strengthDemand.isEmpty() && unitsDemand <= EPSILON) return StockShortfall(emptyList())
+        if (strengthDemand.isEmpty() && unitsDemand <= EPSILON && pinnedUnitsDemand.isEmpty()) return StockShortfall(emptyList())
 
-        val availableByStrength = batches.filter { it.strengthValue != null }
+        val items = mutableListOf<ShortfallItem>()
+
+        // Pinned batches serve their own period's demand first; only what's
+        // left over is still fair game for the shared FIFO pool below.
+        val sharedBatches = batches.map { batch ->
+            val demand = pinnedUnitsDemand[batch.id] ?: return@map batch
+            val short = demand - batch.quantity
+            if (short > EPSILON) items.add(ShortfallItem(null, null, short))
+            batch.copy(quantity = (batch.quantity - demand).coerceAtLeast(0.0))
+        }
+
+        val availableByStrength = sharedBatches.filter { it.strengthValue != null }
             .groupBy { it.strengthValue!! }
             .mapValuesTo(mutableMapOf()) { (_, list) -> list.sumOf { it.quantity } }
 
-        val items = mutableListOf<ShortfallItem>()
         strengthDemand.forEach { (strength, demand) ->
             val available = availableByStrength[strength] ?: 0.0
             val used = minOf(available, demand)
@@ -78,7 +101,7 @@ class ComputeStockShortfallUseCase @Inject constructor(
 
         if (unitsDemand > EPSILON) {
             val remainingAcrossAllBatches = availableByStrength.values.sum() +
-                batches.filter { it.strengthValue == null }.sumOf { it.quantity }
+                sharedBatches.filter { it.strengthValue == null }.sumOf { it.quantity }
             val short = unitsDemand - remainingAcrossAllBatches
             if (short > EPSILON) {
                 items.add(ShortfallItem(null, null, short))

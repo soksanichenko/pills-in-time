@@ -34,9 +34,10 @@ class StockConsumptionRepository @Inject constructor(
         doseMode: DoseMode,
         doseValue: Double,
         doseAllocation: List<DoseComboPiece>?,
+        pinnedBatchId: Long? = null,
     ): DoseConsumptionResult {
         val batches = stockBatchDao.getBatchesForDrug(drugId)
-        return resolveDoseConsumption(doseMode, doseValue, doseAllocation, batches)
+        return resolveDoseConsumption(doseMode, doseValue, doseAllocation, batches, pinnedBatchId)
     }
 
     suspend fun applyResolvedConsumption(logId: Long, decrements: List<BatchDecrement>) {

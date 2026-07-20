@@ -75,6 +75,7 @@ class ScheduleRepository @Inject constructor(
         customCycleText: String?,
         intakeDays: Int? = null,
         breakDays: Int? = null,
+        pinnedBatchId: Long? = null,
         times: List<IntakeTimeInput>,
     ): Long {
         val id = database.withTransaction {
@@ -93,6 +94,7 @@ class ScheduleRepository @Inject constructor(
                             customCycleText = customCycleText,
                             intakeDays = intakeDays,
                             breakDays = breakDays,
+                            pinnedBatchId = pinnedBatchId,
                         ),
                     )
                 }
@@ -112,6 +114,7 @@ class ScheduleRepository @Inject constructor(
                         intakeDays = intakeDays,
                         breakDays = breakDays,
                         createdAt = Instant.now(),
+                        pinnedBatchId = pinnedBatchId,
                     ),
                 )
             }

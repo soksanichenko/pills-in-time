@@ -2,9 +2,12 @@
 
 ![MedTracker icon](pills-in-time.png)
 
-An Android app for tracking medication schedules — dosing (in tablets/units or active-substance strength), tapering/titration across multiple time-bound periods per drug, stock-on-hand tracking, and reminders.
+An Android app for tracking medication schedules — dosing (in tablets/units or active-substance strength), tapering/titration across multiple time-bound periods per drug, stock-on-hand tracking, and reminders. Tracks one or more people from a single install.
 
 ## Features
+
+### Patients
+Every drug belongs to a patient — useful if you're tracking your own medications alongside, say, a parent's or a child's. A single default patient exists from the start, renameable to taste; add more from the switcher in any tab's top bar (a color-dot-and-name button, top right), which also lets you rename, recolor, or delete a patient (the last remaining one can't be deleted). Switching patients re-scopes Home, Drugs, and History to that patient's own drugs. The app's whole color theme follows the current patient's chosen accent color, and reminder/low-stock notifications carry that same color — plus the patient's name in the title once there's more than one — so it's clear at a glance whose data or reminder you're looking at.
 
 ### Drugs & supplies
 Add a drug with a form (tablet, capsule, drops, ml, ampoule, sachet, or a custom text form) — this drives how quantities are labeled everywhere ("3 sachets", "12 drops", etc.), fully localized (English/Ukrainian/Russian/Czech, including proper plural forms).
@@ -46,7 +49,7 @@ A shopping-cart icon appears — next to a period with a defined end (fixed date
 - **Low-stock reminders**: a per-batch, optional alert configured either as "remind me N days before it runs out" (based on the same stock projection) or "remind me when only N units remain" (checked directly against current quantity, no forecast needed). The notification names the specific supply and how much of it remains (plus the projected run-out date, for the days-before mode). Tapping one opens that drug's detail screen; a "Remind tomorrow" action postpones it a day.
 
 ### Backup & restore (Google Drive & local file)
-Connect a Google account (Drive `appdata` scope only) to back up all data — plus the snooze-duration setting — as a single JSON file in the app's private Drive folder, and restore it later. A local file (`pills-in-time-backup.json`) can be saved/restored the same way via the system file picker, no Google account needed. Restore is always a full wipe-and-replace of local data, followed by re-arming all notifications.
+Connect a Google account (Drive `appdata` scope only) to back up all data — every patient and their drugs, plus the snooze-duration setting — as a single JSON file in the app's private Drive folder, and restore it later. A local file (`pills-in-time-backup.json`) can be saved/restored the same way via the system file picker, no Google account needed. Restore is always a full wipe-and-replace of local data, followed by re-arming all notifications.
 
 ### Language
 English, Українська, Русский, and Čeština, switchable in-app (per-app language override) independent of the system language.

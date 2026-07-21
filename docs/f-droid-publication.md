@@ -28,7 +28,7 @@ These are proprietary Google libraries requiring Google Play Services on-device.
 
 ## Organizational gaps to close
 
-1. **Git release tags** — none exist yet (`git tag -l` is empty). F-Droid builds a specific `versionCode`/`versionName` off a specific tag or commit, so releases need to be tagged (e.g. `v1.0` for the current `versionCode 14`).
+1. **Git release tags** — none exist yet (`git tag -l` is empty). F-Droid builds a specific `versionCode`/`versionName` off a specific tag or commit, so releases need to be tagged (e.g. `v1.0` for the current `versionCode 16`).
 
 2. **Fastlane metadata** — F-Droid pulls the store listing (description, screenshots, icon, changelog) from `fastlane/metadata/android/<locale>/`:
    - `short_description.txt`, `full_description.txt`

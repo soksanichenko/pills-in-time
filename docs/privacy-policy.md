@@ -29,6 +29,7 @@ To do its job, the app stores the information you give it directly:
 
 | Category | Examples | Where it lives |
 |---|---|---|
+| Patient profiles | Name you give each tracked person, chosen accent color | On-device database |
 | Medication details | Drug name, form, strength, stock quantity | On-device database |
 | Schedules | Dosing times, cycle pattern, start/end dates | On-device database |
 | Intake history | Taken/skipped status, timestamps, doses logged | On-device database |

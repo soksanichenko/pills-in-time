@@ -42,13 +42,14 @@ import app.zelgray.pills_in_time.data.repository.BackupRepository
 import app.zelgray.pills_in_time.ui.common.ChipOption
 import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
+import app.zelgray.pills_in_time.ui.common.PatientSwitcherAction
 import app.zelgray.pills_in_time.ui.common.localizedDateTime
 import java.time.Instant
 
 private val SNOOZE_OPTIONS = listOf(5, 10, 15, 30)
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onManagePatients: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -85,7 +86,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_settings)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_settings)) },
+                actions = { PatientSwitcherAction(onManagePatients = onManagePatients) },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxWidth().padding(innerPadding).padding(16.dp)) {

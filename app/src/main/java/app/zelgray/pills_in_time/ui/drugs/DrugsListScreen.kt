@@ -37,17 +37,24 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.Drug
+import app.zelgray.pills_in_time.ui.common.PatientSwitcherAction
 
 @Composable
 fun DrugsListScreen(
     onDrugClick: (Long) -> Unit,
     onAddDrugClick: () -> Unit,
+    onManagePatients: () -> Unit = {},
     viewModel: DrugsListViewModel = hiltViewModel(),
 ) {
     val drugs by viewModel.drugs.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_drugs)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_drugs)) },
+                actions = { PatientSwitcherAction(onManagePatients = onManagePatients) },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddDrugClick) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_drug_title))

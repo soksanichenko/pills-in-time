@@ -63,6 +63,7 @@ import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
 import app.zelgray.pills_in_time.notification.AlarmPermissions
 import app.zelgray.pills_in_time.notification.OccurrenceRequest
+import app.zelgray.pills_in_time.ui.common.PatientSwitcherAction
 import app.zelgray.pills_in_time.ui.common.StatusPill
 import app.zelgray.pills_in_time.ui.common.dayLabel
 import app.zelgray.pills_in_time.ui.drugs.doseText
@@ -77,6 +78,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
     pendingOccurrenceRequest: OccurrenceRequest? = null,
     onPendingOccurrenceConsumed: () -> Unit = {},
+    onManagePatients: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val toastMessageRes by viewModel.toastMessageRes.collectAsStateWithLifecycle()
@@ -107,7 +109,12 @@ fun HomeScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_home)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_home)) },
+                actions = { PatientSwitcherAction(onManagePatients = onManagePatients) },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {

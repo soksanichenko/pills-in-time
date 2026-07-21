@@ -45,6 +45,7 @@ import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
 import app.zelgray.pills_in_time.ui.common.ChipOption
 import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
+import app.zelgray.pills_in_time.ui.common.PatientSwitcherAction
 import app.zelgray.pills_in_time.ui.common.StatusPill
 import app.zelgray.pills_in_time.ui.common.dayLabel
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
@@ -56,13 +57,19 @@ import java.time.format.DateTimeFormatter
 fun HistoryScreen(
     onAddEntryClick: () -> Unit,
     onEditEntryClick: (Long) -> Unit,
+    onManagePatients: () -> Unit = {},
     viewModel: HistoryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var logPendingDelete by remember { mutableStateOf<IntakeLog?>(null) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_history)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_history)) },
+                actions = { PatientSwitcherAction(onManagePatients = onManagePatients) },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddEntryClick) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_entry_title))

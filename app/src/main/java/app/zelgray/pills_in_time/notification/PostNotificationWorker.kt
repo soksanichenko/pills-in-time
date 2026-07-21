@@ -63,7 +63,9 @@ class PostNotificationWorker @AssistedInject constructor(
 
         val batches = stockRepository.getBatchesForDrugOnce(drugId)
         val strength = resolveEffectiveStrength(batches)
-        val doseAllocation = scheduleRepository.getTimeById(intakeTimeId)?.doseAllocation
+        val intakeTime = scheduleRepository.getTimeById(intakeTimeId)
+        val doseAllocation = intakeTime?.doseAllocation
+        val isAlarmClock = intakeTime?.isAlarmClock == true
         val doseText = doseTextPlain(applicationContext, doseValue, doseMode, drug, batches, strength, doseAllocation)
         val timeText = "%02d:%02d".format(timeOfDay.hour, timeOfDay.minute)
 
@@ -71,7 +73,8 @@ class PostNotificationWorker @AssistedInject constructor(
         val skipIntent = actionIntent(NotificationContracts.ACTION_SKIP, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)
         val snoozeIntent = actionIntent(NotificationContracts.ACTION_SNOOZE, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)
 
-        val notification = NotificationCompat.Builder(applicationContext, NotificationChannels.MEDICATION_REMINDERS)
+        val channelId = if (isAlarmClock) NotificationChannels.MEDICATION_REMINDERS_ALARM else NotificationChannels.MEDICATION_REMINDERS
+        val builder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(drug.name)
             .setContentText("$timeText · $doseText")
@@ -81,9 +84,15 @@ class PostNotificationWorker @AssistedInject constructor(
             .addAction(0, applicationContext.getString(R.string.action_took_it), pendingIntentFor(notificationId * 10 + 1, takeIntent))
             .addAction(0, applicationContext.getString(R.string.action_skipped), pendingIntentFor(notificationId * 10 + 2, skipIntent))
             .addAction(0, applicationContext.getString(R.string.action_snooze), pendingIntentFor(notificationId * 10 + 3, snoozeIntent))
-            .build()
 
-        NotificationManagerCompat.from(applicationContext).notify(notificationId, notification)
+        if (isAlarmClock) {
+            builder.setCategory(NotificationCompat.CATEGORY_ALARM)
+            if (AlarmPermissions.canUseFullScreenIntent(applicationContext)) {
+                builder.setFullScreenIntent(alarmRingPendingIntent(notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode), true)
+            }
+        }
+
+        NotificationManagerCompat.from(applicationContext).notify(notificationId, builder.build())
         scheduleRepeat(notificationId)
         return Result.success()
     }
@@ -153,6 +162,35 @@ class PostNotificationWorker @AssistedInject constructor(
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+    private fun alarmRingPendingIntent(
+        notificationId: Int,
+        drugId: Long,
+        scheduledIntakeId: Long,
+        intakeTimeId: Long,
+        occurrenceDateEpochDay: Long,
+        timeOfDaySecond: Int,
+        doseValue: Double,
+        doseMode: DoseMode,
+    ): PendingIntent {
+        val intent = Intent(applicationContext, AlarmRingActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(NotificationContracts.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(NotificationContracts.EXTRA_DRUG_ID, drugId)
+            putExtra(NotificationContracts.EXTRA_SCHEDULED_INTAKE_ID, scheduledIntakeId)
+            putExtra(NotificationContracts.EXTRA_INTAKE_TIME_ID, intakeTimeId)
+            putExtra(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, occurrenceDateEpochDay)
+            putExtra(NotificationContracts.EXTRA_TIME_OF_DAY_SECOND, timeOfDaySecond)
+            putExtra(NotificationContracts.EXTRA_DOSE_VALUE, doseValue)
+            putExtra(NotificationContracts.EXTRA_DOSE_MODE, doseMode.name)
+        }
+        return PendingIntent.getActivity(
+            applicationContext,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
 
     companion object {
         private const val REPEAT_INTERVAL_MINUTES = 5L

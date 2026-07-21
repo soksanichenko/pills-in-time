@@ -15,7 +15,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -27,21 +29,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.CycleType
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.EndMode
+import app.zelgray.pills_in_time.notification.AlarmPermissions
 import app.zelgray.pills_in_time.ui.common.ChipOption
 import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
@@ -112,11 +120,6 @@ fun AddEditPeriodScreen(
 
             SectionTitle(stringResource(R.string.period_times_label))
             TimesSection(state, viewModel)
-
-            if (state.pinnedSupplyAvailable) {
-                SectionTitle(stringResource(R.string.period_supply_label))
-                SupplySection(state, viewModel)
-            }
 
             SectionTitle(stringResource(R.string.period_cycle_label))
             CycleSection(state, viewModel)
@@ -260,6 +263,7 @@ private fun EndSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodView
 
 @Composable
 private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodViewModel) {
+    val context = LocalContext.current
     Column {
         state.times.forEach { row ->
             Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
@@ -277,6 +281,31 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
                         IconButton(onClick = { viewModel.onRemoveTimeRow(row.rowKey) }) {
                             Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_delete))
                         }
+                    }
+
+                    FilterChip(
+                        selected = row.isAlarmClock,
+                        onClick = {
+                            val turningOn = !row.isAlarmClock
+                            viewModel.onTimeAlarmClockChange(row.rowKey, turningOn)
+                            // Full-screen-intent access has no in-app request dialog on
+                            // Android 14+ — jump straight to the settings screen for it
+                            // right when the user opts in, instead of making them notice
+                            // and tap a separate hint below.
+                            if (turningOn && !AlarmPermissions.canUseFullScreenIntent(context)) {
+                                context.startActivity(AlarmPermissions.fullScreenIntentSettingsIntent(context))
+                            }
+                        },
+                        label = { Text(stringResource(R.string.time_alarm_style_label)) },
+                        leadingIcon = if (row.isAlarmClock) {
+                            { Icon(Icons.Filled.Alarm, contentDescription = null) }
+                        } else {
+                            null
+                        },
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    if (row.isAlarmClock) {
+                        FullScreenIntentHint()
                     }
 
                     ChipSelector(
@@ -301,6 +330,10 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         singleLine = true,
                     )
+
+                    if (row.doseMode == DoseMode.UNITS && state.pinnedSupplyAvailable) {
+                        SupplyChips(state, viewModel, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                    }
 
                     viewModel.dosePreviewFor(row)?.let { preview ->
                         Text(
@@ -353,7 +386,40 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
 }
 
 @Composable
-private fun SupplySection(state: AddEditPeriodUiState, viewModel: AddEditPeriodViewModel) {
+private fun FullScreenIntentHint() {
+    val context = LocalContext.current
+    var granted by remember { mutableStateOf(AlarmPermissions.canUseFullScreenIntent(context)) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                granted = AlarmPermissions.canUseFullScreenIntent(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    if (!granted) {
+        Column(modifier = Modifier.padding(top = 8.dp)) {
+            Text(
+                text = stringResource(R.string.full_screen_intent_rationale),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Button(
+                onClick = { context.startActivity(AlarmPermissions.fullScreenIntentSettingsIntent(context)) },
+                modifier = Modifier.padding(top = 4.dp),
+            ) {
+                Text(stringResource(R.string.full_screen_intent_enable))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SupplyChips(state: AddEditPeriodUiState, viewModel: AddEditPeriodViewModel, modifier: Modifier = Modifier) {
     val drug = state.drug ?: return
     val anySupplyLabel = stringResource(R.string.period_supply_any)
     val options = buildList {
@@ -366,7 +432,7 @@ private fun SupplySection(state: AddEditPeriodUiState, viewModel: AddEditPeriodV
         options = options,
         selected = state.pinnedBatchId,
         onSelect = viewModel::onPinnedBatchChange,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     )
 }
 

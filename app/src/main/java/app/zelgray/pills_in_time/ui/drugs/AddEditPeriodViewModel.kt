@@ -45,6 +45,9 @@ data class TimeRowState(
     // which on-hand batches to decrement from. Null for UNITS mode, or when
     // no exact combo exists for the entered dose.
     val doseAllocation: List<DoseComboPiece>? = null,
+    // Rings like a system alarm (full-screen, alarm-stream sound) instead of
+    // a regular notification — for doses that need to actually wake the patient.
+    val isAlarmClock: Boolean = false,
 )
 
 data class AddEditPeriodUiState(
@@ -178,6 +181,7 @@ class AddEditPeriodViewModel @Inject constructor(
                                     doseMode = t.doseMode,
                                     doseValueText = formatPlainNumber(t.doseValue),
                                     doseAllocation = t.doseAllocation,
+                                    isAlarmClock = t.isAlarmClock,
                                 )
                             }.ifEmpty { listOf(TimeRowState(rowKey = rowKeySeq++, timeOfDay = LocalTime.of(8, 0))) },
                             effectiveStrength = effectiveStrength,
@@ -290,6 +294,12 @@ class AddEditPeriodViewModel @Inject constructor(
 
     fun onPinnedBatchChange(batchId: Long?) = _uiState.update { it.copy(pinnedBatchId = batchId) }
 
+    fun onTimeAlarmClockChange(rowKey: Long, isAlarmClock: Boolean) {
+        _uiState.update { state ->
+            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(isAlarmClock = isAlarmClock) else it })
+        }
+    }
+
     fun onTimeDoseModeChange(rowKey: Long, mode: DoseMode) {
         if (mode == DoseMode.STRENGTH && !_uiState.value.strengthModeAvailable) return
         _uiState.update { state ->
@@ -390,6 +400,7 @@ class AddEditPeriodViewModel @Inject constructor(
                     doseMode = row.doseMode,
                     doseValue = doseValue,
                     doseAllocation = allocation,
+                    isAlarmClock = row.isAlarmClock,
                 )
             }
             scheduleRepository.savePeriod(

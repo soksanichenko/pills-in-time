@@ -33,4 +33,8 @@ data class IntakeTime(
     // here. Null for UNITS-mode times (pure FIFO across any batch, no combo
     // concept) and for STRENGTH-mode times saved before this field existed.
     val doseAllocation: List<DoseComboPiece>? = null,
+    // When true, the reminder for this time rings/behaves like a system alarm
+    // (full-screen over the lock screen, alarm-stream sound) instead of a
+    // regular notification — for doses that need to actually wake the patient.
+    val isAlarmClock: Boolean = false,
 )

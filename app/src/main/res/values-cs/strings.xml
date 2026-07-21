@@ -107,7 +107,6 @@
     <string name="period_ends_on">Končí %1$s</string>
 
     <string name="period_times_label">Časy užívání</string>
-    <string name="period_supply_label">Zásoba</string>
     <string name="period_supply_any">Libovolná zásoba (FIFO)</string>
     <string name="dose_mode_units">V jednotkách</string>
     <string name="dose_mode_strength">V síle</string>
@@ -118,6 +117,7 @@
     <string name="duration_occurrences_error">Zadejte alespoň 1 dávku</string>
     <string name="specific_days_error">Vyberte alespoň jeden den v týdnu</string>
     <string name="time_label">Čas</string>
+    <string name="time_alarm_style_label">Zvonit jako budík</string>
     <string name="new_time_label">Nový čas</string>
     <string name="add_time_action">Přidat</string>
 
@@ -166,6 +166,9 @@
     <string name="notification_channel_name">Připomenutí užívání léků</string>
     <string name="notification_channel_description">Upozornění, kdy je čas užít naplánovanou dávku</string>
 
+    <string name="notification_channel_alarm_name">Připomenutí-budíky užívání léků</string>
+    <string name="notification_channel_alarm_description">Celoobrazovková připomenutí se zvukem budíku pro časy označené „Zvonit jako budík“</string>
+
     <string name="notification_low_stock_channel_name">Připomenutí o zásobě</string>
     <string name="notification_low_stock_channel_description">Upozornění, když zásoba brzy dojde</string>
     <string name="low_stock_notification_title">Docházející zásoba: %1$s</string>
@@ -186,6 +189,9 @@
 
     <string name="exact_alarm_rationale">Povolte přesné budíky, aby připomenutí užívání léků spouštěla přesně včas.</string>
     <string name="exact_alarm_enable">Povolit</string>
+
+    <string name="full_screen_intent_rationale">Povolte celoobrazovková upozornění, aby toto připomenutí mohlo zvonit přes zamykací obrazovku.</string>
+    <string name="full_screen_intent_enable">Povolit</string>
 
     <string name="reminders_section_title">Připomenutí</string>
     <string name="snooze_minutes_label">Délka odložení</string>

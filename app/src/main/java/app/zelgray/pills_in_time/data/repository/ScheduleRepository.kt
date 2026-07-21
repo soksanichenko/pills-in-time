@@ -33,6 +33,7 @@ data class IntakeTimeInput(
     val doseMode: DoseMode,
     val doseValue: Double,
     val doseAllocation: List<DoseComboPiece>? = null,
+    val isAlarmClock: Boolean = false,
 )
 
 class ScheduleRepository @Inject constructor(
@@ -133,6 +134,7 @@ class ScheduleRepository @Inject constructor(
                             doseMode = input.doseMode,
                             doseValue = input.doseValue,
                             doseAllocation = input.doseAllocation,
+                            isAlarmClock = input.isAlarmClock,
                         ),
                     )
                 } else {
@@ -143,6 +145,7 @@ class ScheduleRepository @Inject constructor(
                             doseMode = input.doseMode,
                             doseValue = input.doseValue,
                             doseAllocation = input.doseAllocation,
+                            isAlarmClock = input.isAlarmClock,
                         ),
                     )
                 }

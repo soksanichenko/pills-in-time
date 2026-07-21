@@ -107,7 +107,6 @@
     <string name="period_ends_on">Закінчується %1$s</string>
 
     <string name="period_times_label">Час прийому</string>
-    <string name="period_supply_label">Запас</string>
     <string name="period_supply_any">Будь-який запас (FIFO)</string>
     <string name="dose_mode_units">В одиницях</string>
     <string name="dose_mode_strength">У дозуванні</string>
@@ -118,6 +117,7 @@
     <string name="duration_occurrences_error">Введіть не менше 1 прийому</string>
     <string name="specific_days_error">Виберіть хоча б один день тижня</string>
     <string name="time_label">Час</string>
+    <string name="time_alarm_style_label">Дзвонити як будильник</string>
     <string name="new_time_label">Новий час</string>
     <string name="add_time_action">Додати</string>
 
@@ -166,6 +166,9 @@
     <string name="notification_channel_name">Нагадування про прийом ліків</string>
     <string name="notification_channel_description">Сповіщення про час прийому запланованої дози</string>
 
+    <string name="notification_channel_alarm_name">Нагадування-будильники про прийом ліків</string>
+    <string name="notification_channel_alarm_description">Повноекранні нагадування зі звуком будильника для часу прийому, позначеного «Дзвонити як будильник»</string>
+
     <string name="notification_low_stock_channel_name">Нагадування про запас</string>
     <string name="notification_low_stock_channel_description">Сповіщення, коли запас скоро закінчиться</string>
     <string name="low_stock_notification_title">Запас закінчується: %1$s</string>
@@ -186,6 +189,9 @@
 
     <string name="exact_alarm_rationale">Увімкніть точні будильники, щоб нагадування про прийом ліків спрацьовували вчасно.</string>
     <string name="exact_alarm_enable">Увімкнути</string>
+
+    <string name="full_screen_intent_rationale">Дозвольте повноекранні сповіщення, щоб це нагадування могло дзвонити поверх екрана блокування.</string>
+    <string name="full_screen_intent_enable">Увімкнути</string>
 
     <string name="reminders_section_title">Нагадування</string>
     <string name="snooze_minutes_label">Тривалість відкладення</string>

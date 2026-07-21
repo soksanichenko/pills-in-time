@@ -111,3 +111,14 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_scheduled_intakes_pinnedBatchId ON scheduled_intakes(pinnedBatchId)")
     }
 }
+
+/**
+ * Lets an individual intake time ring like a system alarm (full-screen,
+ * alarm-stream sound) instead of a regular notification — isAlarmClock,
+ * defaulting to false so every existing time keeps behaving as before.
+ */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE intake_times ADD COLUMN isAlarmClock INTEGER NOT NULL DEFAULT 0")
+    }
+}

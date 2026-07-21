@@ -8,6 +8,7 @@ import app.zelgray.pills_in_time.data.local.MIGRATION_3_4
 import app.zelgray.pills_in_time.data.local.MIGRATION_4_5
 import app.zelgray.pills_in_time.data.local.MIGRATION_5_6
 import app.zelgray.pills_in_time.data.local.MIGRATION_6_7
+import app.zelgray.pills_in_time.data.local.MIGRATION_7_8
 import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogConsumptionDao
@@ -31,7 +32,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): MedTrackerDatabase =
         Room.databaseBuilder(context, MedTrackerDatabase::class.java, MedTrackerDatabase.DATABASE_NAME)
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
             .build()
 
     @Provides

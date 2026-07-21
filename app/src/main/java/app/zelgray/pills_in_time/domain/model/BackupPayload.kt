@@ -92,6 +92,8 @@ data class IntakeTimeDto(
     val doseMode: String,
     val doseValue: Double,
     val doseAllocationCsv: String? = null,
+    // Absent on backups made before this field existed.
+    val isAlarmClock: Boolean = false,
 )
 
 @Serializable
@@ -193,6 +195,7 @@ fun IntakeTime.toDto() = IntakeTimeDto(
     doseMode = doseMode.name,
     doseValue = doseValue,
     doseAllocationCsv = doseAllocation?.encodeToCsv(),
+    isAlarmClock = isAlarmClock,
 )
 
 fun IntakeTimeDto.toEntity() = IntakeTime(
@@ -202,6 +205,7 @@ fun IntakeTimeDto.toEntity() = IntakeTime(
     doseMode = DoseMode.valueOf(doseMode),
     doseValue = doseValue,
     doseAllocation = doseAllocationCsv.decodeDoseAllocationCsv(),
+    isAlarmClock = isAlarmClock,
 )
 
 fun IntakeLog.toDto() = IntakeLogDto(

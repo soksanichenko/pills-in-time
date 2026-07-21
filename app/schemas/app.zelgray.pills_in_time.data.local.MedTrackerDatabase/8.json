@@ -1,0 +1,626 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 8,
+    "identityHash": "31aba8ea7fc4009a5eccb7bfbf23ce6a",
+    "entities": [
+      {
+        "tableName": "drugs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `form` TEXT NOT NULL, `customFormText` TEXT, `createdAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "form",
+            "columnName": "form",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customFormText",
+            "columnName": "customFormText",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "drug_stock_batches",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `drugId` INTEGER NOT NULL, `quantity` REAL NOT NULL, `strengthValue` REAL, `strengthUnit` TEXT, `addedAt` INTEGER NOT NULL, `lowStockReminderDaysBefore` INTEGER, `lowStockReminderUnitsBefore` REAL, `lowStockReminderFiredForRunOutDate` INTEGER, `lowStockReminderUnitsAlreadyFired` INTEGER NOT NULL, FOREIGN KEY(`drugId`) REFERENCES `drugs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drugId",
+            "columnName": "drugId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "strengthValue",
+            "columnName": "strengthValue",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "strengthUnit",
+            "columnName": "strengthUnit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "addedAt",
+            "columnName": "addedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lowStockReminderDaysBefore",
+            "columnName": "lowStockReminderDaysBefore",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lowStockReminderUnitsBefore",
+            "columnName": "lowStockReminderUnitsBefore",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lowStockReminderFiredForRunOutDate",
+            "columnName": "lowStockReminderFiredForRunOutDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lowStockReminderUnitsAlreadyFired",
+            "columnName": "lowStockReminderUnitsAlreadyFired",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_drug_stock_batches_drugId",
+            "unique": false,
+            "columnNames": [
+              "drugId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_drug_stock_batches_drugId` ON `${TABLE_NAME}` (`drugId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "drugs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "drugId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "scheduled_intakes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `drugId` INTEGER NOT NULL, `startDate` INTEGER NOT NULL, `endMode` TEXT NOT NULL, `endDate` INTEGER, `durationDays` INTEGER, `durationOccurrences` INTEGER, `cycleType` TEXT NOT NULL, `specificDays` TEXT, `customCycleText` TEXT, `intakeDays` INTEGER, `breakDays` INTEGER, `createdAt` INTEGER NOT NULL, `pinnedBatchId` INTEGER, FOREIGN KEY(`drugId`) REFERENCES `drugs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`pinnedBatchId`) REFERENCES `drug_stock_batches`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drugId",
+            "columnName": "drugId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "startDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endMode",
+            "columnName": "endMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "endDate",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationDays",
+            "columnName": "durationDays",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationOccurrences",
+            "columnName": "durationOccurrences",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cycleType",
+            "columnName": "cycleType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "specificDays",
+            "columnName": "specificDays",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "customCycleText",
+            "columnName": "customCycleText",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "intakeDays",
+            "columnName": "intakeDays",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "breakDays",
+            "columnName": "breakDays",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pinnedBatchId",
+            "columnName": "pinnedBatchId",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_scheduled_intakes_drugId",
+            "unique": false,
+            "columnNames": [
+              "drugId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_scheduled_intakes_drugId` ON `${TABLE_NAME}` (`drugId`)"
+          },
+          {
+            "name": "index_scheduled_intakes_pinnedBatchId",
+            "unique": false,
+            "columnNames": [
+              "pinnedBatchId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_scheduled_intakes_pinnedBatchId` ON `${TABLE_NAME}` (`pinnedBatchId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "drugs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "drugId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "drug_stock_batches",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pinnedBatchId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "intake_times",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `scheduledIntakeId` INTEGER NOT NULL, `timeOfDay` INTEGER NOT NULL, `doseMode` TEXT NOT NULL, `doseValue` REAL NOT NULL, `doseAllocation` TEXT, `isAlarmClock` INTEGER NOT NULL, FOREIGN KEY(`scheduledIntakeId`) REFERENCES `scheduled_intakes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledIntakeId",
+            "columnName": "scheduledIntakeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeOfDay",
+            "columnName": "timeOfDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doseMode",
+            "columnName": "doseMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doseValue",
+            "columnName": "doseValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doseAllocation",
+            "columnName": "doseAllocation",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isAlarmClock",
+            "columnName": "isAlarmClock",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_intake_times_scheduledIntakeId",
+            "unique": false,
+            "columnNames": [
+              "scheduledIntakeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intake_times_scheduledIntakeId` ON `${TABLE_NAME}` (`scheduledIntakeId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "scheduled_intakes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "scheduledIntakeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "intake_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `drugId` INTEGER NOT NULL, `scheduledIntakeId` INTEGER NOT NULL, `intakeTimeId` INTEGER NOT NULL, `occurrenceDate` INTEGER NOT NULL, `status` TEXT NOT NULL, `actualDateTime` INTEGER NOT NULL, `actualDoseValue` REAL NOT NULL, `actualDoseMode` TEXT NOT NULL, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, FOREIGN KEY(`drugId`) REFERENCES `drugs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`scheduledIntakeId`) REFERENCES `scheduled_intakes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`intakeTimeId`) REFERENCES `intake_times`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "drugId",
+            "columnName": "drugId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledIntakeId",
+            "columnName": "scheduledIntakeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intakeTimeId",
+            "columnName": "intakeTimeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurrenceDate",
+            "columnName": "occurrenceDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualDateTime",
+            "columnName": "actualDateTime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualDoseValue",
+            "columnName": "actualDoseValue",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actualDoseMode",
+            "columnName": "actualDoseMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_intake_logs_scheduledIntakeId_intakeTimeId_occurrenceDate",
+            "unique": true,
+            "columnNames": [
+              "scheduledIntakeId",
+              "intakeTimeId",
+              "occurrenceDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_intake_logs_scheduledIntakeId_intakeTimeId_occurrenceDate` ON `${TABLE_NAME}` (`scheduledIntakeId`, `intakeTimeId`, `occurrenceDate`)"
+          },
+          {
+            "name": "index_intake_logs_drugId",
+            "unique": false,
+            "columnNames": [
+              "drugId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intake_logs_drugId` ON `${TABLE_NAME}` (`drugId`)"
+          },
+          {
+            "name": "index_intake_logs_intakeTimeId",
+            "unique": false,
+            "columnNames": [
+              "intakeTimeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intake_logs_intakeTimeId` ON `${TABLE_NAME}` (`intakeTimeId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "drugs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "drugId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "scheduled_intakes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "scheduledIntakeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "intake_times",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "intakeTimeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "scheduled_alarms",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`requestCode` INTEGER NOT NULL, `scheduledIntakeId` INTEGER NOT NULL, `intakeTimeId` INTEGER NOT NULL, `occurrenceDate` INTEGER NOT NULL, `triggerAtMillis` INTEGER NOT NULL, PRIMARY KEY(`requestCode`))",
+        "fields": [
+          {
+            "fieldPath": "requestCode",
+            "columnName": "requestCode",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledIntakeId",
+            "columnName": "scheduledIntakeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intakeTimeId",
+            "columnName": "intakeTimeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurrenceDate",
+            "columnName": "occurrenceDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "triggerAtMillis",
+            "columnName": "triggerAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "requestCode"
+          ]
+        }
+      },
+      {
+        "tableName": "intake_log_consumptions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `intakeLogId` INTEGER NOT NULL, `batchId` INTEGER NOT NULL, `quantity` REAL NOT NULL, FOREIGN KEY(`intakeLogId`) REFERENCES `intake_logs`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`batchId`) REFERENCES `drug_stock_batches`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intakeLogId",
+            "columnName": "intakeLogId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batchId",
+            "columnName": "batchId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_intake_log_consumptions_intakeLogId",
+            "unique": false,
+            "columnNames": [
+              "intakeLogId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intake_log_consumptions_intakeLogId` ON `${TABLE_NAME}` (`intakeLogId`)"
+          },
+          {
+            "name": "index_intake_log_consumptions_batchId",
+            "unique": false,
+            "columnNames": [
+              "batchId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_intake_log_consumptions_batchId` ON `${TABLE_NAME}` (`batchId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "intake_logs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "intakeLogId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "drug_stock_batches",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "batchId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '31aba8ea7fc4009a5eccb7bfbf23ce6a')"
+    ]
+  }
+}

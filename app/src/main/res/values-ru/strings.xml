@@ -107,7 +107,6 @@
     <string name="period_ends_on">Заканчивается %1$s</string>
 
     <string name="period_times_label">Время приёма</string>
-    <string name="period_supply_label">Запас</string>
     <string name="period_supply_any">Любой запас (FIFO)</string>
     <string name="dose_mode_units">В единицах</string>
     <string name="dose_mode_strength">В дозировке</string>
@@ -118,6 +117,7 @@
     <string name="duration_occurrences_error">Введите не менее 1 приёма</string>
     <string name="specific_days_error">Выберите хотя бы один день недели</string>
     <string name="time_label">Время</string>
+    <string name="time_alarm_style_label">Звонить как будильник</string>
     <string name="new_time_label">Новое время</string>
     <string name="add_time_action">Добавить</string>
 
@@ -166,6 +166,9 @@
     <string name="notification_channel_name">Напоминания о приёме лекарств</string>
     <string name="notification_channel_description">Уведомления о времени приёма запланированной дозы</string>
 
+    <string name="notification_channel_alarm_name">Напоминания-будильники о приёме лекарств</string>
+    <string name="notification_channel_alarm_description">Полноэкранные напоминания со звуком будильника для времени приёма, отмеченного «Звонить как будильник»</string>
+
     <string name="notification_low_stock_channel_name">Напоминания о запасе</string>
     <string name="notification_low_stock_channel_description">Уведомления, когда запас скоро закончится</string>
     <string name="low_stock_notification_title">Запас заканчивается: %1$s</string>
@@ -186,6 +189,9 @@
 
     <string name="exact_alarm_rationale">Включите точные будильники, чтобы напоминания о приёме лекарств срабатывали вовремя.</string>
     <string name="exact_alarm_enable">Включить</string>
+
+    <string name="full_screen_intent_rationale">Разрешите полноэкранные уведомления, чтобы это напоминание могло звонить поверх экрана блокировки.</string>
+    <string name="full_screen_intent_enable">Включить</string>
 
     <string name="reminders_section_title">Напоминания</string>
     <string name="snooze_minutes_label">Длительность отложенного напоминания</string>

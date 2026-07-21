@@ -107,7 +107,6 @@
     <string name="period_ends_on">Ends on %1$s</string>
 
     <string name="period_times_label">Times of day</string>
-    <string name="period_supply_label">Supply</string>
     <string name="period_supply_any">Any supply (FIFO)</string>
     <string name="dose_mode_units">In units</string>
     <string name="dose_mode_strength">In strength</string>
@@ -118,6 +117,7 @@
     <string name="duration_occurrences_error">Enter at least 1 occurrence</string>
     <string name="specific_days_error">Select at least one day of the week</string>
     <string name="time_label">Time</string>
+    <string name="time_alarm_style_label">Ring like an alarm</string>
     <string name="new_time_label">New time</string>
     <string name="add_time_action">Add</string>
 
@@ -166,6 +166,9 @@
     <string name="notification_channel_name">Medication reminders</string>
     <string name="notification_channel_description">Alerts when it\'s time to take a scheduled dose</string>
 
+    <string name="notification_channel_alarm_name">Alarm-style medication reminders</string>
+    <string name="notification_channel_alarm_description">Full-screen, alarm-sound reminders for times you marked \"Ring like an alarm\"</string>
+
     <string name="notification_low_stock_channel_name">Low stock reminders</string>
     <string name="notification_low_stock_channel_description">Alerts when a supply is projected to run out soon</string>
     <string name="low_stock_notification_title">Low stock: %1$s</string>
@@ -186,6 +189,9 @@
 
     <string name="exact_alarm_rationale">Enable exact alarms so medication reminders fire right on time.</string>
     <string name="exact_alarm_enable">Enable</string>
+
+    <string name="full_screen_intent_rationale">Allow full-screen alerts so this reminder can ring over the lock screen.</string>
+    <string name="full_screen_intent_enable">Enable</string>
 
     <string name="reminders_section_title">Reminders</string>
     <string name="snooze_minutes_label">Snooze duration</string>

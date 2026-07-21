@@ -12,6 +12,7 @@ import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
+import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.domain.model.RecordLogResult
 import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
@@ -65,6 +66,7 @@ class AddEditHistoryEntryViewModel @Inject constructor(
     private val drugRepository: DrugRepository,
     private val scheduleRepository: ScheduleRepository,
     private val intakeRepository: IntakeRepository,
+    private val patientRepository: PatientRepository,
 ) : ViewModel() {
 
     private val editingLogId: Long? = savedStateHandle[NavRoutes.ARG_LOG_ID]
@@ -74,7 +76,8 @@ class AddEditHistoryEntryViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val drugs = drugRepository.observeAllDrugs().first()
+            val patientId = patientRepository.observeCurrentPatientId().first()
+            val drugs = drugRepository.observeAllDrugs(patientId).first()
             if (editingLogId != null) {
                 val log = intakeRepository.getById(editingLogId)
                 if (log != null) {

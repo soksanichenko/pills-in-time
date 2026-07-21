@@ -8,6 +8,7 @@ import app.zelgray.pills_in_time.data.local.dao.DrugDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogConsumptionDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
+import app.zelgray.pills_in_time.data.local.dao.PatientDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduledAlarmDao
 import app.zelgray.pills_in_time.data.local.dao.StockBatchDao
@@ -16,11 +17,13 @@ import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.local.entity.IntakeLogConsumption
 import app.zelgray.pills_in_time.data.local.entity.IntakeTime
+import app.zelgray.pills_in_time.data.local.entity.Patient
 import app.zelgray.pills_in_time.data.local.entity.ScheduledAlarm
 import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
 
 @Database(
     entities = [
+        Patient::class,
         Drug::class,
         DrugStockBatch::class,
         ScheduledIntake::class,
@@ -29,11 +32,12 @@ import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
         ScheduledAlarm::class,
         IntakeLogConsumption::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
 abstract class MedTrackerDatabase : RoomDatabase() {
+    abstract fun patientDao(): PatientDao
     abstract fun drugDao(): DrugDao
     abstract fun stockBatchDao(): StockBatchDao
     abstract fun scheduleDao(): ScheduleDao

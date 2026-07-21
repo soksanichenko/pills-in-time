@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.zelgray.pills_in_time.data.repository.DrugRepository
+import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -17,6 +18,7 @@ class SnoozeLowStockReminderWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val drugRepository: DrugRepository,
     private val stockRepository: StockRepository,
+    private val patientRepository: PatientRepository,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -29,8 +31,10 @@ class SnoozeLowStockReminderWorker @AssistedInject constructor(
         val drug = drugRepository.getById(drugId) ?: return Result.failure()
         val batch = stockRepository.getById(batchId) ?: return Result.failure()
         val runOutDate = runOutDateEpochDay.takeIf { it >= 0 }?.let(LocalDate::ofEpochDay)
+        val patients = patientRepository.getAllOnce()
+        val patient = patients.find { it.id == drug.patientId }
 
-        LowStockNotifications.post(applicationContext, drug, batch, runOutDate)
+        LowStockNotifications.post(applicationContext, drug, batch, runOutDate, patient, patients.size > 1)
         return Result.success()
     }
 }

@@ -16,6 +16,7 @@ import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
+import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
@@ -31,6 +32,7 @@ class PostNotificationWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val drugRepository: DrugRepository,
+    private val patientRepository: PatientRepository,
     private val stockRepository: StockRepository,
     private val intakeRepository: IntakeRepository,
     private val scheduleRepository: ScheduleRepository,
@@ -58,6 +60,8 @@ class PostNotificationWorker @AssistedInject constructor(
         }
 
         val drug = drugRepository.getById(drugId) ?: return Result.failure()
+        val patients = patientRepository.getAllOnce()
+        val patient = patients.find { it.id == drug.patientId }
         val timeOfDay = LocalTime.ofSecondOfDay(timeOfDaySecond.toLong())
         val notificationId = ScheduleAlarmsForWindowUseCase.computeRequestCode(scheduledIntakeId, intakeTimeId, occurrenceDate)
 
@@ -73,10 +77,12 @@ class PostNotificationWorker @AssistedInject constructor(
         val skipIntent = actionIntent(NotificationContracts.ACTION_SKIP, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)
         val snoozeIntent = actionIntent(NotificationContracts.ACTION_SNOOZE, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)
 
+        val contentTitle = if (patients.size > 1 && patient != null) "${patient.name} — ${drug.name}" else drug.name
+
         val channelId = if (isAlarmClock) NotificationChannels.MEDICATION_REMINDERS_ALARM else NotificationChannels.MEDICATION_REMINDERS
         val builder = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(drug.name)
+            .setContentTitle(contentTitle)
             .setContentText("$timeText · $doseText")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -84,6 +90,8 @@ class PostNotificationWorker @AssistedInject constructor(
             .addAction(0, applicationContext.getString(R.string.action_took_it), pendingIntentFor(notificationId * 10 + 1, takeIntent))
             .addAction(0, applicationContext.getString(R.string.action_skipped), pendingIntentFor(notificationId * 10 + 2, skipIntent))
             .addAction(0, applicationContext.getString(R.string.action_snooze), pendingIntentFor(notificationId * 10 + 3, snoozeIntent))
+
+        patient?.let { builder.setColor(it.color) }
 
         if (isAlarmClock) {
             builder.setCategory(NotificationCompat.CATEGORY_ALARM)

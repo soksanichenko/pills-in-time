@@ -2,6 +2,7 @@ package app.zelgray.pills_in_time.data.local
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import app.zelgray.pills_in_time.domain.model.PatientColorPalette
 
 /** Adds the "N days on / M days off" cycle type (CycleType.DAYS_ON_OFF). */
 val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -120,5 +121,55 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
 val MIGRATION_7_8 = object : Migration(7, 8) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE intake_times ADD COLUMN isAlarmClock INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+/**
+ * Adds multi-patient support: a Patient entity (name + a preset accent color)
+ * and Drug.patientId tying every drug to one. Every existing drug moves under
+ * one freshly created default patient, renameable afterwards in the UI.
+ */
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS patients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                name TEXT NOT NULL,
+                color INTEGER NOT NULL,
+                createdAt INTEGER NOT NULL
+            )
+            """,
+        )
+        db.execSQL(
+            "INSERT INTO patients (name, color, createdAt) VALUES (?, ?, ?)",
+            arrayOf<Any>(PatientColorPalette.DEFAULT_NAME, PatientColorPalette.colorForIndex(0), System.currentTimeMillis()),
+        )
+        val defaultPatientId = db.query("SELECT last_insert_rowid()").use { cursor ->
+            cursor.moveToFirst()
+            cursor.getLong(0)
+        }
+
+        // SQLite can't add a NOT NULL FK column via ALTER TABLE, so rebuild.
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS drugs_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                patientId INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                form TEXT NOT NULL,
+                customFormText TEXT,
+                createdAt INTEGER NOT NULL,
+                FOREIGN KEY(patientId) REFERENCES patients(id) ON DELETE CASCADE
+            )
+            """,
+        )
+        db.execSQL(
+            "INSERT INTO drugs_new (id, patientId, name, form, customFormText, createdAt) " +
+                "SELECT id, $defaultPatientId, name, form, customFormText, createdAt FROM drugs",
+        )
+        db.execSQL("DROP TABLE drugs")
+        db.execSQL("ALTER TABLE drugs_new RENAME TO drugs")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_drugs_patientId ON drugs(patientId)")
     }
 }

@@ -1,21 +1,44 @@
 package app.zelgray.pills_in_time.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -35,6 +58,8 @@ import app.zelgray.pills_in_time.ui.drugs.DrugsListScreen
 import app.zelgray.pills_in_time.ui.history.AddEditHistoryEntryScreen
 import app.zelgray.pills_in_time.ui.history.HistoryScreen
 import app.zelgray.pills_in_time.ui.home.HomeScreen
+import app.zelgray.pills_in_time.ui.patients.PatientsScreen
+import app.zelgray.pills_in_time.ui.patients.PatientsViewModel
 import app.zelgray.pills_in_time.ui.settings.SettingsScreen
 
 private data class TabItem(
@@ -80,6 +105,11 @@ fun MedTrackerNavHost(
     }
 
     Scaffold(
+        topBar = {
+            if (showBottomBar) {
+                PatientSwitcherBar(onManagePatients = { navController.navigate(NavRoutes.PATIENTS) })
+            }
+        },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
@@ -240,6 +270,74 @@ fun MedTrackerNavHost(
                 AddEditHistoryEntryScreen(
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() },
+                )
+            }
+
+            composable(NavRoutes.PATIENTS) {
+                PatientsScreen(onBack = { navController.popBackStack() })
+            }
+        }
+    }
+}
+
+/**
+ * Slim, always-visible bar (above the per-tab content) showing which patient
+ * every tab is currently scoped to and letting the user switch — so it never
+ * requires digging into Settings to tell whose data is on screen.
+ */
+@Composable
+private fun PatientSwitcherBar(
+    onManagePatients: () -> Unit,
+    viewModel: PatientsViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var expanded by remember { mutableStateOf(false) }
+    val current = state.patients.find { it.id == state.currentPatientId }
+
+    Surface {
+        Box {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = true }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (current != null) {
+                    Box(modifier = Modifier.size(16.dp).background(Color(current.color), CircleShape))
+                    Text(
+                        text = current.name,
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(start = 8.dp).weight(1f),
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                state.patients.forEach { patient ->
+                    DropdownMenuItem(
+                        text = { Text(patient.name) },
+                        leadingIcon = { Box(modifier = Modifier.size(16.dp).background(Color(patient.color), CircleShape)) },
+                        trailingIcon = {
+                            if (patient.id == state.currentPatientId) {
+                                Icon(Icons.Filled.Check, contentDescription = null)
+                            }
+                        },
+                        onClick = {
+                            viewModel.onSelectPatient(patient.id)
+                            expanded = false
+                        },
+                    )
+                }
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.manage_patients_action)) },
+                    onClick = {
+                        expanded = false
+                        onManagePatients()
+                    },
                 )
             }
         }

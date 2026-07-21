@@ -5,6 +5,7 @@ object NavRoutes {
     const val DRUGS_LIST = "drugs"
     const val HISTORY = "history"
     const val SETTINGS = "settings"
+    const val PATIENTS = "patients"
 
     const val DRUG_DETAIL = "drugDetail/{drugId}"
     const val ADD_DRUG = "addDrug"

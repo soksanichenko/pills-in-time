@@ -10,6 +10,7 @@ import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.local.entity.IntakeSource
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import app.zelgray.pills_in_time.data.local.entity.IntakeTime
+import app.zelgray.pills_in_time.data.local.entity.Patient
 import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
 import app.zelgray.pills_in_time.data.local.entity.StrengthUnit
 import kotlinx.serialization.encodeToString
@@ -29,8 +30,15 @@ class BackupRoundTripTest {
 
     @Test
     fun `export then import reproduces the original entities`() {
+        val patient = Patient(
+            id = 1,
+            name = "Me",
+            color = -1699246,
+            createdAt = Instant.ofEpochSecond(500),
+        )
         val drug = Drug(
             id = 1,
+            patientId = 1,
             name = "Prednisolone",
             form = DrugForm.OTHER,
             customFormText = "Patch",
@@ -79,6 +87,7 @@ class BackupRoundTripTest {
         )
 
         val payload = exportUseCase(
+            patients = listOf(patient),
             drugs = listOf(drug),
             stockBatches = listOf(batch),
             scheduledIntakes = listOf(period),
@@ -94,6 +103,7 @@ class BackupRoundTripTest {
 
         val imported = importUseCase(decoded)
 
+        assertEquals(listOf(patient), imported.patients)
         assertEquals(listOf(drug), imported.drugs)
         assertEquals(listOf(batch), imported.stockBatches)
         assertEquals(listOf(period), imported.scheduledIntakes)
@@ -117,6 +127,7 @@ class BackupRoundTripTest {
             createdAt = Instant.EPOCH,
         )
         val payload = exportUseCase(
+            patients = emptyList(),
             drugs = emptyList(),
             stockBatches = emptyList(),
             scheduledIntakes = listOf(period),
@@ -149,6 +160,7 @@ class BackupRoundTripTest {
             createdAt = Instant.EPOCH,
         )
         val payload = exportUseCase(
+            patients = emptyList(),
             drugs = emptyList(),
             stockBatches = emptyList(),
             scheduledIntakes = listOf(period),
@@ -177,6 +189,7 @@ class BackupRoundTripTest {
             lowStockReminderFiredForRunOutDate = LocalDate.of(2026, 8, 1),
         )
         val payload = exportUseCase(
+            patients = emptyList(),
             drugs = emptyList(),
             stockBatches = listOf(batch),
             scheduledIntakes = emptyList(),
@@ -203,6 +216,7 @@ class BackupRoundTripTest {
             addedAt = Instant.EPOCH,
         )
         val payload = exportUseCase(
+            patients = emptyList(),
             drugs = emptyList(),
             stockBatches = listOf(batch),
             scheduledIntakes = emptyList(),
@@ -231,6 +245,7 @@ class BackupRoundTripTest {
             lowStockReminderUnitsAlreadyFired = true,
         )
         val payload = exportUseCase(
+            patients = emptyList(),
             drugs = emptyList(),
             stockBatches = listOf(batch),
             scheduledIntakes = emptyList(),
@@ -262,6 +277,7 @@ class BackupRoundTripTest {
             createdAt = Instant.EPOCH,
         )
         val payload = exportUseCase(
+            patients = emptyList(),
             drugs = emptyList(),
             stockBatches = emptyList(),
             scheduledIntakes = listOf(period),

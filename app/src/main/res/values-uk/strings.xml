@@ -236,4 +236,15 @@
     <string name="local_backup_restore_action">Відновити з файлу</string>
     <string name="local_restore_confirm_title">Відновити з файлу?</string>
     <string name="local_restore_confirm_body">Це замінить усі ліки, запаси, розклади та історію на цьому пристрої даними з обраного файлу. Скасувати цю дію неможливо.</string>
+
+    <string name="patients_screen_title">Пацієнти</string>
+    <string name="add_patient_title">Додати пацієнта</string>
+    <string name="edit_patient_title">Редагувати пацієнта</string>
+    <string name="patient_name_label">Ім\'я</string>
+    <string name="patient_name_placeholder">напр. Мама</string>
+    <string name="patient_name_error">Ім\'я обов\'язкове</string>
+    <string name="patient_color_label">Колір</string>
+    <string name="manage_patients_action">Керувати пацієнтами</string>
+    <string name="delete_patient_title">Видалити пацієнта?</string>
+    <string name="delete_patient_body">Це остаточно видалить цього пацієнта та всі його ліки, запаси, розклади й історію.</string>
 </resources>

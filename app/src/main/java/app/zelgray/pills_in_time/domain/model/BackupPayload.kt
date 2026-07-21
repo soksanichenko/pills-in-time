@@ -10,6 +10,7 @@ import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.local.entity.IntakeSource
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import app.zelgray.pills_in_time.data.local.entity.IntakeTime
+import app.zelgray.pills_in_time.data.local.entity.Patient
 import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
 import app.zelgray.pills_in_time.data.local.entity.StrengthUnit
 import kotlinx.serialization.Serializable
@@ -29,6 +30,10 @@ import java.time.LocalTime
 data class BackupPayload(
     val schemaVersion: Int = SCHEMA_VERSION,
     val exportedAtEpochMilli: Long,
+    // Absent on backups made before multi-patient support existed — every
+    // drug in such a backup carries no patientId either, so ImportBackupUseCase
+    // synthesizes a single default patient for them.
+    val patients: List<PatientDto> = emptyList(),
     val drugs: List<DrugDto>,
     val stockBatches: List<StockBatchDto>,
     val scheduledIntakes: List<ScheduledIntakeDto>,
@@ -38,13 +43,23 @@ data class BackupPayload(
     val snoozeMinutes: Int? = null,
 ) {
     companion object {
-        const val SCHEMA_VERSION = 8
+        const val SCHEMA_VERSION = 9
     }
 }
 
 @Serializable
+data class PatientDto(
+    val id: Long,
+    val name: String,
+    val color: Int,
+    val createdAtEpochMilli: Long,
+)
+
+@Serializable
 data class DrugDto(
     val id: Long,
+    // Absent on backups made before this field existed.
+    val patientId: Long? = null,
     val name: String,
     val form: String,
     val customFormText: String? = null,
@@ -112,16 +127,34 @@ data class IntakeLogDto(
     val updatedAtEpochMilli: Long,
 )
 
+fun Patient.toDto() = PatientDto(
+    id = id,
+    name = name,
+    color = color,
+    createdAtEpochMilli = createdAt.toEpochMilli(),
+)
+
+fun PatientDto.toEntity() = Patient(
+    id = id,
+    name = name,
+    color = color,
+    createdAt = Instant.ofEpochMilli(createdAtEpochMilli),
+)
+
 fun Drug.toDto() = DrugDto(
     id = id,
+    patientId = patientId,
     name = name,
     form = form.name,
     customFormText = customFormText,
     createdAtEpochMilli = createdAt.toEpochMilli(),
 )
 
-fun DrugDto.toEntity() = Drug(
+// fallbackPatientId covers backups made before multi-patient support existed,
+// whose DrugDto rows carry no patientId of their own.
+fun DrugDto.toEntity(fallbackPatientId: Long) = Drug(
     id = id,
+    patientId = patientId ?: fallbackPatientId,
     name = name,
     form = DrugForm.valueOf(form),
     customFormText = customFormText,

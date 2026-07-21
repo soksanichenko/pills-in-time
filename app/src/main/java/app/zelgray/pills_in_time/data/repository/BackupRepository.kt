@@ -7,6 +7,7 @@ import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
+import app.zelgray.pills_in_time.data.local.dao.PatientDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduledAlarmDao
 import app.zelgray.pills_in_time.data.local.dao.StockBatchDao
@@ -30,6 +31,7 @@ private const val BACKUP_FILE_NAME = "medtracker_backup.json"
 class BackupRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val database: MedTrackerDatabase,
+    private val patientDao: PatientDao,
     private val drugDao: DrugDao,
     private val stockBatchDao: StockBatchDao,
     private val scheduleDao: ScheduleDao,
@@ -98,6 +100,7 @@ class BackupRepository @Inject constructor(
 
     private suspend fun buildBackupJson(): String {
         val payload = exportBackupUseCase(
+            patients = patientDao.getAllOnce(),
             drugs = drugDao.getAllOnce(),
             stockBatches = stockBatchDao.getAllOnce(),
             scheduledIntakes = scheduleDao.getAllOnce(),
@@ -124,8 +127,10 @@ class BackupRepository @Inject constructor(
             scheduleDao.deleteAllSchedules()
             stockBatchDao.deleteAllBatches()
             drugDao.deleteAllDrugs()
+            patientDao.deleteAllPatients()
             scheduledAlarmDao.deleteAll()
 
+            patientDao.insertAll(imported.patients)
             drugDao.insertAll(imported.drugs)
             stockBatchDao.insertAll(imported.stockBatches)
             scheduleDao.insertAll(imported.scheduledIntakes)

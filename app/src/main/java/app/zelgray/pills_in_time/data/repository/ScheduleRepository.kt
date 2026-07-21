@@ -48,8 +48,8 @@ class ScheduleRepository @Inject constructor(
     suspend fun getPeriodsForDrugOnce(drugId: Long): List<ScheduledIntakeWithTimes> =
         scheduleDao.getPeriodsWithTimesForDrugOnce(drugId)
 
-    fun observeAllPeriods(): Flow<List<ScheduledIntakeWithTimes>> =
-        scheduleDao.observeAllPeriodsWithTimes()
+    fun observeAllPeriods(patientId: Long): Flow<List<ScheduledIntakeWithTimes>> =
+        scheduleDao.observeAllPeriodsWithTimes(patientId)
 
     suspend fun getAllPeriodsWithTimesOnce(): List<ScheduledIntakeWithTimes> =
         scheduleDao.getAllPeriodsWithTimesOnce()

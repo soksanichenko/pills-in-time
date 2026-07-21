@@ -236,4 +236,15 @@
     <string name="local_backup_restore_action">Obnovit ze souboru</string>
     <string name="local_restore_confirm_title">Obnovit ze souboru?</string>
     <string name="local_restore_confirm_body">Tímto nahradíte všechny léky, zásoby, plány a historii v tomto zařízení daty z vybraného souboru. Tuto akci nelze vrátit zpět.</string>
+
+    <string name="patients_screen_title">Pacienti</string>
+    <string name="add_patient_title">Přidat pacienta</string>
+    <string name="edit_patient_title">Upravit pacienta</string>
+    <string name="patient_name_label">Jméno</string>
+    <string name="patient_name_placeholder">např. Máma</string>
+    <string name="patient_name_error">Jméno je povinné</string>
+    <string name="patient_color_label">Barva</string>
+    <string name="manage_patients_action">Spravovat pacienty</string>
+    <string name="delete_patient_title">Smazat pacienta?</string>
+    <string name="delete_patient_body">Tímto trvale smažete tohoto pacienta a všechny jeho léky, zásoby, plány a historii.</string>
 </resources>

@@ -39,10 +39,20 @@ class SettingsRepository @Inject constructor(
         context.settingsDataStore.edit { it[LAST_BACKUP_KEY] = epochMilli }
     }
 
+    // Null until the user ever switches patients, or if the previously
+    // selected one no longer exists — PatientRepository falls back to the
+    // first patient in either case.
+    val selectedPatientId: Flow<Long?> = context.settingsDataStore.data.map { it[SELECTED_PATIENT_ID_KEY] }
+
+    suspend fun setSelectedPatientId(patientId: Long) {
+        context.settingsDataStore.edit { it[SELECTED_PATIENT_ID_KEY] = patientId }
+    }
+
     companion object {
         const val DEFAULT_SNOOZE_MINUTES = 15
         private val SNOOZE_MINUTES_KEY = intPreferencesKey("snooze_minutes")
         private val DRIVE_CONNECTED_KEY = booleanPreferencesKey("drive_connected")
         private val LAST_BACKUP_KEY = longPreferencesKey("last_backup_epoch_milli")
+        private val SELECTED_PATIENT_ID_KEY = longPreferencesKey("selected_patient_id")
     }
 }

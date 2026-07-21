@@ -8,6 +8,7 @@ import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
+import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.local.relation.IntakeLogWithDrug
 import app.zelgray.pills_in_time.util.NowProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,17 +37,21 @@ data class HistoryUiState(
 class HistoryViewModel @Inject constructor(
     private val drugRepository: DrugRepository,
     private val intakeRepository: IntakeRepository,
+    private val patientRepository: PatientRepository,
     private val nowProvider: NowProvider,
 ) : ViewModel() {
 
     private val selectedDrugId = MutableStateFlow<Long?>(null)
 
-    val uiState: StateFlow<HistoryUiState> = combine(
-        drugRepository.observeAllDrugs(),
-        selectedDrugId,
-    ) { drugs, selected -> drugs to selected }
-        .flatMapLatest { (drugs, selected) ->
-            intakeRepository.observeAllLogs(selected).map { logs ->
+    val uiState: StateFlow<HistoryUiState> = patientRepository.observeCurrentPatientId()
+        .flatMapLatest { patientId ->
+            combine(
+                drugRepository.observeAllDrugs(patientId),
+                selectedDrugId,
+            ) { drugs, selected -> Triple(patientId, drugs, selected) }
+        }
+        .flatMapLatest { (patientId, drugs, selected) ->
+            intakeRepository.observeAllLogs(patientId, selected).map { logs ->
                 val groups = logs
                     .groupBy { it.intakeLog.occurrenceDate }
                     .map { (date, entries) -> HistoryDayGroup(date, entries) }

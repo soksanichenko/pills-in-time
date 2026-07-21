@@ -4,6 +4,7 @@ import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.local.entity.IntakeTime
+import app.zelgray.pills_in_time.data.local.entity.Patient
 import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
 import app.zelgray.pills_in_time.domain.model.BackupPayload
 import app.zelgray.pills_in_time.domain.model.toDto
@@ -13,6 +14,7 @@ import javax.inject.Inject
 class ExportBackupUseCase @Inject constructor() {
 
     operator fun invoke(
+        patients: List<Patient>,
         drugs: List<Drug>,
         stockBatches: List<DrugStockBatch>,
         scheduledIntakes: List<ScheduledIntake>,
@@ -22,6 +24,7 @@ class ExportBackupUseCase @Inject constructor() {
         snoozeMinutes: Int,
     ): BackupPayload = BackupPayload(
         exportedAtEpochMilli = exportedAt.toEpochMilli(),
+        patients = patients.map { it.toDto() },
         drugs = drugs.map { it.toDto() },
         stockBatches = stockBatches.map { it.toDto() },
         scheduledIntakes = scheduledIntakes.map { it.toDto() },

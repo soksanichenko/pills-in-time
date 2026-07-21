@@ -15,6 +15,7 @@ import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
+import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.SettingsRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
@@ -74,6 +75,7 @@ class HomeViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val intakeRepository: IntakeRepository,
     private val drugRepository: DrugRepository,
+    private val patientRepository: PatientRepository,
     private val stockRepository: StockRepository,
     private val settingsRepository: SettingsRepository,
     private val generateOccurrences: GenerateOccurrencesForDateUseCase,
@@ -91,13 +93,16 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<HomeUiState> = combine(
-        dayOffset,
-        scheduleRepository.observeAllPeriods(),
-        drugRepository.observeAllDrugs(),
-        stockRepository.observeAllBatches(),
-        ticker,
-    ) { offset, periods, drugs, batches, _ -> Inputs(offset, periods, drugs, batches) }
+    val uiState: StateFlow<HomeUiState> = patientRepository.observeCurrentPatientId()
+        .flatMapLatest { patientId ->
+            combine(
+                dayOffset,
+                scheduleRepository.observeAllPeriods(patientId),
+                drugRepository.observeAllDrugs(patientId),
+                stockRepository.observeAllBatches(),
+                ticker,
+            ) { offset, periods, drugs, batches, _ -> Inputs(offset, periods, drugs, batches) }
+        }
         .flatMapLatest { inputs ->
             val today = nowProvider.currentLocalDate()
             val date = today.plusDays(inputs.offset.toLong())

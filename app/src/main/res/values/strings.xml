@@ -236,4 +236,15 @@
     <string name="local_backup_restore_action">Restore from file</string>
     <string name="local_restore_confirm_title">Restore from file?</string>
     <string name="local_restore_confirm_body">This replaces all drugs, stock, schedules, and history on this device with the data from the selected file. This cannot be undone.</string>
+
+    <string name="patients_screen_title">Patients</string>
+    <string name="add_patient_title">Add patient</string>
+    <string name="edit_patient_title">Edit patient</string>
+    <string name="patient_name_label">Name</string>
+    <string name="patient_name_placeholder">e.g. Mom</string>
+    <string name="patient_name_error">Name is required</string>
+    <string name="patient_color_label">Color</string>
+    <string name="manage_patients_action">Manage patients</string>
+    <string name="delete_patient_title">Delete patient?</string>
+    <string name="delete_patient_body">This will permanently delete this patient and all their drugs, stock, schedules, and history.</string>
 </resources>

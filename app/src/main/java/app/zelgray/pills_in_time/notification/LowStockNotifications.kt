@@ -9,6 +9,7 @@ import app.zelgray.pills_in_time.MainActivity
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
+import app.zelgray.pills_in_time.data.local.entity.Patient
 import app.zelgray.pills_in_time.ui.common.localizedDatePlain
 import app.zelgray.pills_in_time.ui.common.pluralUnitTextPlain
 import app.zelgray.pills_in_time.ui.common.strengthUnitAbbreviationPlain
@@ -21,7 +22,14 @@ import java.time.LocalDate
  */
 object LowStockNotifications {
 
-    fun post(context: Context, drug: Drug, batch: DrugStockBatch, runOutDate: LocalDate?) {
+    fun post(
+        context: Context,
+        drug: Drug,
+        batch: DrugStockBatch,
+        runOutDate: LocalDate?,
+        patient: Patient?,
+        showPatientName: Boolean,
+    ) {
         val notificationId = notificationIdFor(batch.id)
 
         val contentIntent = PendingIntent.getActivity(
@@ -70,17 +78,19 @@ object LowStockNotifications {
             else -> context.getString(R.string.low_stock_notification_text_no_date, remainingText)
         }
 
-        val notification = NotificationCompat.Builder(context, NotificationChannels.LOW_STOCK_REMINDERS)
+        val titleDrugName = if (showPatientName && patient != null) "${patient.name} — ${drug.name}" else drug.name
+        val builder = NotificationCompat.Builder(context, NotificationChannels.LOW_STOCK_REMINDERS)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(context.getString(R.string.low_stock_notification_title, drug.name))
+            .setContentTitle(context.getString(R.string.low_stock_notification_title, titleDrugName))
             .setContentText(bodyText)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
             .addAction(0, context.getString(R.string.low_stock_snooze_action), snoozePendingIntent)
-            .build()
 
-        NotificationManagerCompat.from(context).notify(notificationId, notification)
+        patient?.let { builder.setColor(it.color) }
+
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
     }
 
     // Distinct, negative range so these can never collide with the hash-derived

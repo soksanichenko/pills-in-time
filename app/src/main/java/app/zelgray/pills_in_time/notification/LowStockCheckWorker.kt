@@ -10,6 +10,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import app.zelgray.pills_in_time.data.repository.DrugRepository
+import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.model.LowStockAlert
@@ -32,6 +33,7 @@ class LowStockCheckWorker @AssistedInject constructor(
     private val stockRepository: StockRepository,
     private val scheduleRepository: ScheduleRepository,
     private val drugRepository: DrugRepository,
+    private val patientRepository: PatientRepository,
     private val checkLowStockReminders: CheckLowStockRemindersUseCase,
     private val nowProvider: NowProvider,
 ) : CoroutineWorker(appContext, workerParams) {
@@ -46,11 +48,13 @@ class LowStockCheckWorker @AssistedInject constructor(
             .associateWith { scheduleRepository.getPeriodsForDrugOnce(it) }
 
         val alerts = checkLowStockReminders(batches, periodsByDrugId, today)
+        val patients = patientRepository.getAllOnce()
 
         alerts.forEach { alert ->
             val drug = drugRepository.getById(alert.drugId) ?: return@forEach
             val batch = stockRepository.getById(alert.batchId) ?: return@forEach
-            LowStockNotifications.post(applicationContext, drug, batch, alert.runOutDate)
+            val patient = patients.find { it.id == drug.patientId }
+            LowStockNotifications.post(applicationContext, drug, batch, alert.runOutDate, patient, patients.size > 1)
             val updated = if (batch.lowStockReminderDaysBefore != null) {
                 batch.copy(lowStockReminderFiredForRunOutDate = alert.runOutDate)
             } else {

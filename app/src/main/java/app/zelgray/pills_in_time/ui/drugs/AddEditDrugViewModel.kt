@@ -5,12 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.zelgray.pills_in_time.data.local.entity.DrugForm
 import app.zelgray.pills_in_time.data.repository.DrugRepository
+import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.ui.navigation.NavRoutes
 import app.zelgray.pills_in_time.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,6 +33,7 @@ data class AddEditDrugUiState(
 class AddEditDrugViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val drugRepository: DrugRepository,
+    private val patientRepository: PatientRepository,
 ) : ViewModel() {
 
     private val editingDrugId: Long? = savedStateHandle[NavRoutes.ARG_DRUG_ID]
@@ -102,7 +105,8 @@ class AddEditDrugViewModel @Inject constructor(
                 )
                 state.drugId
             } else {
-                drugRepository.createDrug(state.name.trim(), state.form, customText)
+                val patientId = patientRepository.observeCurrentPatientId().first()
+                drugRepository.createDrug(patientId, state.name.trim(), state.form, customText)
             }
             onSaved(id)
         }

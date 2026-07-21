@@ -14,7 +14,7 @@ class DrugRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val drugDao: DrugDao,
 ) {
-    fun observeAllDrugs(): Flow<List<Drug>> = drugDao.observeAllDrugs()
+    fun observeAllDrugs(patientId: Long): Flow<List<Drug>> = drugDao.observeAllDrugs(patientId)
 
     fun observeById(drugId: Long): Flow<Drug?> = drugDao.observeById(drugId)
 
@@ -22,9 +22,10 @@ class DrugRepository @Inject constructor(
 
     suspend fun hasSchedulesOrStock(drugId: Long): Boolean = drugDao.hasSchedulesOrStock(drugId)
 
-    suspend fun createDrug(name: String, form: DrugForm, customFormText: String?): Long =
+    suspend fun createDrug(patientId: Long, name: String, form: DrugForm, customFormText: String?): Long =
         drugDao.insert(
             Drug(
+                patientId = patientId,
                 name = name,
                 form = form,
                 customFormText = customFormText,

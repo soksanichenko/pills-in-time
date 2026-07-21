@@ -11,8 +11,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DrugDao {
 
-    @Query("SELECT * FROM drugs ORDER BY name")
-    fun observeAllDrugs(): Flow<List<Drug>>
+    @Query("SELECT * FROM drugs WHERE patientId = :patientId ORDER BY name")
+    fun observeAllDrugs(patientId: Long): Flow<List<Drug>>
 
     @Query("SELECT * FROM drugs")
     suspend fun getAllOnce(): List<Drug>

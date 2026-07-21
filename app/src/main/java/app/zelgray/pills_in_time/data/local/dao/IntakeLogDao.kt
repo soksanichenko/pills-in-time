@@ -33,22 +33,24 @@ interface IntakeLogDao {
     @Query(
         """
         SELECT * FROM intake_logs
-        WHERE occurrenceDate BETWEEN :from AND :to
+        WHERE drugId IN (SELECT id FROM drugs WHERE patientId = :patientId)
+        AND occurrenceDate BETWEEN :from AND :to
         AND (:drugId IS NULL OR drugId = :drugId)
         ORDER BY occurrenceDate DESC, actualDateTime DESC
         """,
     )
-    fun observeLogsInRange(from: LocalDate, to: LocalDate, drugId: Long?): Flow<List<IntakeLogWithDrug>>
+    fun observeLogsInRange(patientId: Long, from: LocalDate, to: LocalDate, drugId: Long?): Flow<List<IntakeLogWithDrug>>
 
     @Transaction
     @Query(
         """
         SELECT * FROM intake_logs
-        WHERE (:drugId IS NULL OR drugId = :drugId)
+        WHERE drugId IN (SELECT id FROM drugs WHERE patientId = :patientId)
+        AND (:drugId IS NULL OR drugId = :drugId)
         ORDER BY occurrenceDate DESC, actualDateTime DESC
         """,
     )
-    fun observeAllLogs(drugId: Long?): Flow<List<IntakeLogWithDrug>>
+    fun observeAllLogs(patientId: Long, drugId: Long?): Flow<List<IntakeLogWithDrug>>
 
     @Query("SELECT * FROM intake_logs")
     suspend fun getAllLogsOnce(): List<IntakeLog>

@@ -23,6 +23,10 @@ interface ScheduleDao {
     fun observeAllPeriodsWithTimes(patientId: Long): Flow<List<ScheduledIntakeWithTimes>>
 
     @Transaction
+    @Query("SELECT * FROM scheduled_intakes WHERE drugId IN (SELECT id FROM drugs WHERE patientId = :patientId)")
+    suspend fun getAllPeriodsWithTimesForPatientOnce(patientId: Long): List<ScheduledIntakeWithTimes>
+
+    @Transaction
     @Query("SELECT * FROM scheduled_intakes")
     suspend fun getAllPeriodsWithTimesOnce(): List<ScheduledIntakeWithTimes>
 

@@ -54,6 +54,9 @@ class ScheduleRepository @Inject constructor(
     suspend fun getAllPeriodsWithTimesOnce(): List<ScheduledIntakeWithTimes> =
         scheduleDao.getAllPeriodsWithTimesOnce()
 
+    suspend fun getAllPeriodsForPatientOnce(patientId: Long): List<ScheduledIntakeWithTimes> =
+        scheduleDao.getAllPeriodsWithTimesForPatientOnce(patientId)
+
     suspend fun getById(id: Long): ScheduledIntake? = scheduleDao.getById(id)
 
     suspend fun getTimesForSchedule(scheduleId: Long) = intakeTimeDao.getTimesForSchedule(scheduleId)

@@ -162,6 +162,10 @@
     <string name="action_skipped">Пропустить</string>
     <string name="action_snooze">Напомнить позже</string>
     <string name="action_undo_status">Отменить</string>
+    <string name="action_mute_alarm">Выключить звук</string>
+
+    <string name="group_intake_title">Несколько препаратов</string>
+    <string name="group_intake_subtitle">Отметьте, что принимаете сейчас, и подтвердите</string>
 
     <string name="notification_channel_name">Напоминания о приёме лекарств</string>
     <string name="notification_channel_description">Уведомления о времени приёма запланированной дозы</string>

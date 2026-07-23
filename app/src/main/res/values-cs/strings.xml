@@ -162,6 +162,10 @@
     <string name="action_skipped">Vynechat</string>
     <string name="action_snooze">Připomenout později</string>
     <string name="action_undo_status">Zrušit</string>
+    <string name="action_mute_alarm">Ztlumit budík</string>
+
+    <string name="group_intake_title">Více léků</string>
+    <string name="group_intake_subtitle">Zaškrtněte, co užíváte nyní, a potvrďte</string>
 
     <string name="notification_channel_name">Připomenutí užívání léků</string>
     <string name="notification_channel_description">Upozornění, kdy je čas užít naplánovanou dávku</string>

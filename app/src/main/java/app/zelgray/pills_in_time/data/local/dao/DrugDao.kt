@@ -17,6 +17,9 @@ interface DrugDao {
     @Query("SELECT * FROM drugs")
     suspend fun getAllOnce(): List<Drug>
 
+    @Query("SELECT * FROM drugs WHERE patientId = :patientId")
+    suspend fun getAllOnce(patientId: Long): List<Drug>
+
     @Query("SELECT * FROM drugs WHERE id = :drugId")
     suspend fun getById(drugId: Long): Drug?
 

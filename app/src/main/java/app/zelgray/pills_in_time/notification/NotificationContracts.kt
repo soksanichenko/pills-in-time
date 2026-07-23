@@ -6,6 +6,7 @@ import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.domain.model.AlarmSpec
 import app.zelgray.pills_in_time.domain.model.Occurrence
 import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * Shared action strings / extras / WorkManager Data keys used across the
@@ -21,6 +22,7 @@ object NotificationContracts {
     const val ACTION_VIEW_OCCURRENCE = "app.zelgray.pills_in_time.action.VIEW_OCCURRENCE"
     const val ACTION_VIEW_STOCK = "app.zelgray.pills_in_time.action.VIEW_STOCK"
     const val ACTION_SNOOZE_LOW_STOCK = "app.zelgray.pills_in_time.action.SNOOZE_LOW_STOCK"
+    const val ACTION_VIEW_GROUP = "app.zelgray.pills_in_time.action.VIEW_GROUP"
 
     const val EXTRA_DRUG_ID = "extra_drug_id"
     const val EXTRA_SCHEDULED_INTAKE_ID = "extra_scheduled_intake_id"
@@ -33,6 +35,8 @@ object NotificationContracts {
     const val EXTRA_STATUS = "extra_status"
     const val EXTRA_STOCK_ID = "extra_stock_id"
     const val EXTRA_RUN_OUT_DATE_EPOCH_DAY = "extra_run_out_date_epoch_day"
+    const val EXTRA_PATIENT_ID = "extra_patient_id"
+    const val EXTRA_GROUP_MEMBERS = "extra_group_members"
 
     fun dataFromSpec(spec: AlarmSpec): Data = Data.Builder()
         .putLong(EXTRA_DRUG_ID, spec.drugId)
@@ -69,7 +73,49 @@ object NotificationContracts {
 
     /** Unique WorkManager work name for the repeat/snooze chain of a given occurrence's notification. */
     fun repeatWorkName(notificationId: Int): String = "post_notification_$notificationId"
+
+    /**
+     * Notification/request-code id for a merged reminder covering every
+     * still-pending occurrence a patient has at the exact same date+time —
+     * distinct from [app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase.computeRequestCode]'s
+     * per-occurrence ids (the extra XOR keeps the two id spaces from colliding).
+     */
+    fun computeGroupNotificationId(patientId: Long, occurrenceDate: LocalDate, timeOfDay: LocalTime): Int {
+        var result = patientId.hashCode()
+        result = 31 * result + occurrenceDate.hashCode()
+        result = 31 * result + timeOfDay.hashCode()
+        return result xor GROUP_ID_MASK
+    }
+
+    fun encodeGroupMembers(members: List<GroupMember>): String =
+        members.joinToString(";") { "${it.scheduledIntakeId}:${it.intakeTimeId}:${it.drugId}:${it.doseValue}:${it.doseMode.name}" }
+
+    fun decodeGroupMembers(encoded: String?): List<GroupMember> =
+        encoded?.takeIf { it.isNotEmpty() }?.split(";")?.mapNotNull { entry ->
+            val parts = entry.split(":")
+            if (parts.size != 5) return@mapNotNull null
+            runCatching {
+                GroupMember(
+                    scheduledIntakeId = parts[0].toLong(),
+                    intakeTimeId = parts[1].toLong(),
+                    drugId = parts[2].toLong(),
+                    doseValue = parts[3].toDouble(),
+                    doseMode = DoseMode.valueOf(parts[4]),
+                )
+            }.getOrNull()
+        }.orEmpty()
+
+    private const val GROUP_ID_MASK = -0x67726f75 // arbitrary constant ("grou") separating group ids from per-occurrence ones
 }
+
+/** One pending occurrence folded into a merged same-time reminder. */
+data class GroupMember(
+    val scheduledIntakeId: Long,
+    val intakeTimeId: Long,
+    val drugId: Long,
+    val doseValue: Double,
+    val doseMode: DoseMode,
+)
 
 /** Identifies a single occurrence to jump straight to when the app is opened from a notification tap. */
 data class OccurrenceRequest(
@@ -98,4 +144,20 @@ fun Intent.toStockRequestOrNull(): StockRequest? {
     val stockId = getLongExtra(NotificationContracts.EXTRA_STOCK_ID, -1)
     if (drugId < 0 || stockId < 0) return null
     return StockRequest(drugId)
+}
+
+/** Identifies a merged same-time reminder slot to open the combined intake panel for. */
+data class GroupRequest(val patientId: Long, val occurrenceDate: LocalDate, val timeOfDay: LocalTime)
+
+fun Intent.toGroupRequestOrNull(): GroupRequest? {
+    if (action != NotificationContracts.ACTION_VIEW_GROUP) return null
+    val patientId = getLongExtra(NotificationContracts.EXTRA_PATIENT_ID, -1)
+    val occurrenceDateEpochDay = getLongExtra(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, -1)
+    val timeOfDaySecond = getIntExtra(NotificationContracts.EXTRA_TIME_OF_DAY_SECOND, -1)
+    if (patientId < 0 || occurrenceDateEpochDay < 0 || timeOfDaySecond < 0) return null
+    return GroupRequest(
+        patientId,
+        NotificationContracts.occurrenceDateOf(occurrenceDateEpochDay),
+        LocalTime.ofSecondOfDay(timeOfDaySecond.toLong()),
+    )
 }

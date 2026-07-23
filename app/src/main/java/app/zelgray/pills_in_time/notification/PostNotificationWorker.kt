@@ -14,6 +14,7 @@ import androidx.work.WorkerParameters
 import app.zelgray.pills_in_time.MainActivity
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
+import app.zelgray.pills_in_time.data.local.entity.Patient
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
 import app.zelgray.pills_in_time.data.repository.PatientRepository
@@ -21,9 +22,11 @@ import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
+import app.zelgray.pills_in_time.domain.usecase.isPeriodActiveOn
 import app.zelgray.pills_in_time.ui.drugs.doseTextPlain
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.time.LocalDate
 import java.time.LocalTime
 import java.util.concurrent.TimeUnit
 
@@ -73,6 +76,16 @@ class PostNotificationWorker @AssistedInject constructor(
         val doseText = doseTextPlain(applicationContext, doseValue, doseMode, drug, batches, strength, doseAllocation)
         val timeText = "%02d:%02d".format(timeOfDay.hour, timeOfDay.minute)
 
+        // isAlarmClock times always stay their own separate, full-screen reminder —
+        // never folded into a merged notification with regular-time siblings.
+        if (!isAlarmClock) {
+            val groupMembers = findGroupMembers(drug.patientId, occurrenceDate, timeOfDay)
+            if (groupMembers.size > 1) {
+                postGroupNotification(drug.patientId, patients, patient, occurrenceDate, occurrenceDateEpochDay, timeOfDay, timeText, groupMembers)
+                return Result.success()
+            }
+        }
+
         val takeIntent = actionIntent(NotificationContracts.ACTION_TAKE, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)
         val skipIntent = actionIntent(NotificationContracts.ACTION_SKIP, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)
         val snoozeIntent = actionIntent(NotificationContracts.ACTION_SNOOZE, notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode)
@@ -103,6 +116,101 @@ class PostNotificationWorker @AssistedInject constructor(
         NotificationManagerCompat.from(applicationContext).notify(notificationId, builder.build())
         scheduleRepeat(notificationId)
         return Result.success()
+    }
+
+    /**
+     * Every other still-unlogged, non-alarm-clock occurrence this patient has
+     * at the exact same date+time — recomputed fresh from the DB on every
+     * call (initial post, each 5-minute repeat, and after a snooze) so it
+     * always reflects whichever siblings are still actually pending.
+     */
+    private suspend fun findGroupMembers(patientId: Long, occurrenceDate: LocalDate, timeOfDay: LocalTime): List<GroupMember> {
+        val periods = scheduleRepository.getAllPeriodsForPatientOnce(patientId)
+        return periods
+            .filter { isPeriodActiveOn(it.scheduledIntake, occurrenceDate) }
+            .flatMap { period -> period.times.map { time -> Triple(period.scheduledIntake.id, time, period.scheduledIntake.drugId) } }
+            .filter { (_, time, _) -> time.timeOfDay == timeOfDay && !time.isAlarmClock }
+            .filter { (sid, time, _) -> intakeRepository.getLogForOccurrenceOnce(sid, time.id, occurrenceDate) == null }
+            .map { (sid, time, drugId) -> GroupMember(sid, time.id, drugId, time.doseValue, time.doseMode) }
+    }
+
+    /** Merges every pending occurrence at this date+time into a single notification instead of one per drug. */
+    private suspend fun postGroupNotification(
+        patientId: Long,
+        patients: List<Patient>,
+        patient: Patient?,
+        occurrenceDate: LocalDate,
+        occurrenceDateEpochDay: Long,
+        timeOfDay: LocalTime,
+        timeText: String,
+        members: List<GroupMember>,
+    ) {
+        val groupNotificationId = NotificationContracts.computeGroupNotificationId(patientId, occurrenceDate, timeOfDay)
+        val drugsById = drugRepository.getAllOnce(patientId).associateBy { it.id }
+        val lines = members.mapNotNull { member ->
+            val memberDrug = drugsById[member.drugId] ?: return@mapNotNull null
+            val memberBatches = stockRepository.getBatchesForDrugOnce(member.drugId)
+            val memberStrength = resolveEffectiveStrength(memberBatches)
+            val memberAllocation = scheduleRepository.getTimeById(member.intakeTimeId)?.doseAllocation
+            val memberDoseText = doseTextPlain(applicationContext, member.doseValue, member.doseMode, memberDrug, memberBatches, memberStrength, memberAllocation)
+            memberDrug.name to memberDoseText
+        }
+        val namesJoined = lines.joinToString(", ") { it.first }
+        val contentTitle = if (patients.size > 1 && patient != null) "${patient.name} — $namesJoined" else namesJoined
+        val bigText = lines.joinToString("\n") { (name, dose) -> "$name — $dose" }
+
+        val encodedMembers = NotificationContracts.encodeGroupMembers(members)
+        val takeIntent = groupActionIntent(NotificationContracts.ACTION_TAKE, groupNotificationId, occurrenceDateEpochDay, encodedMembers)
+        val skipIntent = groupActionIntent(NotificationContracts.ACTION_SKIP, groupNotificationId, occurrenceDateEpochDay, encodedMembers)
+        // Snooze re-enqueues PostNotificationWorker (see SnoozeWorker), which recomputes
+        // the whole group fresh from whichever single member's data seeds it — unlike
+        // Take/Skip it doesn't need the full encoded member list.
+        val seed = members.first()
+        val snoozeIntent = actionIntent(
+            NotificationContracts.ACTION_SNOOZE, groupNotificationId, seed.drugId, seed.scheduledIntakeId,
+            seed.intakeTimeId, occurrenceDateEpochDay, timeOfDay.toSecondOfDay(), seed.doseValue, seed.doseMode,
+        )
+
+        val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.MEDICATION_REMINDERS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(contentTitle)
+            .setContentText("$timeText · $namesJoined")
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(groupContentIntent(groupNotificationId, patientId, occurrenceDateEpochDay, timeOfDay.toSecondOfDay()))
+            .addAction(0, applicationContext.getString(R.string.action_took_it), pendingIntentFor(groupNotificationId * 10 + 1, takeIntent))
+            .addAction(0, applicationContext.getString(R.string.action_skipped), pendingIntentFor(groupNotificationId * 10 + 2, skipIntent))
+            .addAction(0, applicationContext.getString(R.string.action_snooze), pendingIntentFor(groupNotificationId * 10 + 3, snoozeIntent))
+
+        patient?.let { builder.setColor(it.color) }
+
+        NotificationManagerCompat.from(applicationContext).notify(groupNotificationId, builder.build())
+        scheduleRepeat(groupNotificationId)
+    }
+
+    private fun groupActionIntent(action: String, notificationId: Int, occurrenceDateEpochDay: Long, encodedMembers: String): Intent =
+        Intent(applicationContext, IntakeActionReceiver::class.java).apply {
+            this.action = action
+            putExtra(NotificationContracts.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, occurrenceDateEpochDay)
+            putExtra(NotificationContracts.EXTRA_GROUP_MEMBERS, encodedMembers)
+        }
+
+    private fun groupContentIntent(notificationId: Int, patientId: Long, occurrenceDateEpochDay: Long, timeOfDaySecond: Int): PendingIntent {
+        val intent = Intent(applicationContext, MainActivity::class.java).apply {
+            action = NotificationContracts.ACTION_VIEW_GROUP
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra(NotificationContracts.EXTRA_PATIENT_ID, patientId)
+            putExtra(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, occurrenceDateEpochDay)
+            putExtra(NotificationContracts.EXTRA_TIME_OF_DAY_SECOND, timeOfDaySecond)
+        }
+        return PendingIntent.getActivity(
+            applicationContext,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
     }
 
     /** Re-posts this same reminder every REPEAT_INTERVAL_MINUTES until Take/Skip/Snooze cancels or replaces this chain. */

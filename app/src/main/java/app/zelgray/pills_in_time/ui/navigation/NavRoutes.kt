@@ -16,11 +16,15 @@ object NavRoutes {
     const val EDIT_PERIOD = "editPeriod/{drugId}/{scheduleId}"
     const val ADD_HISTORY_ENTRY = "addHistoryEntry"
     const val EDIT_HISTORY_ENTRY = "editHistoryEntry/{logId}"
+    const val GROUP_INTAKE = "groupIntake/{patientId}/{epochDay}/{secondOfDay}"
 
     const val ARG_DRUG_ID = "drugId"
     const val ARG_STOCK_ID = "stockId"
     const val ARG_SCHEDULE_ID = "scheduleId"
     const val ARG_LOG_ID = "logId"
+    const val ARG_PATIENT_ID = "patientId"
+    const val ARG_EPOCH_DAY = "epochDay"
+    const val ARG_SECOND_OF_DAY = "secondOfDay"
 
     fun drugDetail(drugId: Long) = "drugDetail/$drugId"
     fun editDrug(drugId: Long) = "editDrug/$drugId"
@@ -29,6 +33,7 @@ object NavRoutes {
     fun addPeriod(drugId: Long) = "addPeriod/$drugId"
     fun editPeriod(drugId: Long, scheduleId: Long) = "editPeriod/$drugId/$scheduleId"
     fun editHistoryEntry(logId: Long) = "editHistoryEntry/$logId"
+    fun groupIntake(patientId: Long, epochDay: Long, secondOfDay: Int) = "groupIntake/$patientId/$epochDay/$secondOfDay"
 
     val TAB_ROUTES = setOf(HOME, DRUGS_LIST, HISTORY, SETTINGS)
 }

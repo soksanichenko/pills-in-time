@@ -162,6 +162,10 @@
     <string name="action_skipped">Пропустити</string>
     <string name="action_snooze">Нагадати пізніше</string>
     <string name="action_undo_status">Скасувати</string>
+    <string name="action_mute_alarm">Вимкнути звук</string>
+
+    <string name="group_intake_title">Кілька препаратів</string>
+    <string name="group_intake_subtitle">Позначте, що приймаєте зараз, і підтвердіть</string>
 
     <string name="notification_channel_name">Нагадування про прийом ліків</string>
     <string name="notification_channel_description">Сповіщення про час прийому запланованої дози</string>

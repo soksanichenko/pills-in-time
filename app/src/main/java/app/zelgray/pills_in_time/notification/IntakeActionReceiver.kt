@@ -24,12 +24,34 @@ class IntakeActionReceiver : BroadcastReceiver() {
             WorkManager.getInstance(context).cancelUniqueWork(NotificationContracts.repeatWorkName(notificationId))
         }
 
-        val baseData = NotificationContracts.dataFromIntent(intent)
+        val encodedMembers = intent.getStringExtra(NotificationContracts.EXTRA_GROUP_MEMBERS)
 
         when (intent.action) {
-            NotificationContracts.ACTION_TAKE -> enqueueLogAction(context, baseData, IntakeStatus.TAKEN)
-            NotificationContracts.ACTION_SKIP -> enqueueLogAction(context, baseData, IntakeStatus.SKIPPED)
-            NotificationContracts.ACTION_SNOOZE -> enqueueSnooze(context, baseData)
+            NotificationContracts.ACTION_TAKE -> handleLogAction(context, intent, encodedMembers, IntakeStatus.TAKEN)
+            NotificationContracts.ACTION_SKIP -> handleLogAction(context, intent, encodedMembers, IntakeStatus.SKIPPED)
+            NotificationContracts.ACTION_SNOOZE -> enqueueSnooze(context, NotificationContracts.dataFromIntent(intent))
+        }
+    }
+
+    /** For a merged notification (EXTRA_GROUP_MEMBERS present), applies the status to every member; otherwise just the one occurrence. */
+    private fun handleLogAction(context: Context, intent: Intent, encodedMembers: String?, status: IntakeStatus) {
+        val members = NotificationContracts.decodeGroupMembers(encodedMembers)
+        if (members.isEmpty()) {
+            enqueueLogAction(context, NotificationContracts.dataFromIntent(intent), status)
+            return
+        }
+        val occurrenceDateEpochDay = intent.getLongExtra(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, -1)
+        members.forEach { member ->
+            val data = Data.Builder()
+                .putLong(NotificationContracts.EXTRA_DRUG_ID, member.drugId)
+                .putLong(NotificationContracts.EXTRA_SCHEDULED_INTAKE_ID, member.scheduledIntakeId)
+                .putLong(NotificationContracts.EXTRA_INTAKE_TIME_ID, member.intakeTimeId)
+                .putLong(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, occurrenceDateEpochDay)
+                .putDouble(NotificationContracts.EXTRA_DOSE_VALUE, member.doseValue)
+                .putString(NotificationContracts.EXTRA_DOSE_MODE, member.doseMode.name)
+                .putString(NotificationContracts.EXTRA_STATUS, status.name)
+                .build()
+            WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<LogIntakeActionWorker>().setInputData(data).build())
         }
     }
 

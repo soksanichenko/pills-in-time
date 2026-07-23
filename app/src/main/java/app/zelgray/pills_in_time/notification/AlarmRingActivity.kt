@@ -135,9 +135,16 @@ class AlarmRingActivity : AppCompatActivity() {
                     subtitle = "%02d:%02d · %s".format(timeOfDay.hour, timeOfDay.minute, doseText)
                 }
 
+                var muted by remember { mutableStateOf(false) }
+
                 AlarmRingScreen(
                     title = title,
                     subtitle = subtitle,
+                    muted = muted,
+                    onMute = {
+                        stopRinging()
+                        muted = true
+                    },
                     onTake = { act(IntakeStatus.TAKEN, snooze = false) },
                     onSkip = { act(IntakeStatus.SKIPPED, snooze = false) },
                     onSnooze = { act(null, snooze = true) },
@@ -219,6 +226,8 @@ class AlarmRingActivity : AppCompatActivity() {
 private fun AlarmRingScreen(
     title: String,
     subtitle: String,
+    muted: Boolean,
+    onMute: () -> Unit,
     onTake: () -> Unit,
     onSkip: () -> Unit,
     onSnooze: () -> Unit,
@@ -244,7 +253,13 @@ private fun AlarmRingScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            Spacer(modifier = Modifier.size(48.dp))
+            Spacer(modifier = Modifier.size(24.dp))
+            if (!muted) {
+                OutlinedButton(onClick = onMute, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.action_mute_alarm))
+                }
+                Spacer(modifier = Modifier.size(24.dp))
+            }
             Button(onClick = onTake, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.action_took_it))
             }

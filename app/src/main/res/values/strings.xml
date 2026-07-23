@@ -162,6 +162,10 @@
     <string name="action_skipped">Skipped</string>
     <string name="action_snooze">Remind later</string>
     <string name="action_undo_status">Undo</string>
+    <string name="action_mute_alarm">Mute alarm</string>
+
+    <string name="group_intake_title">Multiple medications</string>
+    <string name="group_intake_subtitle">Check off what you\'re taking now, then confirm</string>
 
     <string name="notification_channel_name">Medication reminders</string>
     <string name="notification_channel_description">Alerts when it\'s time to take a scheduled dose</string>

@@ -20,6 +20,8 @@ class DrugRepository @Inject constructor(
 
     suspend fun getById(drugId: Long): Drug? = drugDao.getById(drugId)
 
+    suspend fun getAllOnce(patientId: Long): List<Drug> = drugDao.getAllOnce(patientId)
+
     suspend fun hasSchedulesOrStock(drugId: Long): Boolean = drugDao.hasSchedulesOrStock(drugId)
 
     suspend fun createDrug(patientId: Long, name: String, form: DrugForm, customFormText: String?): Long =

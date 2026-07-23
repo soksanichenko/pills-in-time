@@ -92,6 +92,18 @@ class ProjectDrugStockUseCaseTest {
     }
 
     @Test
+    fun `period whose stock exactly covers its last dose is not flagged depleted`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val end = today.plusDays(9) // 10 days inclusive, 1 unit/day -> exactly 10 consumed
+        val p = period(start = today, end = end, times = listOf(unitsTime(dose = 1.0)))
+        val result = useCase(listOf(p), batches = listOf(batch(quantity = 10.0)), today = today)
+
+        val proj = result.periodProjections.getValue(1L)
+        assertEquals(0.0, proj.atEnd!!, 0.001)
+        assertFalse(proj.stockDepleted)
+    }
+
+    @Test
     fun `sequential periods carry remaining stock forward`() {
         val today = LocalDate.of(2026, 7, 17)
         val p1 = period(id = 1, start = today, end = today.plusDays(4), times = listOf(unitsTime(scheduledIntakeId = 1, dose = 2.0)))

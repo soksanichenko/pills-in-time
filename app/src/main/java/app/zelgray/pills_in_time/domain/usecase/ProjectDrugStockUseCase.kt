@@ -128,7 +128,10 @@ class ProjectDrugStockUseCase @Inject constructor(
             sid to PeriodStockProjection(
                 atStart = start,
                 atEnd = end,
-                stockDepleted = start <= 0.0 || (end != null && end <= 0.0) || depletionWithinPeriod,
+                // Running out exactly after covering the period's last dose (end == 0,
+                // but every dose along the way resolved fine) isn't a problem — only an
+                // actual unresolved (Insufficient) dose within the period is.
+                stockDepleted = start <= 0.0 || depletionWithinPeriod,
             )
         }
 

@@ -25,6 +25,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import app.zelgray.pills_in_time.R
+import app.zelgray.pills_in_time.notification.GroupRequest
 import app.zelgray.pills_in_time.notification.OccurrenceRequest
 import app.zelgray.pills_in_time.notification.StockRequest
 import app.zelgray.pills_in_time.ui.drugs.AddEditDrugScreen
@@ -34,6 +35,7 @@ import app.zelgray.pills_in_time.ui.drugs.DrugDetailScreen
 import app.zelgray.pills_in_time.ui.drugs.DrugsListScreen
 import app.zelgray.pills_in_time.ui.history.AddEditHistoryEntryScreen
 import app.zelgray.pills_in_time.ui.history.HistoryScreen
+import app.zelgray.pills_in_time.ui.home.GroupIntakeScreen
 import app.zelgray.pills_in_time.ui.home.HomeScreen
 import app.zelgray.pills_in_time.ui.patients.PatientsScreen
 import app.zelgray.pills_in_time.ui.settings.SettingsScreen
@@ -58,6 +60,8 @@ fun MedTrackerNavHost(
     onPendingOccurrenceConsumed: () -> Unit = {},
     pendingStockRequest: StockRequest? = null,
     onPendingStockConsumed: () -> Unit = {},
+    pendingGroupRequest: GroupRequest? = null,
+    onPendingGroupConsumed: () -> Unit = {},
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -78,6 +82,19 @@ fun MedTrackerNavHost(
         if (pendingStockRequest != null) {
             navController.navigate(NavRoutes.drugDetail(pendingStockRequest.drugId))
             onPendingStockConsumed()
+        }
+    }
+
+    LaunchedEffect(pendingGroupRequest) {
+        if (pendingGroupRequest != null) {
+            navController.navigate(
+                NavRoutes.groupIntake(
+                    pendingGroupRequest.patientId,
+                    pendingGroupRequest.occurrenceDate.toEpochDay(),
+                    pendingGroupRequest.timeOfDay.toSecondOfDay(),
+                ),
+            )
+            onPendingGroupConsumed()
         }
     }
 
@@ -250,6 +267,20 @@ fun MedTrackerNavHost(
 
             composable(NavRoutes.PATIENTS) {
                 PatientsScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(
+                route = NavRoutes.GROUP_INTAKE,
+                arguments = listOf(
+                    navArgument(NavRoutes.ARG_PATIENT_ID) { type = NavType.LongType },
+                    navArgument(NavRoutes.ARG_EPOCH_DAY) { type = NavType.LongType },
+                    navArgument(NavRoutes.ARG_SECOND_OF_DAY) { type = NavType.IntType },
+                ),
+            ) {
+                GroupIntakeScreen(
+                    onBack = { navController.popBackStack() },
+                    onDone = { navController.popBackStack() },
+                )
             }
         }
     }

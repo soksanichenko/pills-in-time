@@ -20,8 +20,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import app.zelgray.pills_in_time.notification.GroupRequest
 import app.zelgray.pills_in_time.notification.OccurrenceRequest
 import app.zelgray.pills_in_time.notification.StockRequest
+import app.zelgray.pills_in_time.notification.toGroupRequestOrNull
 import app.zelgray.pills_in_time.notification.toOccurrenceRequestOrNull
 import app.zelgray.pills_in_time.notification.toStockRequestOrNull
 import app.zelgray.pills_in_time.ui.navigation.MedTrackerNavHost
@@ -39,12 +41,14 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingOccurrenceRequest by mutableStateOf<OccurrenceRequest?>(null)
     private var pendingStockRequest by mutableStateOf<StockRequest?>(null)
+    private var pendingGroupRequest by mutableStateOf<GroupRequest?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingOccurrenceRequest = intent?.toOccurrenceRequestOrNull()
         pendingStockRequest = intent?.toStockRequestOrNull()
+        pendingGroupRequest = intent?.toGroupRequestOrNull()
         setContent {
             MedTrackerTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -54,6 +58,8 @@ class MainActivity : AppCompatActivity() {
                         onPendingOccurrenceConsumed = { pendingOccurrenceRequest = null },
                         pendingStockRequest = pendingStockRequest,
                         onPendingStockConsumed = { pendingStockRequest = null },
+                        pendingGroupRequest = pendingGroupRequest,
+                        onPendingGroupConsumed = { pendingGroupRequest = null },
                     )
                 }
             }
@@ -65,6 +71,7 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         pendingOccurrenceRequest = intent.toOccurrenceRequestOrNull()
         pendingStockRequest = intent.toStockRequestOrNull()
+        pendingGroupRequest = intent.toGroupRequestOrNull()
     }
 }
 

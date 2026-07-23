@@ -41,6 +41,15 @@ interface IntakeLogDao {
     )
     fun observeLogsInRange(patientId: Long, from: LocalDate, to: LocalDate, drugId: Long?): Flow<List<IntakeLogWithDrug>>
 
+    @Query(
+        """
+        SELECT * FROM intake_logs
+        WHERE drugId IN (SELECT id FROM drugs WHERE patientId = :patientId)
+        AND occurrenceDate BETWEEN :from AND :to
+        """,
+    )
+    fun observeRawLogsInRange(patientId: Long, from: LocalDate, to: LocalDate): Flow<List<IntakeLog>>
+
     @Transaction
     @Query(
         """

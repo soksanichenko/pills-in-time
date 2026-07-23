@@ -33,6 +33,9 @@ class IntakeRepository @Inject constructor(
     fun observeLogsInRange(patientId: Long, from: LocalDate, to: LocalDate, drugId: Long?): Flow<List<IntakeLogWithDrug>> =
         intakeLogDao.observeLogsInRange(patientId, from, to, drugId)
 
+    fun observeRawLogsInRange(patientId: Long, from: LocalDate, to: LocalDate): Flow<List<IntakeLog>> =
+        intakeLogDao.observeRawLogsInRange(patientId, from, to)
+
     fun observeAllLogs(patientId: Long, drugId: Long?): Flow<List<IntakeLogWithDrug>> = intakeLogDao.observeAllLogs(patientId, drugId)
 
     suspend fun getById(logId: Long): IntakeLog? = intakeLogDao.getById(logId)

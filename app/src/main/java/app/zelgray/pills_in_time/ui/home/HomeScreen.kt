@@ -3,9 +3,11 @@
 package app.zelgray.pills_in_time.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,16 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,7 +38,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -47,6 +48,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -67,10 +70,12 @@ import app.zelgray.pills_in_time.ui.common.PatientSwitcherAction
 import app.zelgray.pills_in_time.ui.common.StatusPill
 import app.zelgray.pills_in_time.ui.common.dayLabel
 import app.zelgray.pills_in_time.ui.drugs.doseText
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.time.temporal.WeekFields
+import java.util.Locale
 import kotlin.math.abs
 
 @Composable
@@ -81,6 +86,7 @@ fun HomeScreen(
     onManagePatients: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val calendarMarks by viewModel.calendarMarks.collectAsStateWithLifecycle()
     val toastMessageRes by viewModel.toastMessageRes.collectAsStateWithLifecycle()
     var sheetItem by remember { mutableStateOf<HomeListItem?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -123,9 +129,12 @@ fun HomeScreen(
             DayNavigator(
                 date = state.date,
                 today = state.today,
+                calendarMarks = calendarMarks,
                 onPrev = viewModel::onPrevDay,
                 onNext = viewModel::onNextDay,
                 onDateSelected = viewModel::goToDate,
+                onCalendarMonthChanged = viewModel::onCalendarMonthChanged,
+                onCalendarDialogClosed = viewModel::onCalendarDialogClosed,
             )
 
             Box(
@@ -228,12 +237,21 @@ private fun ExactAlarmBanner() {
 }
 
 @Composable
-private fun DayNavigator(date: LocalDate, today: LocalDate, onPrev: () -> Unit, onNext: () -> Unit, onDateSelected: (LocalDate) -> Unit) {
+private fun DayNavigator(
+    date: LocalDate,
+    today: LocalDate,
+    calendarMarks: Map<LocalDate, CalendarDayMark>,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
+    onCalendarMonthChanged: (YearMonth) -> Unit,
+    onCalendarDialogClosed: () -> Unit,
+) {
     var showDatePicker by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onPrev) {
@@ -250,25 +268,128 @@ private fun DayNavigator(date: LocalDate, today: LocalDate, onPrev: () -> Unit, 
     }
 
     if (showDatePicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        CalendarPickerDialog(
+            initialDate = date,
+            today = today,
+            marks = calendarMarks,
+            onMonthChanged = onCalendarMonthChanged,
+            onDateSelected = onDateSelected,
+            onDismiss = {
+                showDatePicker = false
+                onCalendarDialogClosed()
+            },
         )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let {
-                        onDateSelected(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())
+    }
+}
+
+private val CalendarTakenGreen = Color(0xFF2E7D32)
+
+/**
+ * Custom month-grid date picker: the stock Material3 DatePicker (1.4.0) has no
+ * per-day content slot, so it can't show the taken/scheduled dots this screen needs.
+ */
+@Composable
+private fun CalendarPickerDialog(
+    initialDate: LocalDate,
+    today: LocalDate,
+    marks: Map<LocalDate, CalendarDayMark>,
+    onMonthChanged: (YearMonth) -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedDate by remember { mutableStateOf(initialDate) }
+    var displayedMonth by remember { mutableStateOf(YearMonth.from(initialDate)) }
+
+    LaunchedEffect(displayedMonth) { onMonthChanged(displayedMonth) }
+
+    val locale = Locale.getDefault()
+    val firstDayOfWeek = WeekFields.of(locale).firstDayOfWeek
+    val leadingBlanks = ((displayedMonth.atDay(1).dayOfWeek.value - firstDayOfWeek.value) + 7) % 7
+    val days = List(leadingBlanks) { null } + (1..displayedMonth.lengthOfMonth()).map { displayedMonth.atDay(it) }
+    val trailingBlanks = (7 - days.size % 7) % 7
+    val weeks = (days + List(trailingBlanks) { null }).chunked(7)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                onDateSelected(selectedDate)
+                onDismiss()
+            }) { Text(stringResource(R.string.action_save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { displayedMonth = displayedMonth.minusMonths(1) }) {
+                        Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.previous_day))
                     }
-                    showDatePicker = false
-                }) { Text(stringResource(R.string.action_save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.action_cancel)) }
-            },
-        ) {
-            DatePicker(state = pickerState)
-        }
+                    Text(
+                        text = displayedMonth.format(DateTimeFormatter.ofPattern("LLLL yyyy", locale)),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    IconButton(onClick = { displayedMonth = displayedMonth.plusMonths(1) }) {
+                        Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.next_day))
+                    }
+                }
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    for (i in 0 until 7) {
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = firstDayOfWeek.plus(i.toLong()).getDisplayName(TextStyle.NARROW, locale),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                weeks.forEach { week ->
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        week.forEach { cellDate ->
+                            Box(modifier = Modifier.weight(1f).size(40.dp), contentAlignment = Alignment.Center) {
+                                if (cellDate != null) {
+                                    CalendarDayCell(
+                                        date = cellDate,
+                                        isToday = cellDate == today,
+                                        isSelected = cellDate == selectedDate,
+                                        mark = marks[cellDate] ?: CalendarDayMark.NONE,
+                                        onClick = { selectedDate = cellDate },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun CalendarDayCell(date: LocalDate, isToday: Boolean, isSelected: Boolean, mark: CalendarDayMark, onClick: () -> Unit) {
+    val circleModifier = when {
+        isSelected -> Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+        mark == CalendarDayMark.TAKEN -> Modifier.background(CalendarTakenGreen, CircleShape)
+        mark == CalendarDayMark.SCHEDULED -> Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline, CircleShape)
+        isToday -> Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+        else -> Modifier
+    }
+    val textColor = when {
+        isSelected -> MaterialTheme.colorScheme.onPrimary
+        mark == CalendarDayMark.TAKEN -> Color.White
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    Box(
+        modifier = Modifier.size(36.dp).clip(CircleShape).then(circleModifier).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = date.dayOfMonth.toString(), color = textColor, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

@@ -21,6 +21,7 @@ import app.zelgray.pills_in_time.data.repository.SettingsRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.Occurrence
+import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
 import app.zelgray.pills_in_time.domain.model.RecordLogResult
 import app.zelgray.pills_in_time.domain.usecase.GenerateOccurrencesForDateUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
@@ -31,6 +32,7 @@ import app.zelgray.pills_in_time.util.NowProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,14 +40,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+
+enum class CalendarDayMark { NONE, TAKEN, SCHEDULED }
 
 data class HomeListItem(
     val occurrence: Occurrence,
@@ -125,6 +131,46 @@ class HomeViewModel @Inject constructor(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState(isLoading = true))
+
+    private val calendarMonth = MutableStateFlow<YearMonth?>(null)
+
+    /** Empty (no DB subscription) unless the date-picker dialog is open, per [onCalendarMonthChanged]/[onCalendarDialogClosed]. */
+    val calendarMarks: StateFlow<Map<LocalDate, CalendarDayMark>> = calendarMonth
+        .flatMapLatest { month -> calendarMarksFlowFor(month) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    private fun calendarMarksFlowFor(month: YearMonth?): Flow<Map<LocalDate, CalendarDayMark>> {
+        if (month == null) return flowOf(emptyMap())
+        return patientRepository.observeCurrentPatientId().flatMapLatest { patientId ->
+            combine(
+                scheduleRepository.observeAllPeriods(patientId),
+                intakeRepository.observeRawLogsInRange(patientId, month.atDay(1), month.atEndOfMonth()),
+            ) { periods, logs ->
+                val today = nowProvider.currentLocalDate()
+                val now = nowProvider.currentLocalDateTime()
+                (1..month.lengthOfMonth()).associate { day ->
+                    val date = month.atDay(day)
+                    val occurrences = generateOccurrences(periods, logs, date, today, now)
+                    date to calendarMarkFor(date, occurrences, today)
+                }
+            }
+        }
+    }
+
+    fun onCalendarMonthChanged(month: YearMonth) {
+        calendarMonth.value = month
+    }
+
+    fun onCalendarDialogClosed() {
+        calendarMonth.value = null
+    }
+
+    private fun calendarMarkFor(date: LocalDate, occurrences: List<Occurrence>, today: LocalDate): CalendarDayMark = when {
+        occurrences.isEmpty() -> CalendarDayMark.NONE
+        occurrences.all { it.status == OccurrenceStatus.TAKEN } -> CalendarDayMark.TAKEN
+        date.isAfter(today) -> CalendarDayMark.SCHEDULED
+        else -> CalendarDayMark.NONE
+    }
 
     private val _toastMessageRes = MutableStateFlow<Int?>(null)
     val toastMessageRes: StateFlow<Int?> = _toastMessageRes.asStateFlow()

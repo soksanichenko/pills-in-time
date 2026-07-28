@@ -154,6 +154,7 @@
 
     <string name="status_upcoming">Upcoming</string>
     <string name="status_overdue">Overdue</string>
+    <string name="status_postponed">Postponed</string>
     <string name="status_taken">Taken</string>
     <string name="status_skipped">Skipped</string>
     <string name="status_missed">Missed</string>

@@ -40,6 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
+import androidx.work.WorkManager
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
@@ -144,6 +146,15 @@ class AlarmRingActivity : AppCompatActivity() {
                     onMute = {
                         stopRinging()
                         muted = true
+                        // Otherwise the still-pending 5-minute repeat (never
+                        // cancelled by muting alone) reposts this same
+                        // notification and re-fires the full-screen intent,
+                        // making the alarm ring again shortly after muting.
+                        if (notificationId != -1) {
+                            NotificationManagerCompat.from(this@AlarmRingActivity).cancel(notificationId)
+                            WorkManager.getInstance(this@AlarmRingActivity)
+                                .cancelUniqueWork(NotificationContracts.repeatWorkName(notificationId))
+                        }
                     },
                     onTake = { act(IntakeStatus.TAKEN, snooze = false) },
                     onSkip = { act(IntakeStatus.SKIPPED, snooze = false) },

@@ -5,10 +5,12 @@ import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
+import app.zelgray.pills_in_time.data.local.dao.SnoozedOccurrenceDao
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.local.entity.IntakeSource
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
+import app.zelgray.pills_in_time.data.local.entity.SnoozedOccurrence
 import app.zelgray.pills_in_time.data.local.relation.IntakeLogWithDrug
 import app.zelgray.pills_in_time.domain.model.DoseConsumptionResult
 import app.zelgray.pills_in_time.domain.model.RecordLogResult
@@ -24,9 +26,19 @@ class IntakeRepository @Inject constructor(
     private val intakeLogDao: IntakeLogDao,
     private val intakeTimeDao: IntakeTimeDao,
     private val scheduleDao: ScheduleDao,
+    private val snoozedOccurrenceDao: SnoozedOccurrenceDao,
     private val stockConsumptionRepository: StockConsumptionRepository,
 ) {
     fun observeLogsForDate(date: LocalDate): Flow<List<IntakeLog>> = intakeLogDao.observeLogsForDate(date)
+
+    fun observeSnoozedForDate(date: LocalDate): Flow<List<SnoozedOccurrence>> = snoozedOccurrenceDao.observeForDate(date)
+
+    suspend fun getSnoozedForDateOnce(date: LocalDate): List<SnoozedOccurrence> = snoozedOccurrenceDao.getForDateOnce(date)
+
+    /** Persists "Remind later" so the occurrence shows POSTPONED instead of OVERDUE until [until]. */
+    suspend fun recordSnooze(scheduledIntakeId: Long, intakeTimeId: Long, occurrenceDate: LocalDate, until: Instant) {
+        snoozedOccurrenceDao.upsert(SnoozedOccurrence(scheduledIntakeId, intakeTimeId, occurrenceDate, until))
+    }
 
     suspend fun getLogsForDateOnce(date: LocalDate): List<IntakeLog> = intakeLogDao.getLogsForDateOnce(date)
 
@@ -154,6 +166,7 @@ class IntakeRepository @Inject constructor(
             if (existingLog?.status == IntakeStatus.TAKEN) {
                 stockConsumptionRepository.reverseConsumption(existingLog.id)
             }
+            snoozedOccurrenceDao.delete(scheduledIntakeId, intakeTimeId, occurrenceDate)
 
             val now = Instant.now()
             val logId = intakeLogDao.upsertLog(

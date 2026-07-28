@@ -154,6 +154,7 @@
 
     <string name="status_upcoming">Предстоит</string>
     <string name="status_overdue">Просрочено</string>
+    <string name="status_postponed">Отложено</string>
     <string name="status_taken">Принято</string>
     <string name="status_skipped">Пропущено</string>
     <string name="status_missed">Пропущено без записи</string>

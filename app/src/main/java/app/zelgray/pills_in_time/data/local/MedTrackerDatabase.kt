@@ -11,6 +11,7 @@ import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
 import app.zelgray.pills_in_time.data.local.dao.PatientDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduledAlarmDao
+import app.zelgray.pills_in_time.data.local.dao.SnoozedOccurrenceDao
 import app.zelgray.pills_in_time.data.local.dao.StockBatchDao
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
@@ -20,6 +21,7 @@ import app.zelgray.pills_in_time.data.local.entity.IntakeTime
 import app.zelgray.pills_in_time.data.local.entity.Patient
 import app.zelgray.pills_in_time.data.local.entity.ScheduledAlarm
 import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
+import app.zelgray.pills_in_time.data.local.entity.SnoozedOccurrence
 
 @Database(
     entities = [
@@ -31,8 +33,9 @@ import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
         IntakeLog::class,
         ScheduledAlarm::class,
         IntakeLogConsumption::class,
+        SnoozedOccurrence::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -45,6 +48,7 @@ abstract class MedTrackerDatabase : RoomDatabase() {
     abstract fun intakeLogDao(): IntakeLogDao
     abstract fun scheduledAlarmDao(): ScheduledAlarmDao
     abstract fun intakeLogConsumptionDao(): IntakeLogConsumptionDao
+    abstract fun snoozedOccurrenceDao(): SnoozedOccurrenceDao
 
     companion object {
         const val DATABASE_NAME = "med_tracker.db"

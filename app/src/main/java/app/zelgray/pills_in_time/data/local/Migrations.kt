@@ -173,3 +173,24 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
         db.execSQL("CREATE INDEX IF NOT EXISTS index_drugs_patientId ON drugs(patientId)")
     }
 }
+
+/**
+ * Adds a registry of "Remind later"-snoozed occurrences (snoozing itself never
+ * writes an IntakeLog), so GenerateOccurrencesForDateUseCase can report
+ * OccurrenceStatus.POSTPONED instead of OVERDUE while the snooze is still in effect.
+ */
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS snoozed_occurrences (
+                scheduledIntakeId INTEGER NOT NULL,
+                intakeTimeId INTEGER NOT NULL,
+                occurrenceDate INTEGER NOT NULL,
+                snoozedUntil INTEGER NOT NULL,
+                PRIMARY KEY(scheduledIntakeId, intakeTimeId, occurrenceDate)
+            )
+            """,
+        )
+    }
+}

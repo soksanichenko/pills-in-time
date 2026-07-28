@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -112,11 +113,14 @@ class HomeViewModel @Inject constructor(
         .flatMapLatest { inputs ->
             val today = nowProvider.currentLocalDate()
             val date = today.plusDays(inputs.offset.toLong())
-            intakeRepository.observeLogsForDate(date).map { logs ->
+            combine(
+                intakeRepository.observeLogsForDate(date),
+                intakeRepository.observeSnoozedForDate(date),
+            ) { logs, snoozed ->
                 val now = nowProvider.currentLocalDateTime()
                 val drugsById = inputs.drugs.associateBy { it.id }
                 val batchesByDrugId = inputs.stockBatches.groupBy { it.drugId }
-                val occurrences = generateOccurrences(inputs.periods, logs, date, today, now)
+                val occurrences = generateOccurrences(inputs.periods, logs, date, today, now, snoozed = snoozed)
                 HomeUiState(
                     dayOffset = inputs.offset,
                     date = date,
@@ -216,6 +220,12 @@ class HomeViewModel @Inject constructor(
                 .setInitialDelay(minutes.toLong(), TimeUnit.MINUTES)
                 .build()
             WorkManager.getInstance(context).enqueue(request)
+            intakeRepository.recordSnooze(
+                item.occurrence.scheduledIntakeId,
+                item.occurrence.intakeTimeId,
+                item.occurrence.occurrenceDate,
+                Instant.now().plusSeconds(minutes * 60L),
+            )
         }
     }
 

@@ -44,7 +44,7 @@ import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.Occurrence
-import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
+import app.zelgray.pills_in_time.domain.model.isActionable
 import app.zelgray.pills_in_time.domain.usecase.GenerateOccurrencesForDateUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.notification.NotificationContracts
@@ -108,7 +108,9 @@ class GroupIntakeViewModel @Inject constructor(
         val today = nowProvider.currentLocalDate()
         val now = nowProvider.currentLocalDateTime()
         val logs = intakeRepository.getLogsForDateOnce(occurrenceDate)
-        val occurrences = generateOccurrences(periods, logs, occurrenceDate, today, now).filter { it.timeOfDay == timeOfDay }
+        val snoozed = intakeRepository.getSnoozedForDateOnce(occurrenceDate)
+        val occurrences = generateOccurrences(periods, logs, occurrenceDate, today, now, snoozed = snoozed)
+            .filter { it.timeOfDay == timeOfDay }
 
         val items = occurrences.mapNotNull { occ ->
             val drug = drugsById[occ.drugId] ?: return@mapNotNull null
@@ -118,7 +120,7 @@ class GroupIntakeViewModel @Inject constructor(
                 drug = drug,
                 stockBatches = batches,
                 effectiveStrength = resolveEffectiveStrength(batches),
-                checked = occ.status == OccurrenceStatus.UPCOMING || occ.status == OccurrenceStatus.OVERDUE,
+                checked = occ.status.isActionable,
             )
         }
         _uiState.value = GroupIntakeUiState(timeOfDay = timeOfDay, items = items, isLoading = false)
@@ -141,7 +143,7 @@ class GroupIntakeViewModel @Inject constructor(
     fun onConfirm(onDone: () -> Unit) {
         viewModelScope.launch {
             val actionable = _uiState.value.items.filter {
-                it.checked && (it.occurrence.status == OccurrenceStatus.UPCOMING || it.occurrence.status == OccurrenceStatus.OVERDUE)
+                it.checked && it.occurrence.status.isActionable
             }
             actionable.forEach { item ->
                 intakeRepository.recordQuickAction(
@@ -201,7 +203,7 @@ fun GroupIntakeScreen(
             }
             Button(
                 onClick = { viewModel.onConfirm(onDone) },
-                enabled = state.items.any { it.checked && (it.occurrence.status == OccurrenceStatus.UPCOMING || it.occurrence.status == OccurrenceStatus.OVERDUE) },
+                enabled = state.items.any { it.checked && it.occurrence.status.isActionable },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             ) {
                 Text(stringResource(R.string.action_took_it))
@@ -212,7 +214,7 @@ fun GroupIntakeScreen(
 
 @Composable
 private fun GroupIntakeRow(item: GroupIntakeItem, onToggle: () -> Unit) {
-    val actionable = item.occurrence.status == OccurrenceStatus.UPCOMING || item.occurrence.status == OccurrenceStatus.OVERDUE
+    val actionable = item.occurrence.status.isActionable
     Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),

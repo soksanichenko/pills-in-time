@@ -154,6 +154,7 @@
 
     <string name="status_upcoming">Nadcházející</string>
     <string name="status_overdue">Po termínu</string>
+    <string name="status_postponed">Odloženo</string>
     <string name="status_taken">Užito</string>
     <string name="status_skipped">Vynecháno</string>
     <string name="status_missed">Zmeškáno bez záznamu</string>

@@ -12,6 +12,7 @@ import app.zelgray.pills_in_time.data.local.MIGRATION_5_6
 import app.zelgray.pills_in_time.data.local.MIGRATION_6_7
 import app.zelgray.pills_in_time.data.local.MIGRATION_7_8
 import app.zelgray.pills_in_time.data.local.MIGRATION_8_9
+import app.zelgray.pills_in_time.data.local.MIGRATION_9_10
 import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogConsumptionDao
@@ -20,6 +21,7 @@ import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
 import app.zelgray.pills_in_time.data.local.dao.PatientDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduledAlarmDao
+import app.zelgray.pills_in_time.data.local.dao.SnoozedOccurrenceDao
 import app.zelgray.pills_in_time.data.local.dao.StockBatchDao
 import app.zelgray.pills_in_time.domain.model.PatientColorPalette
 import dagger.Module
@@ -39,7 +41,7 @@ object DatabaseModule {
         Room.databaseBuilder(context, MedTrackerDatabase::class.java, MedTrackerDatabase.DATABASE_NAME)
             .addMigrations(
                 MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-                MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
+                MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
             )
             // A brand-new install skips every Migration above and creates the
             // schema straight from the entities, so it needs its own default
@@ -80,4 +82,8 @@ object DatabaseModule {
     @Provides
     fun provideIntakeLogConsumptionDao(database: MedTrackerDatabase): IntakeLogConsumptionDao =
         database.intakeLogConsumptionDao()
+
+    @Provides
+    fun provideSnoozedOccurrenceDao(database: MedTrackerDatabase): SnoozedOccurrenceDao =
+        database.snoozedOccurrenceDao()
 }

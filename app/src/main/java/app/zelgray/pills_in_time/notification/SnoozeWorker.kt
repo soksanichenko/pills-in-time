@@ -7,9 +7,11 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import app.zelgray.pills_in_time.data.repository.IntakeRepository
 import app.zelgray.pills_in_time.data.repository.SettingsRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
@@ -23,6 +25,7 @@ class SnoozeWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val settingsRepository: SettingsRepository,
+    private val intakeRepository: IntakeRepository,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -37,6 +40,18 @@ class SnoozeWorker @AssistedInject constructor(
             ExistingWorkPolicy.REPLACE,
             request,
         )
+
+        val scheduledIntakeId = inputData.getLong(NotificationContracts.EXTRA_SCHEDULED_INTAKE_ID, -1)
+        val intakeTimeId = inputData.getLong(NotificationContracts.EXTRA_INTAKE_TIME_ID, -1)
+        val occurrenceDateEpochDay = inputData.getLong(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, -1)
+        if (scheduledIntakeId >= 0 && intakeTimeId >= 0 && occurrenceDateEpochDay >= 0) {
+            intakeRepository.recordSnooze(
+                scheduledIntakeId,
+                intakeTimeId,
+                NotificationContracts.occurrenceDateOf(occurrenceDateEpochDay),
+                Instant.now().plusSeconds(snoozeMinutes * 60L),
+            )
+        }
         return Result.success()
     }
 }

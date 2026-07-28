@@ -2,12 +2,15 @@ package app.zelgray.pills_in_time.domain.usecase
 
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
+import app.zelgray.pills_in_time.data.local.entity.SnoozedOccurrence
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.domain.model.Occurrence
 import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import javax.inject.Inject
 
 /**
@@ -29,8 +32,12 @@ class GenerateOccurrencesForDateUseCase @Inject constructor() {
         today: LocalDate,
         now: LocalDateTime,
         graceMinutes: Long = 0,
+        snoozed: List<SnoozedOccurrence> = emptyList(),
     ): List<Occurrence> {
         val logsByKey = existingLogs.associateBy {
+            Triple(it.scheduledIntakeId, it.intakeTimeId, it.occurrenceDate)
+        }
+        val snoozedByKey = snoozed.associateBy {
             Triple(it.scheduledIntakeId, it.intakeTimeId, it.occurrenceDate)
         }
 
@@ -38,7 +45,9 @@ class GenerateOccurrencesForDateUseCase @Inject constructor() {
             .filter { isPeriodActiveOn(it.scheduledIntake, date) }
             .flatMap { periodWithTimes ->
                 periodWithTimes.times.map { time ->
-                    val log = logsByKey[Triple(periodWithTimes.scheduledIntake.id, time.id, date)]
+                    val key = Triple(periodWithTimes.scheduledIntake.id, time.id, date)
+                    val log = logsByKey[key]
+                    val snoozedUntil = snoozedByKey[key]?.snoozedUntil
                     Occurrence(
                         scheduledIntakeId = periodWithTimes.scheduledIntake.id,
                         intakeTimeId = time.id,
@@ -48,7 +57,7 @@ class GenerateOccurrencesForDateUseCase @Inject constructor() {
                         doseValue = log?.actualDoseValue ?: time.doseValue,
                         doseMode = log?.actualDoseMode ?: time.doseMode,
                         doseAllocation = time.doseAllocation,
-                        status = resolveStatus(log, date, today, time.timeOfDay, now, graceMinutes),
+                        status = resolveStatus(log, snoozedUntil, date, today, time.timeOfDay, now, graceMinutes),
                         logId = log?.id,
                     )
                 }
@@ -58,6 +67,7 @@ class GenerateOccurrencesForDateUseCase @Inject constructor() {
 
     private fun resolveStatus(
         log: IntakeLog?,
+        snoozedUntil: Instant?,
         date: LocalDate,
         today: LocalDate,
         timeOfDay: LocalTime,
@@ -66,6 +76,9 @@ class GenerateOccurrencesForDateUseCase @Inject constructor() {
     ): OccurrenceStatus {
         if (log != null) {
             return if (log.status == IntakeStatus.TAKEN) OccurrenceStatus.TAKEN else OccurrenceStatus.SKIPPED
+        }
+        if (snoozedUntil != null && now.isBefore(LocalDateTime.ofInstant(snoozedUntil, ZoneId.systemDefault()))) {
+            return OccurrenceStatus.POSTPONED
         }
         return when {
             date.isAfter(today) -> OccurrenceStatus.UPCOMING

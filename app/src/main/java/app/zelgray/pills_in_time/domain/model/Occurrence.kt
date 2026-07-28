@@ -21,5 +21,13 @@ data class Occurrence(
  * MISSED is a past occurrence with no log — the app never fabricates a "taken"
  * status for it (deviation from the prototype, which auto-marks unlogged past
  * dates as taken; that would be wrong for real medical tracking).
+ *
+ * POSTPONED is a today/overdue occurrence the user explicitly snoozed
+ * ("Remind later") — shown distinctly from OVERDUE until the snooze delay
+ * elapses, since the user already acknowledged it rather than ignoring it.
  */
-enum class OccurrenceStatus { UPCOMING, OVERDUE, TAKEN, SKIPPED, MISSED }
+enum class OccurrenceStatus { UPCOMING, OVERDUE, POSTPONED, TAKEN, SKIPPED, MISSED }
+
+/** Still awaiting a Take/Skip decision — the row's check action and group checklist rely on this. */
+val OccurrenceStatus.isActionable: Boolean
+    get() = this == OccurrenceStatus.UPCOMING || this == OccurrenceStatus.OVERDUE || this == OccurrenceStatus.POSTPONED

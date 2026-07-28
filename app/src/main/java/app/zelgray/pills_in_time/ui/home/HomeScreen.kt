@@ -64,6 +64,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
+import app.zelgray.pills_in_time.domain.model.isActionable
 import app.zelgray.pills_in_time.notification.AlarmPermissions
 import app.zelgray.pills_in_time.notification.OccurrenceRequest
 import app.zelgray.pills_in_time.ui.common.PatientSwitcherAction
@@ -421,7 +422,7 @@ private fun Modifier.swipeDayNavigation(onPrev: () -> Unit, onNext: () -> Unit):
 
 @Composable
 private fun HomeRow(item: HomeListItem, onCheckClick: () -> Unit, onRowClick: () -> Unit) {
-    val canCheck = item.occurrence.status == OccurrenceStatus.UPCOMING || item.occurrence.status == OccurrenceStatus.OVERDUE
+    val canCheck = item.occurrence.status.isActionable
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         onClick = onRowClick,

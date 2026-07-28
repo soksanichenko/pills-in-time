@@ -17,6 +17,7 @@ fun StatusPill(status: OccurrenceStatus) {
     val (labelRes, color) = when (status) {
         OccurrenceStatus.UPCOMING -> R.string.status_upcoming to MaterialTheme.colorScheme.onSurfaceVariant
         OccurrenceStatus.OVERDUE -> R.string.status_overdue to MaterialTheme.colorScheme.error
+        OccurrenceStatus.POSTPONED -> R.string.status_postponed to MaterialTheme.colorScheme.tertiary
         OccurrenceStatus.TAKEN -> R.string.status_taken to Color(0xFF2E7D32)
         OccurrenceStatus.SKIPPED -> R.string.status_skipped to MaterialTheme.colorScheme.error
         OccurrenceStatus.MISSED -> R.string.status_missed to MaterialTheme.colorScheme.onSurfaceVariant

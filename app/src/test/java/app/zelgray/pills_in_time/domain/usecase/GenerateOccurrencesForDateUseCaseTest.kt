@@ -8,6 +8,7 @@ import app.zelgray.pills_in_time.data.local.entity.IntakeSource
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import app.zelgray.pills_in_time.data.local.entity.IntakeTime
 import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
+import app.zelgray.pills_in_time.data.local.entity.SnoozedOccurrence
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
 import org.junit.Assert.assertEquals
@@ -222,6 +223,38 @@ class GenerateOccurrencesForDateUseCaseTest {
         val withGrace = useCase(listOf(p), emptyList(), today, today, now, graceMinutes = 15)
         assertEquals(OccurrenceStatus.OVERDUE, withoutGrace.single().status)
         assertEquals(OccurrenceStatus.UPCOMING, withGrace.single().status)
+    }
+
+    @Test
+    fun `snoozed overdue occurrence is postponed until the snooze delay elapses`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = time()
+        val p = period(start = today, times = listOf(t))
+        val now = LocalDateTime.of(today, LocalTime.of(9, 0))
+        val snoozed = SnoozedOccurrence(
+            scheduledIntakeId = p.scheduledIntake.id,
+            intakeTimeId = t.id,
+            occurrenceDate = today,
+            snoozedUntil = now.plusMinutes(15).atZone(java.time.ZoneId.systemDefault()).toInstant(),
+        )
+        val result = useCase(listOf(p), emptyList(), today, today, now, snoozed = listOf(snoozed))
+        assertEquals(OccurrenceStatus.POSTPONED, result.single().status)
+    }
+
+    @Test
+    fun `postponed occurrence reverts to overdue once the snooze delay elapses`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = time()
+        val p = period(start = today, times = listOf(t))
+        val now = LocalDateTime.of(today, LocalTime.of(9, 0))
+        val snoozed = SnoozedOccurrence(
+            scheduledIntakeId = p.scheduledIntake.id,
+            intakeTimeId = t.id,
+            occurrenceDate = today,
+            snoozedUntil = now.minusMinutes(1).atZone(java.time.ZoneId.systemDefault()).toInstant(),
+        )
+        val result = useCase(listOf(p), emptyList(), today, today, now, snoozed = listOf(snoozed))
+        assertEquals(OccurrenceStatus.OVERDUE, result.single().status)
     }
 
     @Test

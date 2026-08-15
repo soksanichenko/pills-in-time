@@ -194,3 +194,15 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         )
     }
 }
+
+/**
+ * Adds ScheduledIntake.pausedUntilDate — lets a period be paused (a doctor
+ * pausing treatment, side effects, etc.) for N days, N occurrences, or
+ * indefinitely, without touching its start/end dates. Null (the default)
+ * keeps every existing period behaving as before.
+ */
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE scheduled_intakes ADD COLUMN pausedUntilDate INTEGER")
+    }
+}

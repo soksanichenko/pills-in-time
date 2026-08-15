@@ -52,4 +52,10 @@ data class ScheduledIntake(
     // behavior. SET_NULL on delete: removing the pinned batch just falls the
     // period back to unpinned rather than orphaning the reference.
     val pinnedBatchId: Long? = null,
+    // Null: not paused. Otherwise the period is inactive through this date
+    // (inclusive), resuming automatically the day after — set to
+    // INDEFINITE_PAUSE_DATE (domain/usecase/CycleActiveDays.kt) for a manual
+    // pause that only a resume clears. Distinct from stopping a period
+    // (which just moves endDate to today): a pause is expected to end.
+    val pausedUntilDate: LocalDate? = null,
 )

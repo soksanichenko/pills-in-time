@@ -41,16 +41,22 @@ class SnoozeWorker @AssistedInject constructor(
             request,
         )
 
-        val scheduledIntakeId = inputData.getLong(NotificationContracts.EXTRA_SCHEDULED_INTAKE_ID, -1)
-        val intakeTimeId = inputData.getLong(NotificationContracts.EXTRA_INTAKE_TIME_ID, -1)
         val occurrenceDateEpochDay = inputData.getLong(NotificationContracts.EXTRA_OCCURRENCE_DATE_EPOCH_DAY, -1)
-        if (scheduledIntakeId >= 0 && intakeTimeId >= 0 && occurrenceDateEpochDay >= 0) {
-            intakeRepository.recordSnooze(
-                scheduledIntakeId,
-                intakeTimeId,
-                NotificationContracts.occurrenceDateOf(occurrenceDateEpochDay),
-                Instant.now().plusSeconds(snoozeMinutes * 60L),
-            )
+        val snoozedUntil = Instant.now().plusSeconds(snoozeMinutes * 60L)
+        val groupMembers = NotificationContracts.decodeGroupMembers(inputData.getString(NotificationContracts.EXTRA_GROUP_MEMBERS))
+        if (occurrenceDateEpochDay >= 0) {
+            val occurrenceDate = NotificationContracts.occurrenceDateOf(occurrenceDateEpochDay)
+            if (groupMembers.isNotEmpty()) {
+                groupMembers.forEach { member ->
+                    intakeRepository.recordSnooze(member.scheduledIntakeId, member.intakeTimeId, occurrenceDate, snoozedUntil)
+                }
+            } else {
+                val scheduledIntakeId = inputData.getLong(NotificationContracts.EXTRA_SCHEDULED_INTAKE_ID, -1)
+                val intakeTimeId = inputData.getLong(NotificationContracts.EXTRA_INTAKE_TIME_ID, -1)
+                if (scheduledIntakeId >= 0 && intakeTimeId >= 0) {
+                    intakeRepository.recordSnooze(scheduledIntakeId, intakeTimeId, occurrenceDate, snoozedUntil)
+                }
+            }
         }
         return Result.success()
     }

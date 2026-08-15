@@ -31,8 +31,11 @@ class ResolveDoseConsumptionUseCase @Inject constructor(
             // STRENGTH-combo behavior below rather than silently falling
             // back to FIFO across the rest.
             if (pinnedBatchId != null) {
-                val pinned = batches.firstOrNull { it.id == pinnedBatchId } ?: return DoseConsumptionResult.Insufficient
-                if (pinned.quantity + EPSILON < doseValue) return DoseConsumptionResult.Insufficient
+                val pinned = batches.firstOrNull { it.id == pinnedBatchId }
+                    ?: return DoseConsumptionResult.Insufficient()
+                if (pinned.quantity + EPSILON < doseValue) {
+                    return DoseConsumptionResult.Insufficient(setOf(pinned.id))
+                }
                 return DoseConsumptionResult.Resolved(listOf(BatchDecrement(pinned.id, doseValue)))
             }
             return resolveByFifo(doseValue, batches)
@@ -43,7 +46,7 @@ class ResolveDoseConsumptionUseCase @Inject constructor(
         // allocation — fall back to the best-ranked combo available right now.
         val pieces = doseAllocation
             ?: findDoseCombos(batches, doseValue).firstOrNull()?.pieces
-            ?: return DoseConsumptionResult.Insufficient
+            ?: return DoseConsumptionResult.Insufficient()
 
         val decrements = mutableListOf<BatchDecrement>()
         for (piece in pieces) {
@@ -57,7 +60,10 @@ class ResolveDoseConsumptionUseCase @Inject constructor(
                     decrements.add(BatchDecrement(batch.id, take))
                     remaining -= take
                 }
-            if (remaining > EPSILON) return DoseConsumptionResult.Insufficient
+            if (remaining > EPSILON) {
+                val shortBatchIds = batches.filter { it.strengthValue == piece.strength }.map { it.id }.toSet()
+                return DoseConsumptionResult.Insufficient(shortBatchIds)
+            }
         }
         return DoseConsumptionResult.Resolved(decrements)
     }
@@ -74,7 +80,13 @@ class ResolveDoseConsumptionUseCase @Inject constructor(
                 decrements.add(BatchDecrement(batch.id, take))
                 remaining -= take
             }
-        if (remaining > EPSILON) return DoseConsumptionResult.Insufficient
+        if (remaining > EPSILON) {
+            // FIFO across everything on hand still fell short — every batch
+            // that was actually drawn from is implicated, not just the drug's
+            // literal-zero ones (already caught separately by the caller).
+            val shortBatchIds = batches.filter { it.quantity > 0 }.map { it.id }.toSet()
+            return DoseConsumptionResult.Insufficient(shortBatchIds)
+        }
         return DoseConsumptionResult.Resolved(decrements)
     }
 

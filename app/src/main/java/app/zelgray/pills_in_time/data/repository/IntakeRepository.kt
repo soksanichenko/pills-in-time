@@ -200,7 +200,7 @@ class IntakeRepository @Inject constructor(
                     val result = stockConsumptionRepository.resolve(drugId, doseMode, doseValue, allocation, pinnedBatchId)
                 ) {
                     is DoseConsumptionResult.Resolved -> result.decrements
-                    DoseConsumptionResult.Insufficient -> throw InsufficientStockException()
+                    is DoseConsumptionResult.Insufficient -> throw InsufficientStockException()
                 }
                 stockConsumptionRepository.applyResolvedConsumption(logId, decrements)
             }

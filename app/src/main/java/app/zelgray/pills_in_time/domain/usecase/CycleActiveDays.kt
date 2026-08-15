@@ -18,6 +18,8 @@ fun isPeriodActiveOn(period: ScheduledIntake, date: LocalDate): Boolean {
     if (date.isBefore(period.startDate)) return false
     val end = period.endDate
     if (end != null && date.isAfter(end)) return false
+    val pausedUntil = period.pausedUntilDate
+    if (pausedUntil != null && !date.isAfter(pausedUntil)) return false
     return when (period.cycleType) {
         // CUSTOM is a purely descriptive label (spec/prototype parity) —
         // it has no computed effect and behaves like DAILY.
@@ -84,3 +86,30 @@ fun computeEndDateForOccurrences(
 }
 
 private const val OCCURRENCE_SEARCH_HORIZON_DAYS = 3650L
+
+/** Sentinel for ScheduledIntake.pausedUntilDate meaning "paused manually, until resumed" rather than a fixed date. */
+val INDEFINITE_PAUSE_DATE: LocalDate = LocalDate.of(9999, 12, 31)
+
+/**
+ * The last date a "pause for N occurrences" needs to cover to skip exactly
+ * [occurrences] of this period's own upcoming active days, starting from
+ * [from] (inclusive) — counted against the period's cycle/bounds with any
+ * existing pause ignored, so pausing doesn't interact with itself. Returns
+ * null if the period doesn't have that many active days left within the
+ * horizon (e.g. it ends first).
+ */
+fun computePauseUntilDateForOccurrences(period: ScheduledIntake, from: LocalDate, occurrences: Int): LocalDate? {
+    if (occurrences <= 0) return null
+    val unpaused = period.copy(pausedUntilDate = null)
+    var count = 0
+    var date = from
+    val horizon = from.plusDays(OCCURRENCE_SEARCH_HORIZON_DAYS)
+    while (!date.isAfter(horizon)) {
+        if (isPeriodActiveOn(unpaused, date)) {
+            count++
+            if (count == occurrences) return date
+        }
+        date = date.plusDays(1)
+    }
+    return null
+}

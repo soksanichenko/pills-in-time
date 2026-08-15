@@ -43,14 +43,19 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
+import app.zelgray.pills_in_time.data.local.entity.CycleType
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
 import app.zelgray.pills_in_time.domain.model.StockShortfall
+import app.zelgray.pills_in_time.domain.usecase.INDEFINITE_PAUSE_DATE
 import app.zelgray.pills_in_time.domain.usecase.isPeriodActiveOn
+import app.zelgray.pills_in_time.ui.common.ChipOption
+import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
+import app.zelgray.pills_in_time.ui.common.localizedDate
 import app.zelgray.pills_in_time.ui.common.pluralUnitText
 import app.zelgray.pills_in_time.util.ValidationUtils
 import app.zelgray.pills_in_time.util.formatPlainNumber
@@ -76,6 +81,8 @@ fun DrugDetailScreen(
     var deleteDrugHasDependents by remember { mutableStateOf(false) }
     var stockPendingDelete by remember { mutableStateOf<DrugStockBatch?>(null) }
     var periodPendingDelete by remember { mutableStateOf<ScheduledIntakeWithTimes?>(null) }
+    var periodPendingStop by remember { mutableStateOf<ScheduledIntakeWithTimes?>(null) }
+    var periodPendingPause by remember { mutableStateOf<ScheduledIntakeWithTimes?>(null) }
     var restockBatch by remember { mutableStateOf<DrugStockBatch?>(null) }
     var shortfallToShow by remember { mutableStateOf<StockShortfall?>(null) }
 
@@ -224,6 +231,9 @@ fun DrugDetailScreen(
                             shortfall = state.shortfallByPeriodId[periodWithTimes.scheduledIntake.id],
                             onEdit = { onEditPeriod(drugId, periodWithTimes.scheduledIntake.id) },
                             onDelete = { periodPendingDelete = periodWithTimes },
+                            onStop = { periodPendingStop = periodWithTimes },
+                            onPause = { periodPendingPause = periodWithTimes },
+                            onResume = { viewModel.resumePeriod(periodWithTimes) },
                             onShowShortfall = { shortfallToShow = it },
                         )
                     }
@@ -269,6 +279,42 @@ fun DrugDetailScreen(
                 periodPendingDelete = null
             },
             onDismiss = { periodPendingDelete = null },
+        )
+    }
+
+    periodPendingStop?.let { period ->
+        ConfirmDialog(
+            title = stringResource(R.string.stop_period_title),
+            body = stringResource(R.string.stop_period_body),
+            confirmLabel = stringResource(R.string.stop_period_action),
+            onConfirm = {
+                viewModel.stopPeriod(period)
+                periodPendingStop = null
+            },
+            onDismiss = { periodPendingStop = null },
+        )
+    }
+
+    periodPendingPause?.let { period ->
+        PauseDialog(
+            // Mirrors AddEditPeriodUiState.occurrenceDurationAvailable — for a
+            // daily/custom cycle, "N doses" and "N days" mean the same thing,
+            // so only offer the distinct option where it's actually distinct.
+            occurrenceModeAvailable = period.scheduledIntake.cycleType != CycleType.DAILY &&
+                period.scheduledIntake.cycleType != CycleType.CUSTOM,
+            onConfirmDays = { days ->
+                viewModel.pausePeriodForDays(period, days)
+                periodPendingPause = null
+            },
+            onConfirmOccurrences = { occurrences ->
+                viewModel.pausePeriodForOccurrences(period, occurrences)
+                periodPendingPause = null
+            },
+            onConfirmIndefinite = {
+                viewModel.pausePeriodIndefinitely(period)
+                periodPendingPause = null
+            },
+            onDismiss = { periodPendingPause = null },
         )
     }
 
@@ -352,10 +398,17 @@ private fun PeriodCard(
     shortfall: StockShortfall?,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onStop: () -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
     onShowShortfall: (StockShortfall) -> Unit,
 ) {
     val period = periodWithTimes.scheduledIntake
     val depleted = stockProjection?.stockDepleted == true
+    val today = LocalDate.now()
+    val isPaused = period.pausedUntilDate != null && !today.isAfter(period.pausedUntilDate)
+    // Stopping/pausing a course that's already over doesn't mean anything.
+    val canManage = period.endDate == null || !period.endDate.isBefore(today)
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = if (depleted) {
@@ -371,7 +424,17 @@ private fun PeriodCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(text = periodDateRangeLabel(period), style = MaterialTheme.typography.bodyLarge)
-                if (isPeriodActiveOn(period, LocalDate.now())) {
+                if (isPaused) {
+                    Text(
+                        text = if (period.pausedUntilDate == INDEFINITE_PAUSE_DATE) {
+                            stringResource(R.string.period_paused_indefinitely)
+                        } else {
+                            stringResource(R.string.period_paused_until, localizedDate(period.pausedUntilDate!!))
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else if (isPeriodActiveOn(period, today)) {
                     Text(
                         text = stringResource(R.string.period_active_now),
                         style = MaterialTheme.typography.labelLarge,
@@ -443,6 +506,20 @@ private fun PeriodCard(
                         Icon(Icons.Filled.ShoppingCart, contentDescription = stringResource(R.string.shortfall_action))
                     }
                 }
+                if (isPaused) {
+                    TextButton(onClick = onResume) {
+                        Text(stringResource(R.string.resume_period_action))
+                    }
+                } else if (canManage) {
+                    TextButton(onClick = onPause) {
+                        Text(stringResource(R.string.pause_period_action))
+                    }
+                }
+                if (canManage) {
+                    TextButton(onClick = onStop) {
+                        Text(stringResource(R.string.stop_period_action))
+                    }
+                }
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
                 }
@@ -452,6 +529,73 @@ private fun PeriodCard(
             }
         }
     }
+}
+
+private enum class PauseMode { DAYS, OCCURRENCES, INDEFINITE }
+
+@Composable
+private fun PauseDialog(
+    occurrenceModeAvailable: Boolean,
+    onConfirmDays: (Int) -> Unit,
+    onConfirmOccurrences: (Int) -> Unit,
+    onConfirmIndefinite: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var mode by remember { mutableStateOf(PauseMode.DAYS) }
+    var countText by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.pause_period_title)) },
+        text = {
+            Column {
+                ChipSelector(
+                    options = listOfNotNull(
+                        ChipOption(PauseMode.DAYS, stringResource(R.string.pause_mode_days)),
+                        if (occurrenceModeAvailable) {
+                            ChipOption(PauseMode.OCCURRENCES, stringResource(R.string.pause_mode_occurrences))
+                        } else {
+                            null
+                        },
+                        ChipOption(PauseMode.INDEFINITE, stringResource(R.string.pause_mode_indefinite)),
+                    ),
+                    selected = mode,
+                    onSelect = { mode = it; error = false },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (mode != PauseMode.INDEFINITE) {
+                    OutlinedTextField(
+                        value = countText,
+                        onValueChange = { countText = it; error = false },
+                        label = {
+                            Text(
+                                stringResource(
+                                    if (mode == PauseMode.DAYS) R.string.pause_days_label else R.string.pause_occurrences_label,
+                                ),
+                            )
+                        },
+                        isError = error,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                when (mode) {
+                    PauseMode.INDEFINITE -> onConfirmIndefinite()
+                    PauseMode.DAYS -> countText.toIntOrNull()?.takeIf { it > 0 }?.let(onConfirmDays) ?: run { error = true }
+                    PauseMode.OCCURRENCES -> countText.toIntOrNull()?.takeIf { it > 0 }?.let(onConfirmOccurrences) ?: run { error = true }
+                }
+            }) { Text(stringResource(R.string.pause_period_action)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @Composable

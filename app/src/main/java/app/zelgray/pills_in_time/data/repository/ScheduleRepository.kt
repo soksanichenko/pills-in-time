@@ -166,4 +166,24 @@ class ScheduleRepository @Inject constructor(
         scheduleDao.delete(period)
         DailyRescheduleWorker.enqueueNow(context)
     }
+
+    /** Ends the period as of [stopDate] — same effect as editing its end date, just one tap. */
+    suspend fun stopPeriod(scheduleId: Long, stopDate: LocalDate) {
+        val existing = scheduleDao.getById(scheduleId) ?: return
+        scheduleDao.update(existing.copy(endMode = EndMode.DATE, endDate = stopDate))
+        DailyRescheduleWorker.enqueueNow(context)
+    }
+
+    /** Pauses the period through [pausedUntilDate] (inclusive) — see ScheduledIntake.pausedUntilDate. */
+    suspend fun pausePeriod(scheduleId: Long, pausedUntilDate: LocalDate) {
+        val existing = scheduleDao.getById(scheduleId) ?: return
+        scheduleDao.update(existing.copy(pausedUntilDate = pausedUntilDate))
+        DailyRescheduleWorker.enqueueNow(context)
+    }
+
+    suspend fun resumePeriod(scheduleId: Long) {
+        val existing = scheduleDao.getById(scheduleId) ?: return
+        scheduleDao.update(existing.copy(pausedUntilDate = null))
+        DailyRescheduleWorker.enqueueNow(context)
+    }
 }

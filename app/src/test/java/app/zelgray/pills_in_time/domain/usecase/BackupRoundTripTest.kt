@@ -294,6 +294,38 @@ class BackupRoundTripTest {
     }
 
     @Test
+    fun `pausedUntilDate survives round trip`() {
+        val period = ScheduledIntake(
+            id = 8,
+            drugId = 1,
+            startDate = LocalDate.of(2026, 1, 1),
+            endMode = EndMode.NONE,
+            endDate = null,
+            durationDays = null,
+            cycleType = CycleType.DAILY,
+            specificDays = null,
+            customCycleText = null,
+            createdAt = Instant.EPOCH,
+            pausedUntilDate = LocalDate.of(2026, 1, 10),
+        )
+        val payload = exportUseCase(
+            patients = emptyList(),
+            drugs = emptyList(),
+            stockBatches = emptyList(),
+            scheduledIntakes = listOf(period),
+            intakeTimes = emptyList(),
+            intakeLogs = emptyList(),
+            exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
+        )
+        val jsonText = json.encodeToString(payload)
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
+        val imported = importUseCase(decoded)
+
+        assertEquals(period, imported.scheduledIntakes.single())
+    }
+
+    @Test
     fun `backup JSON from before snoozeMinutes existed still decodes, with it null`() {
         val legacyJson = """
             {

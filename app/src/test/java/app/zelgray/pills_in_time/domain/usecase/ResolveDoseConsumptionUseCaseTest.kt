@@ -81,7 +81,7 @@ class ResolveDoseConsumptionUseCaseTest {
             doseAllocation = listOf(DoseComboPiece(strength = 50.0, count = 2.0)),
             batches = batches,
         )
-        assertEquals(DoseConsumptionResult.Insufficient, result)
+        assertEquals(DoseConsumptionResult.Insufficient(setOf(1L)), result)
     }
 
     @Test
@@ -100,7 +100,7 @@ class ResolveDoseConsumptionUseCaseTest {
     @Test
     fun `null allocation with no batches on hand is Insufficient`() {
         val result = useCase(DoseMode.STRENGTH, doseValue = 40.0, doseAllocation = null, batches = emptyList())
-        assertEquals(DoseConsumptionResult.Insufficient, result)
+        assertEquals(DoseConsumptionResult.Insufficient(), result)
     }
 
     @Test
@@ -122,13 +122,13 @@ class ResolveDoseConsumptionUseCaseTest {
     fun `UNITS mode insufficient total quantity is reported as Insufficient`() {
         val batches = listOf(batch(id = 1, strength = 50.0, quantity = 1.0, addedAt = Instant.EPOCH))
         val result = useCase(DoseMode.UNITS, doseValue = 2.0, doseAllocation = null, batches = batches)
-        assertEquals(DoseConsumptionResult.Insufficient, result)
+        assertEquals(DoseConsumptionResult.Insufficient(setOf(1L)), result)
     }
 
     @Test
     fun `batches with zero quantity are skipped`() {
         val depleted = batch(id = 1, strength = 50.0, quantity = 0.0, addedAt = Instant.EPOCH)
         val result = useCase(DoseMode.UNITS, doseValue = 1.0, doseAllocation = null, batches = listOf(depleted))
-        assertEquals(DoseConsumptionResult.Insufficient, result)
+        assertEquals(DoseConsumptionResult.Insufficient(), result)
     }
 }

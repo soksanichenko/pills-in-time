@@ -111,6 +111,12 @@ class PostNotificationWorker @AssistedInject constructor(
             if (AlarmPermissions.canUseFullScreenIntent(applicationContext)) {
                 builder.setFullScreenIntent(alarmRingPendingIntent(notificationId, drugId, scheduledIntakeId, intakeTimeId, occurrenceDateEpochDay, timeOfDaySecond, doseValue, doseMode), true)
             }
+            // This id may already carry an earlier, non-alarm post (e.g. the
+            // "ring like an alarm" toggle got turned on for a time that was
+            // already reminding) — updating that notification in place doesn't
+            // reliably re-trigger the full-screen intent or alarm sound on
+            // every OEM, so cancel it first to force a genuinely fresh post.
+            NotificationManagerCompat.from(applicationContext).cancel(notificationId)
         }
 
         NotificationManagerCompat.from(applicationContext).notify(notificationId, builder.build())
@@ -163,13 +169,16 @@ class PostNotificationWorker @AssistedInject constructor(
         val takeIntent = groupActionIntent(NotificationContracts.ACTION_TAKE, groupNotificationId, occurrenceDateEpochDay, encodedMembers)
         val skipIntent = groupActionIntent(NotificationContracts.ACTION_SKIP, groupNotificationId, occurrenceDateEpochDay, encodedMembers)
         // Snooze re-enqueues PostNotificationWorker (see SnoozeWorker), which recomputes
-        // the whole group fresh from whichever single member's data seeds it — unlike
-        // Take/Skip it doesn't need the full encoded member list.
+        // the whole group fresh from whichever single member's data seeds it — but it
+        // still needs the full encoded member list to record a snooze for every member,
+        // not just the seed.
         val seed = members.first()
         val snoozeIntent = actionIntent(
             NotificationContracts.ACTION_SNOOZE, groupNotificationId, seed.drugId, seed.scheduledIntakeId,
             seed.intakeTimeId, occurrenceDateEpochDay, timeOfDay.toSecondOfDay(), seed.doseValue, seed.doseMode,
-        )
+        ).apply {
+            putExtra(NotificationContracts.EXTRA_GROUP_MEMBERS, encodedMembers)
+        }
 
         val builder = NotificationCompat.Builder(applicationContext, NotificationChannels.MEDICATION_REMINDERS)
             .setSmallIcon(R.drawable.ic_notification)

@@ -89,7 +89,14 @@ class ProjectDrugStockUseCase @Inject constructor(
                         )
                     ) {
                         is DoseConsumptionResult.Resolved -> working = applyDecrements(working, result.decrements)
-                        DoseConsumptionResult.Insufficient -> if (runOutDate == null) runOutDate = date
+                        is DoseConsumptionResult.Insufficient -> {
+                            if (runOutDate == null) runOutDate = date
+                            // The implicated batch(es) may never actually reach literal
+                            // zero (an atomic dose that can't fully resolve consumes
+                            // nothing, so they get stuck just above it) — mark them
+                            // exhausted here too, not only via the quantity<=0 check below.
+                            result.shortBatchIds.forEach { id -> batchExhaustionDates.putIfAbsent(id, date) }
+                        }
                     }
                 }
             }

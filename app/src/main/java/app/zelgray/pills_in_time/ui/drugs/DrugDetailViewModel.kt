@@ -15,6 +15,8 @@ import app.zelgray.pills_in_time.domain.model.StockShortfall
 import app.zelgray.pills_in_time.domain.usecase.ComputeStockShortfallUseCase
 import app.zelgray.pills_in_time.domain.usecase.ProjectDrugStockUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
+import app.zelgray.pills_in_time.domain.usecase.INDEFINITE_PAUSE_DATE
+import app.zelgray.pills_in_time.domain.usecase.computePauseUntilDateForOccurrences
 import app.zelgray.pills_in_time.ui.navigation.NavRoutes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -109,5 +111,36 @@ class DrugDetailViewModel @Inject constructor(
 
     fun deletePeriod(periodWithTimes: ScheduledIntakeWithTimes) {
         viewModelScope.launch { scheduleRepository.deletePeriod(periodWithTimes.scheduledIntake) }
+    }
+
+    fun stopPeriod(periodWithTimes: ScheduledIntakeWithTimes) {
+        viewModelScope.launch {
+            scheduleRepository.stopPeriod(periodWithTimes.scheduledIntake.id, LocalDate.now())
+        }
+    }
+
+    fun pausePeriodForDays(periodWithTimes: ScheduledIntakeWithTimes, days: Int) {
+        val today = LocalDate.now()
+        viewModelScope.launch {
+            scheduleRepository.pausePeriod(periodWithTimes.scheduledIntake.id, today.plusDays((days - 1).toLong()))
+        }
+    }
+
+    fun pausePeriodForOccurrences(periodWithTimes: ScheduledIntakeWithTimes, occurrences: Int) {
+        val today = LocalDate.now()
+        val until = computePauseUntilDateForOccurrences(periodWithTimes.scheduledIntake, today, occurrences)
+            ?: periodWithTimes.scheduledIntake.endDate
+            ?: INDEFINITE_PAUSE_DATE
+        viewModelScope.launch { scheduleRepository.pausePeriod(periodWithTimes.scheduledIntake.id, until) }
+    }
+
+    fun pausePeriodIndefinitely(periodWithTimes: ScheduledIntakeWithTimes) {
+        viewModelScope.launch {
+            scheduleRepository.pausePeriod(periodWithTimes.scheduledIntake.id, INDEFINITE_PAUSE_DATE)
+        }
+    }
+
+    fun resumePeriod(periodWithTimes: ScheduledIntakeWithTimes) {
+        viewModelScope.launch { scheduleRepository.resumePeriod(periodWithTimes.scheduledIntake.id) }
     }
 }

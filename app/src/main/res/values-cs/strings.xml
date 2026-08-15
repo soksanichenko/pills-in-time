@@ -84,9 +84,24 @@
     <string name="periods_empty">Zatím žádná období.</string>
     <string name="period_active_now">Aktivní nyní</string>
     <string name="period_ongoing_from">%1$s – pokračuje</string>
+    <string name="period_paused_until">Pozastaveno do %1$s</string>
+    <string name="period_paused_indefinitely">Pozastaveno</string>
 
     <string name="delete_period_title">Smazat období?</string>
     <string name="delete_period_body">Toto období a jeho časy užívání budou trvale smazány.</string>
+
+    <string name="stop_period_action">Ukončit</string>
+    <string name="stop_period_title">Ukončit tento kurz?</string>
+    <string name="stop_period_body">Kurz skončí dnešním dnem.</string>
+
+    <string name="pause_period_action">Pozastavit</string>
+    <string name="resume_period_action">Obnovit</string>
+    <string name="pause_period_title">Pozastavit tento kurz</string>
+    <string name="pause_mode_days">Dny</string>
+    <string name="pause_mode_occurrences">Dávky</string>
+    <string name="pause_mode_indefinite">Dokud sám neobnovím</string>
+    <string name="pause_days_label">Počet dní</string>
+    <string name="pause_occurrences_label">Počet dávek</string>
 
     <string name="add_period_title">Přidat období</string>
     <string name="edit_period_title">Upravit období</string>

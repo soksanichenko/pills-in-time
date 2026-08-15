@@ -1,0 +1,4 @@
+Fixed: "Remind later" on a merged reminder now postpones every drug in it, not just the first.
+Fixed: alarm-style reminders now reliably ring when turned on for a course that's already in progress.
+Fixed: stock shortfall warnings now correctly flag supplies that get stuck just above zero instead of reading as sufficient.
+New: Stop or Pause a course from its detail card — pause for N days, N doses, or until you resume it.

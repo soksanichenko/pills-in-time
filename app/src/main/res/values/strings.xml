@@ -84,9 +84,24 @@
     <string name="periods_empty">No periods yet.</string>
     <string name="period_active_now">Active now</string>
     <string name="period_ongoing_from">%1$s – ongoing</string>
+    <string name="period_paused_until">Paused until %1$s</string>
+    <string name="period_paused_indefinitely">Paused</string>
 
     <string name="delete_period_title">Delete period?</string>
     <string name="delete_period_body">This will permanently delete this period and its times.</string>
+
+    <string name="stop_period_action">Stop</string>
+    <string name="stop_period_title">Stop this course?</string>
+    <string name="stop_period_body">Ends the course as of today.</string>
+
+    <string name="pause_period_action">Pause</string>
+    <string name="resume_period_action">Resume</string>
+    <string name="pause_period_title">Pause this course</string>
+    <string name="pause_mode_days">Days</string>
+    <string name="pause_mode_occurrences">Doses</string>
+    <string name="pause_mode_indefinite">Until I resume</string>
+    <string name="pause_days_label">Number of days</string>
+    <string name="pause_occurrences_label">Number of doses</string>
 
     <string name="add_period_title">Add period</string>
     <string name="edit_period_title">Edit period</string>

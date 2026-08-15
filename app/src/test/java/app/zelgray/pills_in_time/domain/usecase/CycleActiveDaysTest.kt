@@ -1,13 +1,60 @@
 package app.zelgray.pills_in_time.domain.usecase
 
 import app.zelgray.pills_in_time.data.local.entity.CycleType
+import app.zelgray.pills_in_time.data.local.entity.EndMode
+import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 
 class CycleActiveDaysTest {
+
+    private fun dailyPeriod(start: LocalDate, pausedUntilDate: LocalDate? = null) = ScheduledIntake(
+        id = 1,
+        drugId = 1,
+        startDate = start,
+        endMode = EndMode.NONE,
+        endDate = null,
+        durationDays = null,
+        cycleType = CycleType.DAILY,
+        specificDays = null,
+        customCycleText = null,
+        createdAt = Instant.EPOCH,
+        pausedUntilDate = pausedUntilDate,
+    )
+
+    @Test
+    fun `a period is inactive through its pausedUntilDate, inclusive, and resumes the day after`() {
+        val start = LocalDate.of(2026, 8, 1)
+        val period = dailyPeriod(start, pausedUntilDate = LocalDate.of(2026, 8, 10))
+
+        assertFalse(isPeriodActiveOn(period, LocalDate.of(2026, 8, 10)))
+        assertTrue(isPeriodActiveOn(period, LocalDate.of(2026, 8, 11)))
+    }
+
+    @Test
+    fun `an indefinite pause stays inactive far into the future`() {
+        val start = LocalDate.of(2026, 8, 1)
+        val period = dailyPeriod(start, pausedUntilDate = INDEFINITE_PAUSE_DATE)
+
+        assertFalse(isPeriodActiveOn(period, start.plusYears(5)))
+    }
+
+    @Test
+    fun `pause-for-N-occurrences skips exactly N of the period's own active days`() {
+        val start = LocalDate.of(2026, 8, 1)
+        val period = dailyPeriod(start)
+        val from = LocalDate.of(2026, 8, 5)
+
+        val until = computePauseUntilDateForOccurrences(period, from, occurrences = 3)
+
+        assertEquals(from.plusDays(2), until)
+    }
 
     @Test
     fun `daily cycle - N occurrences is N calendar days later`() {

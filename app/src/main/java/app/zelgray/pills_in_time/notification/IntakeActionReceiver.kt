@@ -29,7 +29,7 @@ class IntakeActionReceiver : BroadcastReceiver() {
         when (intent.action) {
             NotificationContracts.ACTION_TAKE -> handleLogAction(context, intent, encodedMembers, IntakeStatus.TAKEN)
             NotificationContracts.ACTION_SKIP -> handleLogAction(context, intent, encodedMembers, IntakeStatus.SKIPPED)
-            NotificationContracts.ACTION_SNOOZE -> enqueueSnooze(context, NotificationContracts.dataFromIntent(intent))
+            NotificationContracts.ACTION_SNOOZE -> enqueueSnooze(context, NotificationContracts.dataFromIntent(intent), encodedMembers)
         }
     }
 
@@ -64,8 +64,12 @@ class IntakeActionReceiver : BroadcastReceiver() {
         WorkManager.getInstance(context).enqueue(request)
     }
 
-    private fun enqueueSnooze(context: Context, baseData: Data) {
-        val request = OneTimeWorkRequestBuilder<SnoozeWorker>().setInputData(baseData).build()
+    private fun enqueueSnooze(context: Context, baseData: Data, encodedMembers: String?) {
+        val data = Data.Builder()
+            .putAll(baseData)
+            .putString(NotificationContracts.EXTRA_GROUP_MEMBERS, encodedMembers ?: "")
+            .build()
+        val request = OneTimeWorkRequestBuilder<SnoozeWorker>().setInputData(data).build()
         WorkManager.getInstance(context).enqueue(request)
     }
 }

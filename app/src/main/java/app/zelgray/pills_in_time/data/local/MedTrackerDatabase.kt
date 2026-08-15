@@ -35,7 +35,7 @@ import app.zelgray.pills_in_time.data.local.entity.SnoozedOccurrence
         IntakeLogConsumption::class,
         SnoozedOccurrence::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

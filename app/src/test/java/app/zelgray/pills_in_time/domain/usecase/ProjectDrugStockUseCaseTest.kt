@@ -219,4 +219,19 @@ class ProjectDrugStockUseCaseTest {
 
         assertTrue(result.periodProjections.getValue(1L).stockDepleted)
     }
+
+    @Test
+    fun `a batch stuck insufficient above zero is still reported as exhausted`() {
+        // 3/day from 10 on hand: 10->7->4->1, then day3 needs 3 but only 1 is
+        // left -> insufficient, so it consumes nothing and stays stuck at 1
+        // forever. The batch never reaches literal zero, but it's genuinely
+        // unable to cover the remaining course, so it must still show up in
+        // batchExhaustionDates rather than reading as "sufficient".
+        val today = LocalDate.of(2026, 7, 17)
+        val end = today.plusDays(9)
+        val p = period(start = today, end = end, times = listOf(unitsTime(dose = 3.0)))
+        val result = useCase(listOf(p), batches = listOf(batch(id = 1, quantity = 10.0)), today = today)
+
+        assertEquals(today.plusDays(3), result.batchExhaustionDates[1L])
+    }
 }

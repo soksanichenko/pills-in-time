@@ -84,9 +84,24 @@
     <string name="periods_empty">Ще немає періодів.</string>
     <string name="period_active_now">Активний зараз</string>
     <string name="period_ongoing_from">%1$s — триває</string>
+    <string name="period_paused_until">На паузі до %1$s</string>
+    <string name="period_paused_indefinitely">На паузі</string>
 
     <string name="delete_period_title">Видалити період?</string>
     <string name="delete_period_body">Цей період і його часи прийому будуть видалені назавжди.</string>
+
+    <string name="stop_period_action">Припинити</string>
+    <string name="stop_period_title">Припинити цей курс?</string>
+    <string name="stop_period_body">Курс завершиться сьогоднішнім днем.</string>
+
+    <string name="pause_period_action">Пауза</string>
+    <string name="resume_period_action">Відновити</string>
+    <string name="pause_period_title">Поставити курс на паузу</string>
+    <string name="pause_mode_days">Дні</string>
+    <string name="pause_mode_occurrences">Прийоми</string>
+    <string name="pause_mode_indefinite">Поки не відновлю сам</string>
+    <string name="pause_days_label">Кількість днів</string>
+    <string name="pause_occurrences_label">Кількість прийомів</string>
 
     <string name="add_period_title">Додати період</string>
     <string name="edit_period_title">Редагувати період</string>

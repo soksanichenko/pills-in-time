@@ -234,4 +234,30 @@ class ProjectDrugStockUseCaseTest {
 
         assertEquals(today.plusDays(3), result.batchExhaustionDates[1L])
     }
+
+    @Test
+    fun `atStart and atEnd break down per batch when the period isn't pinned`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val end = today.plusDays(6) // 7 days
+        val p = period(start = today, end = end, times = listOf(strengthTime(doseMg = 16.0)))
+        val batch4mg = batch(id = 1, quantity = 16.5, strength = 4.0)
+        val batch16mg = batch(id = 2, quantity = 7.0, strength = 16.0)
+        val result = useCase(listOf(p), batches = listOf(batch4mg, batch16mg), today = today)
+
+        val proj = result.periodProjections.getValue(1L)
+        assertEquals(16.5, proj.atStartByBatch[1L]!!, 0.001)
+        assertEquals(7.0, proj.atStartByBatch[2L]!!, 0.001)
+        // 1x 16mg tablet/day for 7 days -> 16mg batch drained, 4mg untouched.
+        assertEquals(16.5, proj.atEndByBatch!![1L]!!, 0.001)
+        assertEquals(0.0, proj.atEndByBatch!![2L]!!, 0.001)
+    }
+
+    @Test
+    fun `per-batch breakdown is empty for a single-batch drug`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val p = period(start = today, end = today.plusDays(3), times = listOf(unitsTime(dose = 1.0)))
+        val result = useCase(listOf(p), batches = listOf(batch(quantity = 10.0)), today = today)
+
+        assertTrue(result.periodProjections.getValue(1L).atStartByBatch.isEmpty())
+    }
 }

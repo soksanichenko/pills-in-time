@@ -6,6 +6,13 @@ data class PeriodStockProjection(
     val atStart: Double,
     val atEnd: Double?,
     val stockDepleted: Boolean,
+    // Same atStart/atEnd checkpoints, broken down per on-hand batch — a
+    // healthy combined total can still hide one specific strength running
+    // out while another is plentiful. Empty for a single-batch drug (the
+    // combined figure already says everything there is to say) or a period
+    // pinned to one supply (atStart/atEnd already reflect just that one).
+    val atStartByBatch: Map<Long, Double> = emptyMap(),
+    val atEndByBatch: Map<Long, Double>? = null,
 )
 
 sealed interface StockOverallProjection {

@@ -137,3 +137,28 @@ fun periodStockAtStartText(projection: PeriodStockProjection, drug: Drug): Strin
 fun periodStockAtEndText(projection: PeriodStockProjection, drug: Drug): String? = projection.atEnd?.let {
     stringResource(R.string.period_stock_at_end, pluralUnitText(drug.form, drug.customFormText, it))
 }
+
+/**
+ * One line per on-hand batch's own atStart -> atEnd figures for this period —
+ * a healthy combined total (above) can still hide one specific strength
+ * running out while another is plentiful, so this breaks it back out.
+ * Empty when there's nothing to break down (single supply, or a period
+ * pinned to one — see PeriodStockProjection.atStartByBatch).
+ */
+@Composable
+fun periodStockByBatchLines(projection: PeriodStockProjection, batches: List<DrugStockBatch>, drug: Drug): List<String> {
+    if (projection.atStartByBatch.size <= 1) return emptyList()
+    val batchesById = batches.associateBy { it.id }
+    return projection.atStartByBatch.entries
+        .sortedByDescending { (id, _) -> batchesById[id]?.strengthValue ?: Double.MAX_VALUE }
+        .mapNotNull { (id, startQty) ->
+            val batch = batchesById[id] ?: return@mapNotNull null
+            val strengthLabel = batch.strengthValue?.let { value ->
+                batch.strengthUnit?.let { unit -> "${formatPlainNumber(value)} ${strengthUnitAbbreviation(unit)}" }
+            } ?: return@mapNotNull null
+            val startText = pluralUnitText(drug.form, drug.customFormText, startQty)
+            val endQty = projection.atEndByBatch?.get(id)
+            val valueText = if (endQty != null) "$startText → ${pluralUnitText(drug.form, drug.customFormText, endQty)}" else startText
+            "$strengthLabel: $valueText"
+        }
+}

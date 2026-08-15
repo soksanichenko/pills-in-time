@@ -57,6 +57,8 @@ class ProjectDrugStockUseCase @Inject constructor(
         var runOutDate: LocalDate? = null
         val atStart = mutableMapOf<Long, Double>()
         val atEnd = mutableMapOf<Long, Double>()
+        val atStartByBatch = mutableMapOf<Long, Map<Long, Double>>()
+        val atEndByBatch = mutableMapOf<Long, Map<Long, Double>>()
         val batchExhaustionDates = mutableMapOf<Long, LocalDate>()
 
         fun totalRemaining() = working.sumOf { it.quantity }
@@ -73,6 +75,9 @@ class ProjectDrugStockUseCase @Inject constructor(
                 val effectiveStartDate = maxOf(period.scheduledIntake.startDate, today)
                 if (date == effectiveStartDate) {
                     atStart[sid] = remainingFor(period.scheduledIntake.pinnedBatchId)
+                    if (period.scheduledIntake.pinnedBatchId == null && batches.size > 1) {
+                        atStartByBatch[sid] = working.associate { it.id to it.quantity }
+                    }
                 }
             }
 
@@ -112,6 +117,9 @@ class ProjectDrugStockUseCase @Inject constructor(
                 val end = period.scheduledIntake.endDate
                 if (end != null && date == end) {
                     atEnd[sid] = remainingFor(period.scheduledIntake.pinnedBatchId)
+                    if (period.scheduledIntake.pinnedBatchId == null && batches.size > 1) {
+                        atEndByBatch[sid] = working.associate { it.id to it.quantity }
+                    }
                 }
             }
 
@@ -139,6 +147,9 @@ class ProjectDrugStockUseCase @Inject constructor(
                 // but every dose along the way resolved fine) isn't a problem — only an
                 // actual unresolved (Insufficient) dose within the period is.
                 stockDepleted = start <= 0.0 || depletionWithinPeriod,
+                atStartByBatch = atStartByBatch[sid]
+                    ?: (if (pinnedBatchId == null && batches.size > 1) batches.associate { it.id to it.quantity } else emptyMap()),
+                atEndByBatch = atEndByBatch[sid],
             )
         }
 

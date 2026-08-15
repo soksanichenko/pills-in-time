@@ -1,4 +1,1 @@
-Fixed: "Remind later" on a merged reminder now postpones every drug in it, not just the first.
-Fixed: alarm-style reminders now reliably ring when turned on for a course that's already in progress.
-Fixed: stock shortfall warnings now correctly flag supplies that get stuck just above zero instead of reading as sufficient.
-New: Stop or Pause a course from its detail card — pause for N days, N doses, or until you resume it.
+New: a period's stock-at-start/at-end now breaks down by strength (e.g. "4 mg: 16.5 -> 1, 16 mg: 7 -> 0"), so a healthy combined total can no longer hide one specific dosage running low while another is fine.

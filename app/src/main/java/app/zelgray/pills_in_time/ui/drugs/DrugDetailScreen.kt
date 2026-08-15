@@ -487,6 +487,15 @@ private fun PeriodCard(
                 // supply specifically — the drug-wide multi-batch breakdown
                 // would be redundant (and possibly confusing) alongside it.
                 if (pinnedBatch == null) {
+                    // The combined total above can still read as "there's stock"
+                    // while one specific strength is actually running out — break
+                    // it back out per supply so that never hides.
+                    for (line in periodStockByBatchLines(stockProjection, stockBatches, drug)) {
+                        Row(modifier = Modifier.padding(top = 2.dp)) {
+                            Text(text = "•  ", style = MaterialTheme.typography.labelLarge, color = stockTextColor)
+                            Text(text = line, style = MaterialTheme.typography.labelLarge, color = stockTextColor)
+                        }
+                    }
                     perBatchExhaustionText(stockBatches, batchExhaustionDates)?.let { text ->
                         Text(
                             text = text,

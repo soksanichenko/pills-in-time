@@ -1,1 +1,1 @@
-New: a period's stock-at-start/at-end now breaks down by strength (e.g. "4 mg: 16.5 -> 1, 16 mg: 7 -> 0"), so a healthy combined total can no longer hide one specific dosage running low while another is fine.
+Improved: the per-supply stock breakdown on a period card is now a tap-to-view popup (an "i" icon next to Stock at start/end) instead of an always-shown list, keeping the card compact when a drug has multiple supplies.

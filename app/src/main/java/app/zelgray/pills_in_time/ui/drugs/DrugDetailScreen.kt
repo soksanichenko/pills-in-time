@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -85,6 +87,7 @@ fun DrugDetailScreen(
     var periodPendingPause by remember { mutableStateOf<ScheduledIntakeWithTimes?>(null) }
     var restockBatch by remember { mutableStateOf<DrugStockBatch?>(null) }
     var shortfallToShow by remember { mutableStateOf<StockShortfall?>(null) }
+    var stockBreakdownToShow by remember { mutableStateOf<Pair<String, List<String>>?>(null) }
 
     Scaffold(
         topBar = {
@@ -235,6 +238,7 @@ fun DrugDetailScreen(
                             onPause = { periodPendingPause = periodWithTimes },
                             onResume = { viewModel.resumePeriod(periodWithTimes) },
                             onShowShortfall = { shortfallToShow = it },
+                            onShowStockBreakdown = { title, lines -> stockBreakdownToShow = title to lines },
                         )
                     }
                 }
@@ -340,6 +344,23 @@ fun DrugDetailScreen(
             },
         )
     }
+
+    stockBreakdownToShow?.let { (title, lines) ->
+        AlertDialog(
+            onDismissRequest = { stockBreakdownToShow = null },
+            title = { Text(title) },
+            text = {
+                Column {
+                    for (line in lines) {
+                        Text(text = line, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { stockBreakdownToShow = null }) { Text(stringResource(R.string.action_ok)) }
+            },
+        )
+    }
 }
 
 @Composable
@@ -402,6 +423,7 @@ private fun PeriodCard(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onShowShortfall: (StockShortfall) -> Unit,
+    onShowStockBreakdown: (String, List<String>) -> Unit,
 ) {
     val period = periodWithTimes.scheduledIntake
     val depleted = stockProjection?.stockDepleted == true
@@ -470,32 +492,63 @@ private fun PeriodCard(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
-                Text(
-                    text = periodStockAtStartText(stockProjection, drug),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = stockTextColor,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-                periodStockAtEndText(stockProjection, drug)?.let { text ->
+                // A pinned period's atStart/atEnd already reflect that one supply
+                // specifically — the drug-wide multi-batch breakdown would be
+                // redundant (and possibly confusing) alongside it.
+                val startBreakdownLines = if (pinnedBatch == null) {
+                    periodStockAtStartByBatchLines(stockProjection, stockBatches, drug)
+                } else {
+                    emptyList()
+                }
+                val endBreakdownLines = if (pinnedBatch == null) {
+                    periodStockAtEndByBatchLines(stockProjection, stockBatches, drug)
+                } else {
+                    emptyList()
+                }
+                val startDetailsTitle = stringResource(R.string.period_stock_at_start_details_action)
+                val endDetailsTitle = stringResource(R.string.period_stock_at_end_details_action)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                     Text(
-                        text = text,
+                        text = periodStockAtStartText(stockProjection, drug),
                         style = MaterialTheme.typography.labelLarge,
                         color = stockTextColor,
                     )
-                }
-                // A pinned period's atStart/atEnd above already reflect that one
-                // supply specifically — the drug-wide multi-batch breakdown
-                // would be redundant (and possibly confusing) alongside it.
-                if (pinnedBatch == null) {
-                    // The combined total above can still read as "there's stock"
-                    // while one specific strength is actually running out — break
+                    // The combined total can still read as "there's stock" while one
+                    // specific strength is actually running out — this popup breaks
                     // it back out per supply so that never hides.
-                    for (line in periodStockByBatchLines(stockProjection, stockBatches, drug)) {
-                        Row(modifier = Modifier.padding(top = 2.dp)) {
-                            Text(text = "•  ", style = MaterialTheme.typography.labelLarge, color = stockTextColor)
-                            Text(text = line, style = MaterialTheme.typography.labelLarge, color = stockTextColor)
+                    if (startBreakdownLines.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onShowStockBreakdown(startDetailsTitle, startBreakdownLines) },
+                            modifier = Modifier.size(20.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Info,
+                                contentDescription = startDetailsTitle,
+                                tint = stockTextColor,
+                                modifier = Modifier.size(16.dp),
+                            )
                         }
                     }
+                }
+                periodStockAtEndText(stockProjection, drug)?.let { text ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = text, style = MaterialTheme.typography.labelLarge, color = stockTextColor)
+                        if (endBreakdownLines.isNotEmpty()) {
+                            IconButton(
+                                onClick = { onShowStockBreakdown(endDetailsTitle, endBreakdownLines) },
+                                modifier = Modifier.size(20.dp),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Info,
+                                    contentDescription = endDetailsTitle,
+                                    tint = stockTextColor,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+                if (pinnedBatch == null) {
                     perBatchExhaustionText(stockBatches, batchExhaustionDates)?.let { text ->
                         Text(
                             text = text,

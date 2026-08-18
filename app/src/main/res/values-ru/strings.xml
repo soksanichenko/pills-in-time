@@ -155,6 +155,8 @@
     <string name="stock_projection_none">Нет активных или предстоящих периодов</string>
     <string name="period_stock_at_start">Запас в начале: %1$s</string>
     <string name="period_stock_at_end">Запас в конце: %1$s</string>
+    <string name="period_stock_at_start_details_action">Запас в начале по каждому запасу</string>
+    <string name="period_stock_at_end_details_action">Запас в конце по каждому запасу</string>
     <string name="period_pinned_supply">Запас: %1$s</string>
 
     <string name="or_word">или</string>

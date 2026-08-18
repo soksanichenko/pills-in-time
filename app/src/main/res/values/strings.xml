@@ -155,6 +155,8 @@
     <string name="stock_projection_none">No active or upcoming periods</string>
     <string name="period_stock_at_start">Stock at start: %1$s</string>
     <string name="period_stock_at_end">Stock at end: %1$s</string>
+    <string name="period_stock_at_start_details_action">Stock at start by supply</string>
+    <string name="period_stock_at_end_details_action">Stock at end by supply</string>
     <string name="period_pinned_supply">Supply: %1$s</string>
 
     <string name="or_word">or</string>

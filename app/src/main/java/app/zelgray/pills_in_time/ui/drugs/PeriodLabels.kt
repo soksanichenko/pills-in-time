@@ -139,26 +139,31 @@ fun periodStockAtEndText(projection: PeriodStockProjection, drug: Drug): String?
 }
 
 /**
- * One line per on-hand batch's own atStart -> atEnd figures for this period —
- * a healthy combined total (above) can still hide one specific strength
- * running out while another is plentiful, so this breaks it back out.
- * Empty when there's nothing to break down (single supply, or a period
- * pinned to one — see PeriodStockProjection.atStartByBatch).
+ * One line per on-hand batch's own quantity for this period — a healthy
+ * combined total (above) can still hide one specific strength running out
+ * while another is plentiful, so this breaks it back out. Empty when
+ * there's nothing to break down (single supply, or a period pinned to one
+ * — see PeriodStockProjection.atStartByBatch).
  */
 @Composable
-fun periodStockByBatchLines(projection: PeriodStockProjection, batches: List<DrugStockBatch>, drug: Drug): List<String> {
-    if (projection.atStartByBatch.size <= 1) return emptyList()
+private fun stockByBatchLines(byBatch: Map<Long, Double>, batches: List<DrugStockBatch>, drug: Drug): List<String> {
+    if (byBatch.size <= 1) return emptyList()
     val batchesById = batches.associateBy { it.id }
-    return projection.atStartByBatch.entries
+    return byBatch.entries
         .sortedByDescending { (id, _) -> batchesById[id]?.strengthValue ?: Double.MAX_VALUE }
-        .mapNotNull { (id, startQty) ->
+        .mapNotNull { (id, qty) ->
             val batch = batchesById[id] ?: return@mapNotNull null
             val strengthLabel = batch.strengthValue?.let { value ->
                 batch.strengthUnit?.let { unit -> "${formatPlainNumber(value)} ${strengthUnitAbbreviation(unit)}" }
             } ?: return@mapNotNull null
-            val startText = pluralUnitText(drug.form, drug.customFormText, startQty)
-            val endQty = projection.atEndByBatch?.get(id)
-            val valueText = if (endQty != null) "$startText → ${pluralUnitText(drug.form, drug.customFormText, endQty)}" else startText
-            "$strengthLabel: $valueText"
+            "$strengthLabel: ${pluralUnitText(drug.form, drug.customFormText, qty)}"
         }
 }
+
+@Composable
+fun periodStockAtStartByBatchLines(projection: PeriodStockProjection, batches: List<DrugStockBatch>, drug: Drug): List<String> =
+    stockByBatchLines(projection.atStartByBatch, batches, drug)
+
+@Composable
+fun periodStockAtEndByBatchLines(projection: PeriodStockProjection, batches: List<DrugStockBatch>, drug: Drug): List<String> =
+    projection.atEndByBatch?.let { stockByBatchLines(it, batches, drug) } ?: emptyList()

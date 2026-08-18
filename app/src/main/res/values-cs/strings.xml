@@ -155,6 +155,8 @@
     <string name="stock_projection_none">Žádná aktivní ani nadcházející období</string>
     <string name="period_stock_at_start">Zásoba na začátku: %1$s</string>
     <string name="period_stock_at_end">Zásoba na konci: %1$s</string>
+    <string name="period_stock_at_start_details_action">Zásoba na začátku podle jednotlivých zásob</string>
+    <string name="period_stock_at_end_details_action">Zásoba na konci podle jednotlivých zásob</string>
     <string name="period_pinned_supply">Zásoba: %1$s</string>
 
     <string name="or_word">nebo</string>

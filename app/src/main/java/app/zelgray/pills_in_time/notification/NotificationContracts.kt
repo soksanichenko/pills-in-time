@@ -41,6 +41,14 @@ object NotificationContracts {
     const val EXTRA_PATIENT_ID = "extra_patient_id"
     const val EXTRA_GROUP_MEMBERS = "extra_group_members"
     const val EXTRA_KIND = "extra_kind"
+    // True only for a COUNT_PER_DAY session's running-count notification —
+    // tells IntakeActionReceiver to leave it up (just updated in place)
+    // instead of the usual cancel-on-Take/Skip.
+    const val EXTRA_KEEP_NOTIFICATION = "extra_keep_notification"
+    // Which session dose (1-based) a PostSessionStatusWorker invocation is
+    // for — present only on its own 5-minute repost re-invocations, absent
+    // on the original alarm-triggered tick (see PostSessionStatusWorker).
+    const val EXTRA_SESSION_SEQ = "extra_session_seq"
 
     fun dataFromSpec(spec: AlarmSpec): Data = Data.Builder()
         .putLong(EXTRA_DRUG_ID, spec.drugId)

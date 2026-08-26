@@ -11,7 +11,9 @@ object NotificationChannels {
     const val MEDICATION_REMINDERS = "medication_reminders"
     const val MEDICATION_REMINDERS_ALARM = "medication_reminders_alarm"
     const val LOW_STOCK_REMINDERS = "low_stock_reminders"
-    const val SESSION_REMINDERS = "session_reminders"
+    const val SESSION_START_PROMPT = "session_start_prompt"
+    const val SESSION_INTERVAL_REMINDERS = "session_interval_reminders"
+    const val SESSION_COUNT_REMINDERS = "session_count_reminders"
 
     fun ensureCreated(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -55,16 +57,35 @@ object NotificationChannels {
                 description = context.getString(R.string.notification_low_stock_channel_description)
             },
         )
-        // Kept separate from MEDICATION_REMINDERS so an hourly/count-per-day
-        // session (which can alert far more often in a day) can be muted on
-        // its own without silencing regular dose reminders.
+        // Three separate channels (instead of one) so each can be muted
+        // independently — a "start your day?" prompt, an hourly dose
+        // reminder, and a running "N of M today" count behave very
+        // differently and a user may want only some of them.
         manager.createNotificationChannel(
             NotificationChannel(
-                SESSION_REMINDERS,
-                context.getString(R.string.notification_channel_session_name),
+                SESSION_START_PROMPT,
+                context.getString(R.string.notification_channel_session_start_name),
                 NotificationManager.IMPORTANCE_HIGH,
             ).apply {
-                description = context.getString(R.string.notification_channel_session_description)
+                description = context.getString(R.string.notification_channel_session_start_description)
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                SESSION_INTERVAL_REMINDERS,
+                context.getString(R.string.notification_channel_session_interval_name),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = context.getString(R.string.notification_channel_session_interval_description)
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(
+                SESSION_COUNT_REMINDERS,
+                context.getString(R.string.notification_channel_session_count_name),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = context.getString(R.string.notification_channel_session_count_description)
             },
         )
     }

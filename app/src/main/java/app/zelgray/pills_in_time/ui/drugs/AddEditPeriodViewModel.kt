@@ -135,8 +135,9 @@ data class AddEditPeriodUiState(
     val pinnedSupplyAvailable: Boolean get() = stockBatches.size > 1 && times.any { it.doseMode == DoseMode.UNITS }
 
     // Simplification: at most one session-type row per period (a second one
-    // would be a confusing UX this app doesn't ask for).
-    val canAddSessionRow: Boolean get() = times.none { it.isSessionRow }
+    // would be a confusing UX this app doesn't ask for) — drives which rows'
+    // "Session-based" toggle option stays enabled.
+    fun canSetSessionMode(rowKey: Long): Boolean = times.none { it.isSessionRow && it.rowKey != rowKey }
 }
 
 @HiltViewModel
@@ -301,12 +302,15 @@ class AddEditPeriodViewModel @Inject constructor(
         _uiState.update { it.copy(times = it.times.filterNot { row -> row.rowKey == rowKey }) }
     }
 
-    /** Adds a session-type row (see IntakeTime.isSession) — at most one per period, see canAddSessionRow. */
-    fun onAddSessionTimeRow() {
-        val state = _uiState.value
-        if (!state.canAddSessionRow) return
-        val newRow = TimeRowState(rowKey = rowKeySeq++, timeOfDay = LocalTime.MIDNIGHT, isSessionRow = true)
-        _uiState.update { it.copy(times = it.times + newRow, timesError = false) }
+    /** Switches a row (new or already-added) between fixed-clock and session-based (see IntakeTime.isSession) — at most one session row per period. */
+    fun onSetRowSessionMode(rowKey: Long, isSession: Boolean) {
+        _uiState.update { state ->
+            if (isSession && !state.canSetSessionMode(rowKey)) return@update state
+            state.copy(
+                times = state.times.map { if (it.rowKey == rowKey) it.copy(isSessionRow = isSession) else it },
+                timesError = false,
+            )
+        }
     }
 
     fun onSessionDayStartFromChange(rowKey: Long, time: LocalTime) {

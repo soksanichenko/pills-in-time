@@ -144,13 +144,13 @@
     <string name="new_time_label">Nový čas</string>
     <string name="add_time_action">Přidat</string>
 
+    <string name="fixed_time_mode_label">Pevný čas</string>
     <string name="session_row_title">Relační dávkování</string>
     <string name="session_day_start_from_label">Ptát se od</string>
     <string name="session_cadence_hourly_label">Každých N hodin</string>
     <string name="session_cadence_count_label">N krát denně</string>
     <string name="session_interval_hours_label">Interval (hodiny)</string>
     <string name="session_times_per_day_label">Krát denně</string>
-    <string name="add_session_time_action">Přidat relační dávkování</string>
 
     <string name="period_cycle_label">Cyklus</string>
     <string name="cycle_daily">Denně</string>
@@ -211,15 +211,16 @@
     <string name="notification_low_stock_channel_name">Připomenutí o zásobě</string>
     <string name="notification_low_stock_channel_description">Upozornění, když zásoba brzy dojde</string>
 
-    <string name="notification_channel_session_name">Relační připomenutí</string>
-    <string name="notification_channel_session_description">Připomenutí každou hodinu nebo N krát denně — od začátku dne do spánku</string>
+    <string name="notification_channel_session_start_name">Výzvy k zahájení dne</string>
+    <string name="notification_channel_session_start_description">Vyzve k zahájení dne pro období s hodinovými nebo N-krát-denně připomenutími</string>
+    <string name="notification_channel_session_interval_name">Intervalová připomenutí</string>
+    <string name="notification_channel_session_interval_description">Připomenutí každou hodinu (nebo každých N hodin) během aktivní relace</string>
+    <string name="notification_channel_session_count_name">Připomenutí N krát denně</string>
+    <string name="notification_channel_session_count_description">Průběžný stav "N z M dnes" pro období s dávkováním N krát denně</string>
     <string name="session_start_prompt_title">Začít den?</string>
     <string name="session_start_prompt_text">%1$s — klepnutím spustíte hodinová připomenutí</string>
     <string name="action_start_day">Den zahájen</string>
     <string name="action_end_day">Jdu spát</string>
-    <string name="session_hourly_status_title">%1$s — relace aktivní</string>
-    <string name="session_hourly_next_dose">Další dávka ~%1$s</string>
-    <string name="session_hourly_dose_due">Dávka je splatná</string>
     <string name="session_count_status_title">%1$s — %2$d z %3$d dnes</string>
     <string name="session_count_status_done">Všech %1$d dávek dnes hotovo</string>
     <string name="low_stock_notification_title">Docházející zásoba: %1$s</string>

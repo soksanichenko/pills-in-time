@@ -144,13 +144,13 @@
     <string name="new_time_label">New time</string>
     <string name="add_time_action">Add</string>
 
+    <string name="fixed_time_mode_label">Fixed time</string>
     <string name="session_row_title">Session-based dosing</string>
     <string name="session_day_start_from_label">Start asking from</string>
     <string name="session_cadence_hourly_label">Every N hours</string>
     <string name="session_cadence_count_label">N times a day</string>
     <string name="session_interval_hours_label">Interval (hours)</string>
     <string name="session_times_per_day_label">Times a day</string>
-    <string name="add_session_time_action">Add session-based dosing</string>
 
     <string name="period_cycle_label">Cycle</string>
     <string name="cycle_daily">Daily</string>
@@ -211,15 +211,16 @@
     <string name="notification_low_stock_channel_name">Low stock reminders</string>
     <string name="notification_low_stock_channel_description">Alerts when a supply is projected to run out soon</string>
 
-    <string name="notification_channel_session_name">Session reminders</string>
-    <string name="notification_channel_session_description">Hourly or count-per-day reminders that run from when you start your day until you go to sleep</string>
+    <string name="notification_channel_session_start_name">Day-start prompts</string>
+    <string name="notification_channel_session_start_description">Asks you to start your day for an hourly or count-per-day reminder period</string>
+    <string name="notification_channel_session_interval_name">Interval dose reminders</string>
+    <string name="notification_channel_session_interval_description">Hourly (or every N hours) reminders during an active session</string>
+    <string name="notification_channel_session_count_name">Daily dose count reminders</string>
+    <string name="notification_channel_session_count_description">Running "N of M taken today" status for a count-per-day reminder period</string>
     <string name="session_start_prompt_title">Start your day?</string>
     <string name="session_start_prompt_text">%1$s — tap to start hourly reminders</string>
     <string name="action_start_day">Day started</string>
     <string name="action_end_day">Going to sleep</string>
-    <string name="session_hourly_status_title">%1$s — session active</string>
-    <string name="session_hourly_next_dose">Next dose ~%1$s</string>
-    <string name="session_hourly_dose_due">Dose due now</string>
     <string name="session_count_status_title">%1$s — %2$d of %3$d today</string>
     <string name="session_count_status_done">All %1$d doses done for today</string>
     <string name="low_stock_notification_title">Low stock: %1$s</string>

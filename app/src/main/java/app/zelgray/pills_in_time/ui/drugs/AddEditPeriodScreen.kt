@@ -54,6 +54,7 @@ import app.zelgray.pills_in_time.ui.common.ChipOption
 import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
 import app.zelgray.pills_in_time.ui.common.DatePickerField
+import app.zelgray.pills_in_time.ui.common.DropdownSelectorField
 import app.zelgray.pills_in_time.ui.common.TimePickerField
 import app.zelgray.pills_in_time.ui.common.localizedDate
 import app.zelgray.pills_in_time.ui.common.strengthUnitAbbreviation
@@ -268,20 +269,29 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
         state.times.forEach { row ->
             Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    if (row.isSessionRow) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.session_row_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.weight(1f),
-                            )
-                            IconButton(onClick = { viewModel.onRemoveTimeRow(row.rowKey) }) {
-                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_delete))
-                            }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        ChipSelector(
+                            options = listOf(
+                                ChipOption(false, stringResource(R.string.fixed_time_mode_label)),
+                                ChipOption(
+                                    true,
+                                    stringResource(R.string.session_row_title),
+                                    enabled = state.canSetSessionMode(row.rowKey),
+                                ),
+                            ),
+                            selected = row.isSessionRow,
+                            onSelect = { viewModel.onSetRowSessionMode(row.rowKey, it) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = { viewModel.onRemoveTimeRow(row.rowKey) }) {
+                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_delete))
                         }
+                    }
+
+                    if (row.isSessionRow) {
                         TimePickerField(
                             label = stringResource(R.string.session_day_start_from_label),
                             time = row.sessionDayStartFrom,
@@ -317,45 +327,37 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
                             )
                         }
                     } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
                         TimePickerField(
                             label = stringResource(R.string.time_label),
                             time = row.timeOfDay,
                             onTimeChange = { viewModel.onTimeOfDayChange(row.rowKey, it) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         )
-                        IconButton(onClick = { viewModel.onRemoveTimeRow(row.rowKey) }) {
-                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_delete))
-                        }
-                    }
 
-                    FilterChip(
-                        selected = row.isAlarmClock,
-                        onClick = {
-                            val turningOn = !row.isAlarmClock
-                            viewModel.onTimeAlarmClockChange(row.rowKey, turningOn)
-                            // Full-screen-intent access has no in-app request dialog on
-                            // Android 14+ — jump straight to the settings screen for it
-                            // right when the user opts in, instead of making them notice
-                            // and tap a separate hint below.
-                            if (turningOn && !AlarmPermissions.canUseFullScreenIntent(context)) {
-                                context.startActivity(AlarmPermissions.fullScreenIntentSettingsIntent(context))
-                            }
-                        },
-                        label = { Text(stringResource(R.string.time_alarm_style_label)) },
-                        leadingIcon = if (row.isAlarmClock) {
-                            { Icon(Icons.Filled.Alarm, contentDescription = null) }
-                        } else {
-                            null
-                        },
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                    if (row.isAlarmClock) {
-                        FullScreenIntentHint()
-                    }
+                        FilterChip(
+                            selected = row.isAlarmClock,
+                            onClick = {
+                                val turningOn = !row.isAlarmClock
+                                viewModel.onTimeAlarmClockChange(row.rowKey, turningOn)
+                                // Full-screen-intent access has no in-app request dialog on
+                                // Android 14+ — jump straight to the settings screen for it
+                                // right when the user opts in, instead of making them notice
+                                // and tap a separate hint below.
+                                if (turningOn && !AlarmPermissions.canUseFullScreenIntent(context)) {
+                                    context.startActivity(AlarmPermissions.fullScreenIntentSettingsIntent(context))
+                                }
+                            },
+                            label = { Text(stringResource(R.string.time_alarm_style_label)) },
+                            leadingIcon = if (row.isAlarmClock) {
+                                { Icon(Icons.Filled.Alarm, contentDescription = null) }
+                            } else {
+                                null
+                            },
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                        if (row.isAlarmClock) {
+                            FullScreenIntentHint()
+                        }
                     }
 
                     ChipSelector(
@@ -432,12 +434,6 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
                 Text(stringResource(R.string.add_time_action))
             }
         }
-
-        if (state.canAddSessionRow) {
-            TextButton(onClick = viewModel::onAddSessionTimeRow) {
-                Text(stringResource(R.string.add_session_time_action))
-            }
-        }
     }
 }
 
@@ -494,13 +490,17 @@ private fun SupplyChips(state: AddEditPeriodUiState, viewModel: AddEditPeriodVie
 
 @Composable
 private fun CycleSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodViewModel) {
-    ChipSelector(
+    // A dropdown, not a ChipSelector like everywhere else — 5 options no
+    // longer fit on one line on a phone-width screen, and ChipSelector's
+    // LazyRow never wraps, so the selected option could scroll out of view.
+    DropdownSelectorField(
+        label = stringResource(R.string.period_cycle_label),
         options = listOf(
-            ChipOption(CycleType.DAILY, stringResource(R.string.cycle_daily)),
-            ChipOption(CycleType.EVERY_OTHER_DAY, stringResource(R.string.cycle_every_other_day)),
-            ChipOption(CycleType.SPECIFIC_DAYS, stringResource(R.string.cycle_specific_days)),
-            ChipOption(CycleType.DAYS_ON_OFF, stringResource(R.string.cycle_days_on_off)),
-            ChipOption(CycleType.CUSTOM, stringResource(R.string.cycle_custom)),
+            CycleType.DAILY to stringResource(R.string.cycle_daily),
+            CycleType.EVERY_OTHER_DAY to stringResource(R.string.cycle_every_other_day),
+            CycleType.SPECIFIC_DAYS to stringResource(R.string.cycle_specific_days),
+            CycleType.DAYS_ON_OFF to stringResource(R.string.cycle_days_on_off),
+            CycleType.CUSTOM to stringResource(R.string.cycle_custom),
         ),
         selected = state.cycleType,
         onSelect = viewModel::onCycleTypeChange,

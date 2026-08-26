@@ -144,13 +144,13 @@
     <string name="new_time_label">Новий час</string>
     <string name="add_time_action">Додати</string>
 
+    <string name="fixed_time_mode_label">Звичайний час</string>
     <string name="session_row_title">Сесійний прийом</string>
     <string name="session_day_start_from_label">Запитувати починаючи з</string>
     <string name="session_cadence_hourly_label">Кожні N годин</string>
     <string name="session_cadence_count_label">N разів на день</string>
     <string name="session_interval_hours_label">Інтервал (годин)</string>
     <string name="session_times_per_day_label">Разів на день</string>
-    <string name="add_session_time_action">Додати сесійний прийом</string>
 
     <string name="period_cycle_label">Цикл</string>
     <string name="cycle_daily">Щодня</string>
@@ -211,15 +211,16 @@
     <string name="notification_low_stock_channel_name">Нагадування про запас</string>
     <string name="notification_low_stock_channel_description">Сповіщення, коли запас скоро закінчиться</string>
 
-    <string name="notification_channel_session_name">Сесійні нагадування</string>
-    <string name="notification_channel_session_description">Нагадування щогодини або N разів на день — від початку дня до відбою</string>
+    <string name="notification_channel_session_start_name">Запит почати день</string>
+    <string name="notification_channel_session_start_description">Пропонує почати день для періоду з щогодинними або N-разів-на-день нагадуваннями</string>
+    <string name="notification_channel_session_interval_name">Періодичні нагадування</string>
+    <string name="notification_channel_session_interval_description">Нагадування щогодини (або кожні N годин) під час активної сесії</string>
+    <string name="notification_channel_session_count_name">Нагадування N разів на день</string>
+    <string name="notification_channel_session_count_description">Поточний статус «прийнято N з M сьогодні» для періоду з прийомом N разів на день</string>
     <string name="session_start_prompt_title">Почати день?</string>
     <string name="session_start_prompt_text">%1$s — торкніться, щоб почати щогодинні нагадування</string>
     <string name="action_start_day">День почато</string>
     <string name="action_end_day">Іду спати</string>
-    <string name="session_hourly_status_title">%1$s — сесія активна</string>
-    <string name="session_hourly_next_dose">Наступна доза ~%1$s</string>
-    <string name="session_hourly_dose_due">Час прийняти</string>
     <string name="session_count_status_title">%1$s — %2$d з %3$d сьогодні</string>
     <string name="session_count_status_done">Усі %1$d прийом(и) на сьогодні виконано</string>
     <string name="low_stock_notification_title">Запас закінчується: %1$s</string>

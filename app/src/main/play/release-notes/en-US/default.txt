@@ -1,2 +1,3 @@
-New: session-based reminders for drugs like eye drops — hourly, or a set number of times a day, starting when you tap "Day started" and running until "Going to sleep".
-New: calibrate drop-form stock from bottle volume + drops per mL instead of typing a raw drop count.
+Improved: hourly session reminders (e.g. eye drops) now post as regular dismissible notifications instead of one that stays pinned all day.
+New: session reminders (day-start prompt, hourly, and count-per-day) each have their own notification channel, so you can mute them independently.
+Improved: switch a period's time between fixed and session-based dosing in place, and pick its repeat cycle from a dropdown.

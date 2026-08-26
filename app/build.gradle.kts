@@ -35,7 +35,7 @@ android {
         applicationId = "app.zelgray.pills_in_time"
         minSdk = 26
         targetSdk = 37
-        versionCode = 25
+        versionCode = 27
         versionName = "1.0"
 
         testInstrumentationRunner = "app.zelgray.pills_in_time.HiltTestRunner"

@@ -1,1 +1,2 @@
-Improved: the per-supply stock breakdown on a period card is now a tap-to-view popup (an "i" icon next to Stock at start/end) instead of an always-shown list, keeping the card compact when a drug has multiple supplies.
+New: session-based reminders for drugs like eye drops — hourly, or a set number of times a day, starting when you tap "Day started" and running until "Going to sleep".
+New: calibrate drop-form stock from bottle volume + drops per mL instead of typing a raw drop count.

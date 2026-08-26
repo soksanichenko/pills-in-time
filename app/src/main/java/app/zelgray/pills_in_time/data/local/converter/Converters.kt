@@ -1,6 +1,7 @@
 package app.zelgray.pills_in_time.data.local.converter
 
 import androidx.room.TypeConverter
+import app.zelgray.pills_in_time.data.local.entity.AlarmKind
 import app.zelgray.pills_in_time.data.local.entity.CycleType
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.DrugForm
@@ -88,6 +89,12 @@ class Converters {
 
     @TypeConverter
     fun intakeSourceToString(source: IntakeSource?): String? = source?.name
+
+    @TypeConverter
+    fun fromAlarmKind(value: String?): AlarmKind? = value?.let { AlarmKind.valueOf(it) }
+
+    @TypeConverter
+    fun alarmKindToString(kind: AlarmKind?): String? = kind?.name
 
     @TypeConverter
     fun fromDoseAllocationCsv(value: String?): List<DoseComboPiece>? = value.decodeDoseAllocationCsv()

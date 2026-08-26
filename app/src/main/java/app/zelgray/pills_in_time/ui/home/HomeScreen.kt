@@ -63,6 +63,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
+import app.zelgray.pills_in_time.domain.model.Occurrence
 import app.zelgray.pills_in_time.domain.model.OccurrenceStatus
 import app.zelgray.pills_in_time.domain.model.isActionable
 import app.zelgray.pills_in_time.notification.AlarmPermissions
@@ -156,7 +157,13 @@ fun HomeScreen(
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-                        items(state.items, key = { it.occurrence.intakeTimeId.toString() + "_" + it.occurrence.occurrenceDate }) { item ->
+                        items(
+                            state.items,
+                            // sessionSeq (0 for a normal fixed-time occurrence)
+                            // disambiguates a session day's multiple doses,
+                            // which otherwise share the same intakeTimeId/date.
+                            key = { "${it.occurrence.intakeTimeId}_${it.occurrence.occurrenceDate}_${it.occurrence.sessionSeq}" },
+                        ) { item ->
                             HomeRow(
                                 item = item,
                                 onCheckClick = { viewModel.onTookIt(item) },
@@ -420,6 +427,12 @@ private fun Modifier.swipeDayNavigation(onPrev: () -> Unit, onNext: () -> Unit):
     }
 }
 
+/** A session-based occurrence has no fixed clock time — falls back to "Dose N" (see IntakeTime.isSession). */
+@Composable
+private fun occurrenceTimeLabel(occurrence: Occurrence): String =
+    occurrence.timeOfDay?.format(DateTimeFormatter.ofPattern("HH:mm"))
+        ?: stringResource(R.string.session_dose_label, occurrence.sessionSeq)
+
 @Composable
 private fun HomeRow(item: HomeListItem, onCheckClick: () -> Unit, onRowClick: () -> Unit) {
     val canCheck = item.occurrence.status.isActionable
@@ -439,7 +452,7 @@ private fun HomeRow(item: HomeListItem, onCheckClick: () -> Unit, onRowClick: ()
             }
             Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
                 Text(
-                    text = item.occurrence.timeOfDay.format(DateTimeFormatter.ofPattern("HH:mm")) + "  " + item.drug.name,
+                    text = occurrenceTimeLabel(item.occurrence) + "  " + item.drug.name,
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(
@@ -464,7 +477,7 @@ private fun HomeActionSheetContent(
     val alreadyLogged = item.occurrence.status == OccurrenceStatus.TAKEN || item.occurrence.status == OccurrenceStatus.SKIPPED
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
-            text = item.occurrence.timeOfDay.format(DateTimeFormatter.ofPattern("HH:mm")) + " · " + item.drug.name + " · " +
+            text = occurrenceTimeLabel(item.occurrence) + " · " + item.drug.name + " · " +
                 doseText(
                     item.occurrence.doseValue,
                     item.occurrence.doseMode,
@@ -487,11 +500,18 @@ private fun HomeActionSheetContent(
                 ) {
                     Text(stringResource(R.string.action_took_it))
                 }
-                OutlinedButton(onClick = onSkipped, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                OutlinedButton(
+                    onClick = onSkipped,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = if (item.occurrence.sessionSeq == 0) 8.dp else 0.dp),
+                ) {
                     Text(stringResource(R.string.action_skipped))
                 }
-                OutlinedButton(onClick = onSnooze, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.action_snooze))
+                // Sessions (see IntakeTime.isSession) don't support snooze —
+                // their ongoing status notification already stays visible.
+                if (item.occurrence.sessionSeq == 0) {
+                    OutlinedButton(onClick = onSnooze, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.action_snooze))
+                    }
                 }
             }
         }

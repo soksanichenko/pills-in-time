@@ -206,3 +206,54 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
         db.execSQL("ALTER TABLE scheduled_intakes ADD COLUMN pausedUntilDate INTEGER")
     }
 }
+
+/**
+ * Adds session-based dosing (hourly-from-wake-until-sleep, or a fixed count
+ * per day, with no fixed clock times — e.g. eye drops) and drop-size
+ * calibration for DROPS-form stock batches:
+ *  - drug_stock_batches.dropsPerMl: optional per-bottle drops-per-mL, used
+ *    only as an entry/display convenience (see DrugStockBatch doc comment).
+ *  - intake_times gains sessionDayStartFrom/sessionIntervalHours/
+ *    sessionTimesPerDay (all nullable; non-null cadence field marks a row as
+ *    session-type instead of fixed-clock — see IntakeTime.isSession).
+ *  - intake_logs gains sessionSeq (0 for an ordinary occurrence, 1-based
+ *    ordinal for a session day's individual doses), and the unique index
+ *    widens to include it so a session day can log more than one row against
+ *    the same (scheduledIntakeId, intakeTimeId, occurrenceDate) triple.
+ *  - scheduled_alarms gains kind, distinguishing a normal dose-reminder alarm
+ *    from a session's day-start-prompt alarm in the same registry.
+ *  - daily_sessions: new table, one row per day a session-type IntakeTime was
+ *    actually started (startedAt) and, once closed, ended (endedAt).
+ */
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE drug_stock_batches ADD COLUMN dropsPerMl REAL")
+
+        db.execSQL("ALTER TABLE intake_times ADD COLUMN sessionDayStartFrom INTEGER")
+        db.execSQL("ALTER TABLE intake_times ADD COLUMN sessionIntervalHours INTEGER")
+        db.execSQL("ALTER TABLE intake_times ADD COLUMN sessionTimesPerDay INTEGER")
+
+        db.execSQL("ALTER TABLE intake_logs ADD COLUMN sessionSeq INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("DROP INDEX IF EXISTS index_intake_logs_scheduledIntakeId_intakeTimeId_occurrenceDate")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_intake_logs_scheduledIntakeId_intakeTimeId_occurrenceDate_sessionSeq " +
+                "ON intake_logs(scheduledIntakeId, intakeTimeId, occurrenceDate, sessionSeq)",
+        )
+
+        db.execSQL("ALTER TABLE scheduled_alarms ADD COLUMN kind TEXT NOT NULL DEFAULT 'DOSE_REMINDER'")
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS daily_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                scheduledIntakeId INTEGER NOT NULL,
+                date INTEGER NOT NULL,
+                startedAt INTEGER NOT NULL,
+                endedAt INTEGER,
+                FOREIGN KEY(scheduledIntakeId) REFERENCES scheduled_intakes(id) ON DELETE CASCADE
+            )
+            """,
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_daily_sessions_scheduledIntakeId_date ON daily_sessions(scheduledIntakeId, date)")
+    }
+}

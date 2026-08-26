@@ -37,4 +37,19 @@ data class IntakeTime(
     // (full-screen over the lock screen, alarm-stream sound) instead of a
     // regular notification — for doses that need to actually wake the patient.
     val isAlarmClock: Boolean = false,
+    // Session-based dosing (e.g. hourly eye drops from wake to sleep, or a
+    // fixed count per day with no fixed clock times): non-null
+    // sessionIntervalHours/sessionTimesPerDay marks this row as session-type
+    // instead of fixed-clock (see IntakeTime.isSession below). timeOfDay is
+    // unused/kept at its placeholder default for such rows — SQLite can't add
+    // a nullable column and relax an existing NOT NULL one without a table
+    // rebuild, so it's simplest to just never read it for session rows rather
+    // than migrate it to nullable.
+    val sessionDayStartFrom: LocalTime? = null,
+    val sessionIntervalHours: Int? = null,
+    val sessionTimesPerDay: Int? = null,
 )
+
+/** Session-type rows have no fixed [IntakeTime.timeOfDay] — exactly one of the two cadence fields is set instead. */
+val IntakeTime.isSession: Boolean
+    get() = sessionIntervalHours != null || sessionTimesPerDay != null

@@ -17,6 +17,7 @@ class ScheduledAlarmRepository @Inject constructor(
             intakeTimeId = spec.intakeTimeId,
             occurrenceDate = spec.occurrenceDate,
             triggerAtMillis = spec.triggerAtEpochMilli,
+            kind = spec.kind,
         ),
     )
 

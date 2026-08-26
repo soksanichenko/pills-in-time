@@ -11,6 +11,7 @@ object NotificationChannels {
     const val MEDICATION_REMINDERS = "medication_reminders"
     const val MEDICATION_REMINDERS_ALARM = "medication_reminders_alarm"
     const val LOW_STOCK_REMINDERS = "low_stock_reminders"
+    const val SESSION_REMINDERS = "session_reminders"
 
     fun ensureCreated(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
@@ -52,6 +53,18 @@ object NotificationChannels {
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
                 description = context.getString(R.string.notification_low_stock_channel_description)
+            },
+        )
+        // Kept separate from MEDICATION_REMINDERS so an hourly/count-per-day
+        // session (which can alert far more often in a day) can be muted on
+        // its own without silencing regular dose reminders.
+        manager.createNotificationChannel(
+            NotificationChannel(
+                SESSION_REMINDERS,
+                context.getString(R.string.notification_channel_session_name),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = context.getString(R.string.notification_channel_session_description)
             },
         )
     }

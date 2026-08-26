@@ -9,11 +9,14 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import app.zelgray.pills_in_time.data.local.entity.DailySession
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
+import app.zelgray.pills_in_time.data.repository.DailySessionRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.ScheduledAlarmRepository
 import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
+import app.zelgray.pills_in_time.domain.usecase.ScheduleSessionPromptsForWindowUseCase
 import app.zelgray.pills_in_time.util.NowProvider
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -33,7 +36,9 @@ class DailyRescheduleWorker @AssistedInject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val intakeRepository: IntakeRepository,
     private val scheduledAlarmRepository: ScheduledAlarmRepository,
+    private val dailySessionRepository: DailySessionRepository,
     private val scheduleAlarmsForWindow: ScheduleAlarmsForWindowUseCase,
+    private val scheduleSessionPromptsForWindow: ScheduleSessionPromptsForWindowUseCase,
     private val alarmScheduler: AlarmScheduler,
     private val nowProvider: NowProvider,
 ) : CoroutineWorker(appContext, workerParams) {
@@ -42,14 +47,18 @@ class DailyRescheduleWorker @AssistedInject constructor(
         val today = nowProvider.currentLocalDate()
         val now = nowProvider.currentLocalDateTime()
         val periods = scheduleRepository.getAllPeriodsWithTimesOnce()
+        val windowEnd = today.plusDays((ScheduleAlarmsForWindowUseCase.DEFAULT_WINDOW_DAYS - 1).toLong())
 
         val logsByDate: Map<LocalDate, List<IntakeLog>> =
             (0 until ScheduleAlarmsForWindowUseCase.DEFAULT_WINDOW_DAYS).associate { offset ->
                 val date = today.plusDays(offset.toLong())
                 date to intakeRepository.getLogsForDateOnce(date)
             }
+        val sessionsByDate: Map<LocalDate, List<DailySession>> =
+            dailySessionRepository.getInRangeOnce(today, windowEnd).groupBy { it.date }
 
-        val desired = scheduleAlarmsForWindow(periods, logsByDate, today, now)
+        val desired = scheduleAlarmsForWindow(periods, logsByDate, today, now) +
+            scheduleSessionPromptsForWindow(periods, sessionsByDate, today)
         val desiredByCode = desired.associateBy { it.requestCode }
 
         val existing = scheduledAlarmRepository.getAll()

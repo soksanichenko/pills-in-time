@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -92,19 +93,58 @@ fun AddEditStockScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
-            OutlinedTextField(
-                value = state.quantity,
-                onValueChange = viewModel::onQuantityChange,
-                label = { Text(stringResource(R.string.quantity_label)) },
-                placeholder = { Text(stringResource(R.string.quantity_placeholder)) },
-                isError = state.quantityError,
-                supportingText = {
-                    if (state.quantityError) Text(stringResource(R.string.quantity_error))
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+            if (state.showDropsCalibration) {
+                FilterChip(
+                    selected = state.useDropsCalibration,
+                    onClick = { viewModel.onUseDropsCalibrationChange(!state.useDropsCalibration) },
+                    label = { Text(stringResource(R.string.drops_calibration_toggle)) },
+                )
+            }
+
+            if (state.showDropsCalibration && state.useDropsCalibration) {
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                    OutlinedTextField(
+                        value = state.bottleVolumeMl,
+                        onValueChange = viewModel::onBottleVolumeChange,
+                        label = { Text(stringResource(R.string.bottle_volume_label)) },
+                        placeholder = { Text(stringResource(R.string.bottle_volume_placeholder)) },
+                        isError = state.bottleVolumeError,
+                        supportingText = {
+                            if (state.bottleVolumeError) Text(stringResource(R.string.bottle_volume_error))
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = state.dropsPerMl,
+                        onValueChange = viewModel::onDropsPerMlChange,
+                        label = { Text(stringResource(R.string.drops_per_ml_label)) },
+                        placeholder = { Text(stringResource(R.string.drops_per_ml_placeholder)) },
+                        isError = state.dropsPerMlError,
+                        supportingText = {
+                            if (state.dropsPerMlError) Text(stringResource(R.string.drops_per_ml_error))
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f).padding(start = 8.dp),
+                        singleLine = true,
+                    )
+                }
+            } else {
+                OutlinedTextField(
+                    value = state.quantity,
+                    onValueChange = viewModel::onQuantityChange,
+                    label = { Text(stringResource(R.string.quantity_label)) },
+                    placeholder = { Text(stringResource(R.string.quantity_placeholder)) },
+                    isError = state.quantityError,
+                    supportingText = {
+                        if (state.quantityError) Text(stringResource(R.string.quantity_error))
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth().let { if (state.showDropsCalibration) it.padding(top = 12.dp) else it },
+                    singleLine = true,
+                )
+            }
 
             Text(
                 text = stringResource(R.string.strength_per_unit_label),

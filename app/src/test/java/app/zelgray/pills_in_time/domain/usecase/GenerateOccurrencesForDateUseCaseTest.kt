@@ -1,6 +1,7 @@
 package app.zelgray.pills_in_time.domain.usecase
 
 import app.zelgray.pills_in_time.data.local.entity.CycleType
+import app.zelgray.pills_in_time.data.local.entity.DailySession
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.EndMode
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
@@ -19,6 +20,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 
 class GenerateOccurrencesForDateUseCaseTest {
 
@@ -267,5 +269,123 @@ class GenerateOccurrencesForDateUseCaseTest {
         assertEquals(2, result.size)
         assertEquals(LocalTime.of(8, 0), result[0].timeOfDay)
         assertEquals(LocalTime.of(20, 0), result[1].timeOfDay)
+    }
+
+    private fun sessionTime(
+        id: Long = 10,
+        scheduledIntakeId: Long = 1,
+        intervalHours: Int? = 1,
+        timesPerDay: Int? = null,
+    ) = IntakeTime(
+        id = id,
+        scheduledIntakeId = scheduledIntakeId,
+        timeOfDay = LocalTime.MIDNIGHT,
+        doseMode = DoseMode.UNITS,
+        doseValue = 1.0,
+        sessionDayStartFrom = LocalTime.of(8, 0),
+        sessionIntervalHours = intervalHours,
+        sessionTimesPerDay = timesPerDay,
+    )
+
+    private fun sessionLog(t: IntakeTime, date: LocalDate, seq: Int, status: IntakeStatus = IntakeStatus.TAKEN) = IntakeLog(
+        drugId = 1,
+        scheduledIntakeId = t.scheduledIntakeId,
+        intakeTimeId = t.id,
+        occurrenceDate = date,
+        status = status,
+        actualDateTime = Instant.EPOCH,
+        actualDoseValue = 1.0,
+        actualDoseMode = DoseMode.UNITS,
+        source = IntakeSource.REMINDER,
+        createdAt = Instant.EPOCH,
+        updatedAt = Instant.EPOCH,
+        sessionSeq = seq,
+    )
+
+    private fun instant(dateTime: LocalDateTime) = dateTime.atZone(ZoneId.systemDefault()).toInstant()
+
+    @Test
+    fun `session time with no DailySession yet produces no occurrences`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = sessionTime()
+        val p = period(start = today, times = listOf(t))
+        val result = useCase(listOf(p), emptyList(), today, today, LocalDateTime.of(today, LocalTime.of(9, 0)))
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `hourly session with no doses logged yet has one pending occurrence due at start`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = sessionTime(intervalHours = 1)
+        val p = period(start = today, times = listOf(t))
+        val startedAt = instant(LocalDateTime.of(today, LocalTime.of(8, 0)))
+        val session = DailySession(scheduledIntakeId = t.scheduledIntakeId, date = today, startedAt = startedAt)
+        val now = LocalDateTime.of(today, LocalTime.of(8, 5))
+        val result = useCase(listOf(p), emptyList(), today, today, now, sessions = listOf(session))
+        assertEquals(1, result.size)
+        assertEquals(1, result.single().sessionSeq)
+        assertEquals(LocalTime.of(8, 0), result.single().timeOfDay)
+        assertEquals(OccurrenceStatus.OVERDUE, result.single().status)
+    }
+
+    @Test
+    fun `hourly session logged dose becomes taken and next pending dose is due one interval later`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = sessionTime(intervalHours = 1)
+        val p = period(start = today, times = listOf(t))
+        val startedAt = instant(LocalDateTime.of(today, LocalTime.of(8, 0)))
+        val session = DailySession(scheduledIntakeId = t.scheduledIntakeId, date = today, startedAt = startedAt)
+        val logs = listOf(sessionLog(t, today, seq = 1))
+        val now = LocalDateTime.of(today, LocalTime.of(8, 30))
+        val result = useCase(listOf(p), logs, today, today, now, sessions = listOf(session))
+        assertEquals(2, result.size)
+        assertEquals(OccurrenceStatus.TAKEN, result[0].status)
+        assertEquals(1, result[0].sessionSeq)
+        assertEquals(2, result[1].sessionSeq)
+        assertEquals(LocalTime.of(9, 0), result[1].timeOfDay)
+        assertEquals(OccurrenceStatus.UPCOMING, result[1].status)
+    }
+
+    @Test
+    fun `count-per-day session has one pending occurrence with no fixed time until target reached`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = sessionTime(intervalHours = null, timesPerDay = 3)
+        val p = period(start = today, times = listOf(t))
+        val startedAt = instant(LocalDateTime.of(today, LocalTime.of(8, 0)))
+        val session = DailySession(scheduledIntakeId = t.scheduledIntakeId, date = today, startedAt = startedAt)
+        val now = LocalDateTime.of(today, LocalTime.of(9, 0))
+        val result = useCase(listOf(p), emptyList(), today, today, now, sessions = listOf(session))
+        assertEquals(1, result.size)
+        assertEquals(null, result.single().timeOfDay)
+        assertEquals(OccurrenceStatus.OVERDUE, result.single().status)
+    }
+
+    @Test
+    fun `count-per-day session with target reached has no pending occurrence`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = sessionTime(intervalHours = null, timesPerDay = 2)
+        val p = period(start = today, times = listOf(t))
+        val startedAt = instant(LocalDateTime.of(today, LocalTime.of(8, 0)))
+        val session = DailySession(scheduledIntakeId = t.scheduledIntakeId, date = today, startedAt = startedAt)
+        val logs = listOf(sessionLog(t, today, seq = 1), sessionLog(t, today, seq = 2))
+        val now = LocalDateTime.of(today, LocalTime.of(12, 0))
+        val result = useCase(listOf(p), logs, today, today, now, sessions = listOf(session))
+        assertEquals(2, result.size)
+        assertTrue(result.all { it.status == OccurrenceStatus.TAKEN })
+    }
+
+    @Test
+    fun `ended session has no pending occurrence even below its target`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val t = sessionTime(intervalHours = null, timesPerDay = 3)
+        val p = period(start = today, times = listOf(t))
+        val startedAt = instant(LocalDateTime.of(today, LocalTime.of(8, 0)))
+        val endedAt = instant(LocalDateTime.of(today, LocalTime.of(10, 0)))
+        val session = DailySession(scheduledIntakeId = t.scheduledIntakeId, date = today, startedAt = startedAt, endedAt = endedAt)
+        val logs = listOf(sessionLog(t, today, seq = 1))
+        val now = LocalDateTime.of(today, LocalTime.of(12, 0))
+        val result = useCase(listOf(p), logs, today, today, now, sessions = listOf(session))
+        assertEquals(1, result.size)
+        assertEquals(OccurrenceStatus.TAKEN, result.single().status)
     }
 }

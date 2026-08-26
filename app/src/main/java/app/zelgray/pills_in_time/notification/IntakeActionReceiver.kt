@@ -7,6 +7,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import app.zelgray.pills_in_time.data.local.entity.AlarmKind
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -18,8 +19,11 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class IntakeActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // A session dose action (see IntakeTime.isSession) keeps its ongoing
+        // status notification up — only a regular reminder auto-dismisses.
+        val isSessionDose = intent.getStringExtra(NotificationContracts.EXTRA_KIND) == AlarmKind.SESSION_TICK.name
         val notificationId = intent.getIntExtra(NotificationContracts.EXTRA_NOTIFICATION_ID, -1)
-        if (notificationId != -1) {
+        if (notificationId != -1 && !isSessionDose) {
             NotificationManagerCompat.from(context).cancel(notificationId)
             WorkManager.getInstance(context).cancelUniqueWork(NotificationContracts.repeatWorkName(notificationId))
         }
@@ -27,16 +31,19 @@ class IntakeActionReceiver : BroadcastReceiver() {
         val encodedMembers = intent.getStringExtra(NotificationContracts.EXTRA_GROUP_MEMBERS)
 
         when (intent.action) {
-            NotificationContracts.ACTION_TAKE -> handleLogAction(context, intent, encodedMembers, IntakeStatus.TAKEN)
-            NotificationContracts.ACTION_SKIP -> handleLogAction(context, intent, encodedMembers, IntakeStatus.SKIPPED)
+            NotificationContracts.ACTION_TAKE -> handleLogAction(context, intent, encodedMembers, IntakeStatus.TAKEN, isSessionDose)
+            NotificationContracts.ACTION_SKIP -> handleLogAction(context, intent, encodedMembers, IntakeStatus.SKIPPED, isSessionDose)
             NotificationContracts.ACTION_SNOOZE -> enqueueSnooze(context, NotificationContracts.dataFromIntent(intent), encodedMembers)
         }
     }
 
     /** For a merged notification (EXTRA_GROUP_MEMBERS present), applies the status to every member; otherwise just the one occurrence. */
-    private fun handleLogAction(context: Context, intent: Intent, encodedMembers: String?, status: IntakeStatus) {
+    private fun handleLogAction(context: Context, intent: Intent, encodedMembers: String?, status: IntakeStatus, isSessionDose: Boolean) {
         val members = NotificationContracts.decodeGroupMembers(encodedMembers)
         if (members.isEmpty()) {
+            // dataFromIntent already carries EXTRA_KIND straight from the intent
+            // (session dose intents are never grouped), so isSessionDose needs
+            // no separate threading here.
             enqueueLogAction(context, NotificationContracts.dataFromIntent(intent), status)
             return
         }

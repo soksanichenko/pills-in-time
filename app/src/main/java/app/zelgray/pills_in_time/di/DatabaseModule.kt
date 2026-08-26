@@ -14,7 +14,9 @@ import app.zelgray.pills_in_time.data.local.MIGRATION_7_8
 import app.zelgray.pills_in_time.data.local.MIGRATION_8_9
 import app.zelgray.pills_in_time.data.local.MIGRATION_9_10
 import app.zelgray.pills_in_time.data.local.MIGRATION_10_11
+import app.zelgray.pills_in_time.data.local.MIGRATION_11_12
 import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
+import app.zelgray.pills_in_time.data.local.dao.DailySessionDao
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogConsumptionDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
@@ -43,7 +45,7 @@ object DatabaseModule {
             .addMigrations(
                 MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                 MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
-                MIGRATION_10_11,
+                MIGRATION_10_11, MIGRATION_11_12,
             )
             // A brand-new install skips every Migration above and creates the
             // schema straight from the entities, so it needs its own default
@@ -88,4 +90,8 @@ object DatabaseModule {
     @Provides
     fun provideSnoozedOccurrenceDao(database: MedTrackerDatabase): SnoozedOccurrenceDao =
         database.snoozedOccurrenceDao()
+
+    @Provides
+    fun provideDailySessionDao(database: MedTrackerDatabase): DailySessionDao =
+        database.dailySessionDao()
 }

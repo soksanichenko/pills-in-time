@@ -56,6 +56,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".notification.SessionActionReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".notification.LowStockActionReceiver"
             android:exported="false" />
 

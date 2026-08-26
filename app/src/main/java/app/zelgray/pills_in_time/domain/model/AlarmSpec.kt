@@ -1,5 +1,6 @@
 package app.zelgray.pills_in_time.domain.model
 
+import app.zelgray.pills_in_time.data.local.entity.AlarmKind
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import java.time.LocalDate
 import java.time.LocalTime
@@ -14,4 +15,5 @@ data class AlarmSpec(
     val triggerAtEpochMilli: Long,
     val doseValue: Double,
     val doseMode: DoseMode,
+    val kind: AlarmKind = AlarmKind.DOSE_REMINDER,
 )

@@ -1,6 +1,8 @@
 package app.zelgray.pills_in_time.domain.usecase
 
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
+import app.zelgray.pills_in_time.data.local.entity.IntakeTime
+import app.zelgray.pills_in_time.data.local.entity.isSession
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.domain.model.BatchDecrement
 import app.zelgray.pills_in_time.domain.model.DoseConsumptionResult
@@ -8,6 +10,7 @@ import app.zelgray.pills_in_time.domain.model.DrugStockProjection
 import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
 import app.zelgray.pills_in_time.domain.model.StockOverallProjection
 import java.time.LocalDate
+import java.time.LocalTime
 import javax.inject.Inject
 
 /**
@@ -84,23 +87,30 @@ class ProjectDrugStockUseCase @Inject constructor(
             val activePeriods = relevant.filter { isPeriodActiveOn(it.scheduledIntake, date) }
             for (period in activePeriods) {
                 for (time in period.times) {
-                    when (
-                        val result = resolveDoseConsumption(
-                            time.doseMode,
-                            time.doseValue,
-                            time.doseAllocation,
-                            working,
-                            period.scheduledIntake.pinnedBatchId,
-                        )
-                    ) {
-                        is DoseConsumptionResult.Resolved -> working = applyDecrements(working, result.decrements)
-                        is DoseConsumptionResult.Insufficient -> {
-                            if (runOutDate == null) runOutDate = date
-                            // The implicated batch(es) may never actually reach literal
-                            // zero (an atomic dose that can't fully resolve consumes
-                            // nothing, so they get stuck just above it) — mark them
-                            // exhausted here too, not only via the quantity<=0 check below.
-                            result.shortBatchIds.forEach { id -> batchExhaustionDates.putIfAbsent(id, date) }
+                    // A session-based time (see IntakeTime.isSession) has no
+                    // single daily dose — it fires many times a day, either an
+                    // exact count (COUNT_PER_DAY) or an estimate from its
+                    // interval and how much of the day it's active for (HOURLY).
+                    val dosesToday = if (time.isSession) sessionDosesPerDay(time) else 1
+                    repeat(dosesToday) {
+                        when (
+                            val result = resolveDoseConsumption(
+                                time.doseMode,
+                                time.doseValue,
+                                time.doseAllocation,
+                                working,
+                                period.scheduledIntake.pinnedBatchId,
+                            )
+                        ) {
+                            is DoseConsumptionResult.Resolved -> working = applyDecrements(working, result.decrements)
+                            is DoseConsumptionResult.Insufficient -> {
+                                if (runOutDate == null) runOutDate = date
+                                // The implicated batch(es) may never actually reach literal
+                                // zero (an atomic dose that can't fully resolve consumes
+                                // nothing, so they get stuck just above it) — mark them
+                                // exhausted here too, not only via the quantity<=0 check below.
+                                result.shortBatchIds.forEach { id -> batchExhaustionDates.putIfAbsent(id, date) }
+                            }
                         }
                     }
                 }
@@ -160,6 +170,22 @@ class ProjectDrugStockUseCase @Inject constructor(
         }
 
         return DrugStockProjection(periodProjections, overall, batchExhaustionDates)
+    }
+
+    /**
+     * COUNT_PER_DAY has an exact count. HOURLY has no fixed count — estimated
+     * from how many interval-hours fit between its day-start prompt time and
+     * midnight, since that's the only signal available (there's no separate
+     * "usual bedtime" setting). A rough estimate, not a guarantee — matches
+     * the same tradeoff GenerateOccurrencesForDateUseCase makes by not
+     * needing to know the actual end-of-day time either.
+     */
+    private fun sessionDosesPerDay(time: IntakeTime): Int {
+        time.sessionTimesPerDay?.let { return it }
+        val intervalHours = time.sessionIntervalHours ?: return 1
+        val startFrom = time.sessionDayStartFrom ?: LocalTime.MIDNIGHT
+        val awakeHours = (24 - startFrom.hour).coerceAtLeast(1)
+        return (awakeHours / intervalHours).coerceAtLeast(1)
     }
 
     private fun applyDecrements(batches: List<DrugStockBatch>, decrements: List<BatchDecrement>): List<DrugStockBatch> {

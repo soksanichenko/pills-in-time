@@ -55,6 +55,10 @@ class IntakeRepository @Inject constructor(
     suspend fun getLogForOccurrenceOnce(scheduledIntakeId: Long, intakeTimeId: Long, occurrenceDate: LocalDate): IntakeLog? =
         intakeLogDao.getLogForOccurrence(scheduledIntakeId, intakeTimeId, occurrenceDate)
 
+    /** How many session doses (see IntakeTime.isSession) have been logged so far today for this triple. */
+    suspend fun getSessionDoseCountOnce(scheduledIntakeId: Long, intakeTimeId: Long, occurrenceDate: LocalDate): Int =
+        intakeLogDao.getMaxSessionSeq(scheduledIntakeId, intakeTimeId, occurrenceDate) ?: 0
+
     /**
      * Quick in-app actions (Home row check button, action-sheet Took it/Skipped)
      * are tagged source = REMINDER, distinct only from the retroactive manual
@@ -133,6 +137,40 @@ class IntakeRepository @Inject constructor(
         )
     }
 
+    /**
+     * Logs one dose of a session-based IntakeTime (see IntakeTime.isSession) —
+     * unlike recordQuickAction/recordManualEntry, this always creates a new
+     * row rather than updating an existing one: a session day can have many
+     * doses against the same (scheduledIntakeId, intakeTimeId, occurrenceDate)
+     * triple, disambiguated by sessionSeq. The next ordinal is computed inside
+     * the same transaction as the insert (writeLog's own transaction joins
+     * this one) so two concurrent session doses can't race onto the same seq.
+     */
+    suspend fun recordSessionDose(
+        drugId: Long,
+        scheduledIntakeId: Long,
+        intakeTimeId: Long,
+        occurrenceDate: LocalDate,
+        doseValue: Double,
+        doseMode: DoseMode,
+        status: IntakeStatus,
+    ): RecordLogResult = database.withTransaction {
+        val nextSeq = (intakeLogDao.getMaxSessionSeq(scheduledIntakeId, intakeTimeId, occurrenceDate) ?: 0) + 1
+        writeLog(
+            existingLog = null,
+            drugId = drugId,
+            scheduledIntakeId = scheduledIntakeId,
+            intakeTimeId = intakeTimeId,
+            occurrenceDate = occurrenceDate,
+            actualDateTime = Instant.now(),
+            doseValue = doseValue,
+            doseMode = doseMode,
+            status = status,
+            source = IntakeSource.REMINDER,
+            sessionSeq = nextSeq,
+        )
+    }
+
     suspend fun deleteLog(log: IntakeLog) {
         database.withTransaction {
             if (log.status == IntakeStatus.TAKEN) {
@@ -161,6 +199,7 @@ class IntakeRepository @Inject constructor(
         doseMode: DoseMode,
         status: IntakeStatus,
         source: IntakeSource,
+        sessionSeq: Int = 0,
     ): RecordLogResult = try {
         database.withTransaction {
             if (existingLog?.status == IntakeStatus.TAKEN) {
@@ -183,6 +222,7 @@ class IntakeRepository @Inject constructor(
                     source = source,
                     createdAt = existingLog?.createdAt ?: now,
                     updatedAt = now,
+                    sessionSeq = sessionSeq,
                 ),
             )
 

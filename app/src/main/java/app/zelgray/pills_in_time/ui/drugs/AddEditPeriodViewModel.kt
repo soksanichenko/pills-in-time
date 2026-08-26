@@ -8,6 +8,7 @@ import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.EndMode
+import app.zelgray.pills_in_time.data.local.entity.isSession
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeTimeInput
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
@@ -34,6 +35,9 @@ import javax.inject.Inject
 
 enum class StartMode { CUSTOM, CONTINUE }
 
+/** Which cadence a session-type row (see IntakeTime.isSession) uses — mirrors ScheduleRepository's mutually exclusive nullable fields. */
+enum class SessionCadence { HOURLY, COUNT_PER_DAY }
+
 data class TimeRowState(
     val rowKey: Long,
     val id: Long = 0,
@@ -48,6 +52,15 @@ data class TimeRowState(
     // Rings like a system alarm (full-screen, alarm-stream sound) instead of
     // a regular notification — for doses that need to actually wake the patient.
     val isAlarmClock: Boolean = false,
+    // Session-based dosing (e.g. hourly eye drops from wake to sleep, or a
+    // fixed count per day, with no fixed clock time) — timeOfDay above is an
+    // unused placeholder when isSessionRow is true. At most one session row
+    // is allowed per period (AddEditPeriodUiState.canAddSessionRow).
+    val isSessionRow: Boolean = false,
+    val sessionDayStartFrom: LocalTime = LocalTime.of(8, 0),
+    val sessionCadence: SessionCadence = SessionCadence.HOURLY,
+    val sessionIntervalHoursText: String = "1",
+    val sessionTimesPerDayText: String = "3",
 )
 
 data class AddEditPeriodUiState(
@@ -120,6 +133,10 @@ data class AddEditPeriodUiState(
     // to choose between, and at least one time actually consumes in units
     // (STRENGTH-mode times keep resolving via their own combo, pin or not).
     val pinnedSupplyAvailable: Boolean get() = stockBatches.size > 1 && times.any { it.doseMode == DoseMode.UNITS }
+
+    // Simplification: at most one session-type row per period (a second one
+    // would be a confusing UX this app doesn't ask for).
+    val canAddSessionRow: Boolean get() = times.none { it.isSessionRow }
 }
 
 @HiltViewModel
@@ -182,6 +199,11 @@ class AddEditPeriodViewModel @Inject constructor(
                                     doseValueText = formatPlainNumber(t.doseValue),
                                     doseAllocation = t.doseAllocation,
                                     isAlarmClock = t.isAlarmClock,
+                                    isSessionRow = t.isSession,
+                                    sessionDayStartFrom = t.sessionDayStartFrom ?: LocalTime.of(8, 0),
+                                    sessionCadence = if (t.sessionTimesPerDay != null) SessionCadence.COUNT_PER_DAY else SessionCadence.HOURLY,
+                                    sessionIntervalHoursText = (t.sessionIntervalHours ?: 1).toString(),
+                                    sessionTimesPerDayText = (t.sessionTimesPerDay ?: 3).toString(),
                                 )
                             }.ifEmpty { listOf(TimeRowState(rowKey = rowKeySeq++, timeOfDay = LocalTime.of(8, 0))) },
                             effectiveStrength = effectiveStrength,
@@ -279,6 +301,38 @@ class AddEditPeriodViewModel @Inject constructor(
         _uiState.update { it.copy(times = it.times.filterNot { row -> row.rowKey == rowKey }) }
     }
 
+    /** Adds a session-type row (see IntakeTime.isSession) — at most one per period, see canAddSessionRow. */
+    fun onAddSessionTimeRow() {
+        val state = _uiState.value
+        if (!state.canAddSessionRow) return
+        val newRow = TimeRowState(rowKey = rowKeySeq++, timeOfDay = LocalTime.MIDNIGHT, isSessionRow = true)
+        _uiState.update { it.copy(times = it.times + newRow, timesError = false) }
+    }
+
+    fun onSessionDayStartFromChange(rowKey: Long, time: LocalTime) {
+        _uiState.update { state ->
+            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(sessionDayStartFrom = time) else it })
+        }
+    }
+
+    fun onSessionCadenceChange(rowKey: Long, cadence: SessionCadence) {
+        _uiState.update { state ->
+            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(sessionCadence = cadence) else it })
+        }
+    }
+
+    fun onSessionIntervalHoursChange(rowKey: Long, text: String) {
+        _uiState.update { state ->
+            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(sessionIntervalHoursText = text) else it }, timesError = false)
+        }
+    }
+
+    fun onSessionTimesPerDayChange(rowKey: Long, text: String) {
+        _uiState.update { state ->
+            state.copy(times = state.times.map { if (it.rowKey == rowKey) it.copy(sessionTimesPerDayText = text) else it }, timesError = false)
+        }
+    }
+
     fun onTimeOfDayChange(rowKey: Long, newTime: LocalTime) {
         _uiState.update { state ->
             // Dedup by exact time, same rule as adding a new row — silently
@@ -362,7 +416,13 @@ class AddEditPeriodViewModel @Inject constructor(
     fun save(onSaved: () -> Unit) {
         val state = _uiState.value
         val timesInvalid = state.times.isEmpty() ||
-            state.times.any { (parseLocaleAwareDouble(it.doseValueText) ?: 0.0) <= 0 }
+            state.times.any { (parseLocaleAwareDouble(it.doseValueText) ?: 0.0) <= 0 } ||
+            state.times.any { row ->
+                row.isSessionRow && when (row.sessionCadence) {
+                    SessionCadence.HOURLY -> (row.sessionIntervalHoursText.toIntOrNull() ?: 0) <= 0
+                    SessionCadence.COUNT_PER_DAY -> (row.sessionTimesPerDayText.toIntOrNull() ?: 0) <= 0
+                }
+            }
         val durationInvalid = state.endMode == EndMode.DAYS &&
             (state.durationDaysText.toIntOrNull() == null || state.durationDaysText.toIntOrNull()!! < 1)
         val durationOccurrencesInvalid = state.endMode == EndMode.OCCURRENCES &&
@@ -396,11 +456,16 @@ class AddEditPeriodViewModel @Inject constructor(
                 }
                 IntakeTimeInput(
                     id = row.id,
-                    timeOfDay = row.timeOfDay,
+                    timeOfDay = if (row.isSessionRow) LocalTime.MIDNIGHT else row.timeOfDay,
                     doseMode = row.doseMode,
                     doseValue = doseValue,
                     doseAllocation = allocation,
                     isAlarmClock = row.isAlarmClock,
+                    sessionDayStartFrom = row.sessionDayStartFrom.takeIf { row.isSessionRow },
+                    sessionIntervalHours = row.sessionIntervalHoursText.toIntOrNull()
+                        .takeIf { row.isSessionRow && row.sessionCadence == SessionCadence.HOURLY },
+                    sessionTimesPerDay = row.sessionTimesPerDayText.toIntOrNull()
+                        .takeIf { row.isSessionRow && row.sessionCadence == SessionCadence.COUNT_PER_DAY },
                 )
             }
             scheduleRepository.savePeriod(

@@ -36,6 +36,7 @@ class StockRepository @Inject constructor(
         strengthUnit: StrengthUnit?,
         lowStockReminderDaysBefore: Int? = null,
         lowStockReminderUnitsBefore: Double? = null,
+        dropsPerMl: Double? = null,
     ): Long {
         val id = stockBatchDao.insert(
             DrugStockBatch(
@@ -46,6 +47,7 @@ class StockRepository @Inject constructor(
                 addedAt = Instant.now(),
                 lowStockReminderDaysBefore = lowStockReminderDaysBefore,
                 lowStockReminderUnitsBefore = lowStockReminderUnitsBefore,
+                dropsPerMl = dropsPerMl,
             ),
         )
         LowStockCheckWorker.enqueueNow(context)

@@ -90,4 +90,24 @@ class ScheduleAlarmsForWindowUseCaseTest {
         val specs = useCase(emptyList(), emptyMap(), today, LocalDateTime.of(today, LocalTime.of(9, 0)))
         assertTrue(specs.isEmpty())
     }
+
+    @Test
+    fun `session-based time never produces a dose-reminder alarm spec`() {
+        // No DailySession data flows into this window (session alarms are
+        // scheduled separately, see SessionActionHandler/ScheduleSessionPromptsForWindowUseCase),
+        // so a session-type time must never surface here regardless of window size.
+        val today = LocalDate.of(2026, 7, 17)
+        val sessionTime = IntakeTime(
+            id = 1,
+            scheduledIntakeId = 1,
+            timeOfDay = LocalTime.MIDNIGHT,
+            doseMode = DoseMode.UNITS,
+            doseValue = 1.0,
+            sessionDayStartFrom = LocalTime.of(8, 0),
+            sessionIntervalHours = 1,
+        )
+        val p = period(start = today.minusDays(5), times = listOf(sessionTime))
+        val specs = useCase(listOf(p), emptyMap(), today, LocalDateTime.of(today, LocalTime.of(9, 0)), windowDays = 3)
+        assertTrue(specs.isEmpty())
+    }
 }

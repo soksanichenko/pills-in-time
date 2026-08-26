@@ -46,8 +46,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.CycleType
+import app.zelgray.pills_in_time.data.local.entity.DailySession
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
+import app.zelgray.pills_in_time.data.local.entity.isSession
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import app.zelgray.pills_in_time.domain.model.EffectiveStrength
 import app.zelgray.pills_in_time.domain.model.PeriodStockProjection
@@ -232,11 +234,14 @@ fun DrugDetailScreen(
                                 ?.get(periodWithTimes.scheduledIntake.id),
                             batchExhaustionDates = state.stockProjection?.batchExhaustionDates.orEmpty(),
                             shortfall = state.shortfallByPeriodId[periodWithTimes.scheduledIntake.id],
+                            todaySession = state.todaySessionByScheduledIntakeId[periodWithTimes.scheduledIntake.id],
                             onEdit = { onEditPeriod(drugId, periodWithTimes.scheduledIntake.id) },
                             onDelete = { periodPendingDelete = periodWithTimes },
                             onStop = { periodPendingStop = periodWithTimes },
                             onPause = { periodPendingPause = periodWithTimes },
                             onResume = { viewModel.resumePeriod(periodWithTimes) },
+                            onStartDay = { viewModel.startDay(periodWithTimes) },
+                            onEndDay = { viewModel.endDay(periodWithTimes) },
                             onShowShortfall = { shortfallToShow = it },
                             onShowStockBreakdown = { title, lines -> stockBreakdownToShow = title to lines },
                         )
@@ -417,11 +422,14 @@ private fun PeriodCard(
     stockProjection: PeriodStockProjection?,
     batchExhaustionDates: Map<Long, LocalDate>,
     shortfall: StockShortfall?,
+    todaySession: DailySession?,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onStop: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
+    onStartDay: () -> Unit,
+    onEndDay: () -> Unit,
     onShowShortfall: (StockShortfall) -> Unit,
     onShowStockBreakdown: (String, List<String>) -> Unit,
 ) {
@@ -580,6 +588,17 @@ private fun PeriodCard(
                 if (canManage) {
                     TextButton(onClick = onStop) {
                         Text(stringResource(R.string.stop_period_action))
+                    }
+                }
+                if (canManage && periodWithTimes.times.any { it.isSession }) {
+                    if (todaySession == null || todaySession.endedAt != null) {
+                        TextButton(onClick = onStartDay) {
+                            Text(stringResource(R.string.action_start_day))
+                        }
+                    } else {
+                        TextButton(onClick = onEndDay) {
+                            Text(stringResource(R.string.action_end_day))
+                        }
                     }
                 }
                 IconButton(onClick = onEdit) {

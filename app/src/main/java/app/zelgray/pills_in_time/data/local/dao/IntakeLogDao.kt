@@ -76,6 +76,13 @@ interface IntakeLogDao {
     @Query("SELECT * FROM intake_logs WHERE id = :id")
     suspend fun getById(id: Long): IntakeLog?
 
+    /** Highest sessionSeq already logged for this triple (null if none) — the next session dose is one past this. */
+    @Query(
+        "SELECT MAX(sessionSeq) FROM intake_logs " +
+            "WHERE scheduledIntakeId = :scheduledIntakeId AND intakeTimeId = :intakeTimeId AND occurrenceDate = :date",
+    )
+    suspend fun getMaxSessionSeq(scheduledIntakeId: Long, intakeTimeId: Long, date: LocalDate): Int?
+
     @Query("DELETE FROM intake_logs")
     suspend fun deleteAllLogs()
 }

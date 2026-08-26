@@ -79,6 +79,14 @@
     <string name="unit_mcg">мкг</string>
     <string name="unit_iu">МЕ</string>
 
+    <string name="drops_calibration_toggle">Рассчитать по объёму флакона</string>
+    <string name="bottle_volume_label">Объём флакона (мл)</string>
+    <string name="bottle_volume_placeholder">10</string>
+    <string name="bottle_volume_error">Введите объём больше 0</string>
+    <string name="drops_per_ml_label">Капель на мл (эта капельница)</string>
+    <string name="drops_per_ml_placeholder">20</string>
+    <string name="drops_per_ml_error">Введите значение больше 0</string>
+
     <string name="periods_section_title">Периоды</string>
     <string name="add_period_action">Добавить период</string>
     <string name="periods_empty">Пока нет периодов.</string>
@@ -136,6 +144,14 @@
     <string name="new_time_label">Новое время</string>
     <string name="add_time_action">Добавить</string>
 
+    <string name="session_row_title">Сессионный приём</string>
+    <string name="session_day_start_from_label">Спрашивать начиная с</string>
+    <string name="session_cadence_hourly_label">Каждые N часов</string>
+    <string name="session_cadence_count_label">N раз в день</string>
+    <string name="session_interval_hours_label">Интервал (часов)</string>
+    <string name="session_times_per_day_label">Раз в день</string>
+    <string name="add_session_time_action">Добавить сессионный приём</string>
+
     <string name="period_cycle_label">Цикл</string>
     <string name="cycle_daily">Ежедневно</string>
     <string name="cycle_every_other_day">Через день</string>
@@ -176,6 +192,7 @@
     <string name="status_skipped">Пропущено</string>
     <string name="status_missed">Пропущено без записи</string>
 
+    <string name="session_dose_label">Доза %1$d</string>
     <string name="action_took_it">Принял(а)</string>
     <string name="action_skipped">Пропустить</string>
     <string name="action_snooze">Напомнить позже</string>
@@ -193,6 +210,18 @@
 
     <string name="notification_low_stock_channel_name">Напоминания о запасе</string>
     <string name="notification_low_stock_channel_description">Уведомления, когда запас скоро закончится</string>
+
+    <string name="notification_channel_session_name">Сессионные напоминания</string>
+    <string name="notification_channel_session_description">Напоминания каждый час или N раз в день — с момента начала дня и до отбоя</string>
+    <string name="session_start_prompt_title">Начать день?</string>
+    <string name="session_start_prompt_text">%1$s — нажмите, чтобы начать часовые напоминания</string>
+    <string name="action_start_day">День начат</string>
+    <string name="action_end_day">Иду спать</string>
+    <string name="session_hourly_status_title">%1$s — сессия активна</string>
+    <string name="session_hourly_next_dose">Следующая доза ~%1$s</string>
+    <string name="session_hourly_dose_due">Пора принять</string>
+    <string name="session_count_status_title">%1$s — %2$d из %3$d сегодня</string>
+    <string name="session_count_status_done">Все %1$d приёма(ов) на сегодня выполнены</string>
     <string name="low_stock_notification_title">Запас заканчивается: %1$s</string>
     <string name="low_stock_notification_text">Осталось %1$s — закончится примерно %2$s</string>
     <string name="low_stock_notification_text_with_supply">%1$s: осталось %2$s — закончится примерно %3$s</string>

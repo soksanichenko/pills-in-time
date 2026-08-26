@@ -223,7 +223,7 @@ private fun GroupIntakeRow(item: GroupIntakeItem, onToggle: () -> Unit) {
             Checkbox(checked = item.checked, onCheckedChange = { onToggle() }, enabled = actionable)
             Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
                 Text(
-                    text = item.occurrence.timeOfDay.format(DateTimeFormatter.ofPattern("HH:mm")) + "  " + item.drug.name,
+                    text = item.occurrence.timeOfDay?.format(DateTimeFormatter.ofPattern("HH:mm")).orEmpty() + "  " + item.drug.name,
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Text(

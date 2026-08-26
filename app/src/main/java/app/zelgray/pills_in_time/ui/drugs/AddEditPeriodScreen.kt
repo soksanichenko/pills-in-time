@@ -268,6 +268,55 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
         state.times.forEach { row ->
             Card(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                 Column(modifier = Modifier.padding(12.dp)) {
+                    if (row.isSessionRow) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.session_row_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.weight(1f),
+                            )
+                            IconButton(onClick = { viewModel.onRemoveTimeRow(row.rowKey) }) {
+                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_delete))
+                            }
+                        }
+                        TimePickerField(
+                            label = stringResource(R.string.session_day_start_from_label),
+                            time = row.sessionDayStartFrom,
+                            onTimeChange = { viewModel.onSessionDayStartFromChange(row.rowKey, it) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        )
+                        ChipSelector(
+                            options = listOf(
+                                ChipOption(SessionCadence.HOURLY, stringResource(R.string.session_cadence_hourly_label)),
+                                ChipOption(SessionCadence.COUNT_PER_DAY, stringResource(R.string.session_cadence_count_label)),
+                            ),
+                            selected = row.sessionCadence,
+                            onSelect = { viewModel.onSessionCadenceChange(row.rowKey, it) },
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        )
+                        if (row.sessionCadence == SessionCadence.HOURLY) {
+                            OutlinedTextField(
+                                value = row.sessionIntervalHoursText,
+                                onValueChange = { viewModel.onSessionIntervalHoursChange(row.rowKey, it) },
+                                label = { Text(stringResource(R.string.session_interval_hours_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                singleLine = true,
+                            )
+                        } else {
+                            OutlinedTextField(
+                                value = row.sessionTimesPerDayText,
+                                onValueChange = { viewModel.onSessionTimesPerDayChange(row.rowKey, it) },
+                                label = { Text(stringResource(R.string.session_times_per_day_label)) },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                singleLine = true,
+                            )
+                        }
+                    } else {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -306,6 +355,7 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
                     )
                     if (row.isAlarmClock) {
                         FullScreenIntentHint()
+                    }
                     }
 
                     ChipSelector(
@@ -380,6 +430,12 @@ private fun TimesSection(state: AddEditPeriodUiState, viewModel: AddEditPeriodVi
             Spacer(modifier = Modifier.size(8.dp))
             TextButton(onClick = viewModel::onAddTimeRow) {
                 Text(stringResource(R.string.add_time_action))
+            }
+        }
+
+        if (state.canAddSessionRow) {
+            TextButton(onClick = viewModel::onAddSessionTimeRow) {
+                Text(stringResource(R.string.add_session_time_action))
             }
         }
     }

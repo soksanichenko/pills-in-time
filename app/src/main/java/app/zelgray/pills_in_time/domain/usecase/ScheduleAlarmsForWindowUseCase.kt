@@ -29,8 +29,13 @@ class ScheduleAlarmsForWindowUseCase @Inject constructor(
             val date = today.plusDays(offset.toLong())
             val logs = logsByDate[date].orEmpty()
             generateOccurrences(periods, logs, date, today, now)
-                .filter { it.status == OccurrenceStatus.UPCOMING }
-                .map { occurrence ->
+                // Session occurrences (sessionSeq != 0) are excluded: their
+                // alarms aren't known this far ahead (an HOURLY session's next
+                // tick depends on when the day is actually started) and are
+                // scheduled separately once the day begins.
+                .filter { it.status == OccurrenceStatus.UPCOMING && it.sessionSeq == 0 }
+                .mapNotNull { occurrence ->
+                    val timeOfDay = occurrence.timeOfDay ?: return@mapNotNull null
                     AlarmSpec(
                         requestCode = computeRequestCode(
                             occurrence.scheduledIntakeId,
@@ -41,8 +46,8 @@ class ScheduleAlarmsForWindowUseCase @Inject constructor(
                         intakeTimeId = occurrence.intakeTimeId,
                         drugId = occurrence.drugId,
                         occurrenceDate = occurrence.occurrenceDate,
-                        timeOfDay = occurrence.timeOfDay,
-                        triggerAtEpochMilli = LocalDateTime.of(occurrence.occurrenceDate, occurrence.timeOfDay)
+                        timeOfDay = timeOfDay,
+                        triggerAtEpochMilli = LocalDateTime.of(occurrence.occurrenceDate, timeOfDay)
                             .atZone(zoneId)
                             .toInstant()
                             .toEpochMilli(),

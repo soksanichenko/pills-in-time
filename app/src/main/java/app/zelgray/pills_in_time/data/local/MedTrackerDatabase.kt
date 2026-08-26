@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import app.zelgray.pills_in_time.data.local.converter.Converters
+import app.zelgray.pills_in_time.data.local.dao.DailySessionDao
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogConsumptionDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
@@ -13,6 +14,7 @@ import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduledAlarmDao
 import app.zelgray.pills_in_time.data.local.dao.SnoozedOccurrenceDao
 import app.zelgray.pills_in_time.data.local.dao.StockBatchDao
+import app.zelgray.pills_in_time.data.local.entity.DailySession
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.IntakeLog
@@ -34,8 +36,9 @@ import app.zelgray.pills_in_time.data.local.entity.SnoozedOccurrence
         ScheduledAlarm::class,
         IntakeLogConsumption::class,
         SnoozedOccurrence::class,
+        DailySession::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -49,6 +52,7 @@ abstract class MedTrackerDatabase : RoomDatabase() {
     abstract fun scheduledAlarmDao(): ScheduledAlarmDao
     abstract fun intakeLogConsumptionDao(): IntakeLogConsumptionDao
     abstract fun snoozedOccurrenceDao(): SnoozedOccurrenceDao
+    abstract fun dailySessionDao(): DailySessionDao
 
     companion object {
         const val DATABASE_NAME = "med_tracker.db"

@@ -3,9 +3,12 @@ package app.zelgray.pills_in_time.ui.drugs
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.zelgray.pills_in_time.data.local.entity.DailySession
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
+import app.zelgray.pills_in_time.data.local.entity.isSession
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
+import app.zelgray.pills_in_time.data.repository.DailySessionRepository
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
@@ -17,6 +20,7 @@ import app.zelgray.pills_in_time.domain.usecase.ProjectDrugStockUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.domain.usecase.INDEFINITE_PAUSE_DATE
 import app.zelgray.pills_in_time.domain.usecase.computePauseUntilDateForOccurrences
+import app.zelgray.pills_in_time.notification.SessionActionHandler
 import app.zelgray.pills_in_time.ui.navigation.NavRoutes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,6 +41,10 @@ data class DrugDetailUiState(
     // shortfall entry here — an open-ended period has no course to complete.
     val shortfallByPeriodId: Map<Long, StockShortfall> = emptyMap(),
     val overallShortfall: StockShortfall? = null,
+    // Today's DailySession (see IntakeTime.isSession) for whichever periods
+    // have a session-type time — absent means that period's day hasn't been
+    // started yet today.
+    val todaySessionByScheduledIntakeId: Map<Long, DailySession> = emptyMap(),
     val isLoading: Boolean = true,
 )
 
@@ -46,6 +54,8 @@ class DrugDetailViewModel @Inject constructor(
     private val drugRepository: DrugRepository,
     private val stockRepository: StockRepository,
     private val scheduleRepository: ScheduleRepository,
+    private val dailySessionRepository: DailySessionRepository,
+    private val sessionActionHandler: SessionActionHandler,
     private val resolveEffectiveStrength: ResolveEffectiveStrengthUseCase,
     private val projectDrugStock: ProjectDrugStockUseCase,
     private val computeStockShortfall: ComputeStockShortfallUseCase,
@@ -57,7 +67,8 @@ class DrugDetailViewModel @Inject constructor(
         drugRepository.observeById(drugId),
         stockRepository.observeBatchesForDrug(drugId),
         scheduleRepository.observePeriodsForDrug(drugId),
-    ) { drug, batches, periods ->
+        dailySessionRepository.observeInRange(LocalDate.now(), LocalDate.now()),
+    ) { drug, batches, periods, todaySessions ->
         val effectiveStrength = resolveEffectiveStrength(batches)
         val today = LocalDate.now()
 
@@ -83,6 +94,7 @@ class DrugDetailViewModel @Inject constructor(
             ),
             shortfallByPeriodId = shortfallByPeriodId,
             overallShortfall = overallShortfall,
+            todaySessionByScheduledIntakeId = todaySessions.associateBy { it.scheduledIntakeId },
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DrugDetailUiState())
@@ -142,5 +154,21 @@ class DrugDetailViewModel @Inject constructor(
 
     fun resumePeriod(periodWithTimes: ScheduledIntakeWithTimes) {
         viewModelScope.launch { scheduleRepository.resumePeriod(periodWithTimes.scheduledIntake.id) }
+    }
+
+    /** Manual "Начать день" — the same start-of-day anchor a day-start-prompt notification tap would set. */
+    fun startDay(periodWithTimes: ScheduledIntakeWithTimes) {
+        val time = periodWithTimes.times.find { it.isSession } ?: return
+        viewModelScope.launch {
+            sessionActionHandler.startDay(periodWithTimes.scheduledIntake.id, time.id, LocalDate.now())
+        }
+    }
+
+    /** Manual "Иду спать" — ends today's session early. */
+    fun endDay(periodWithTimes: ScheduledIntakeWithTimes) {
+        val time = periodWithTimes.times.find { it.isSession } ?: return
+        viewModelScope.launch {
+            sessionActionHandler.endDay(periodWithTimes.scheduledIntake.id, time.id, LocalDate.now())
+        }
     }
 }

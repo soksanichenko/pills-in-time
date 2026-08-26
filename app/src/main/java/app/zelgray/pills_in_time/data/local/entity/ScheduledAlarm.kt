@@ -10,4 +10,5 @@ data class ScheduledAlarm(
     val intakeTimeId: Long,
     val occurrenceDate: LocalDate,
     val triggerAtMillis: Long,
+    val kind: AlarmKind = AlarmKind.DOSE_REMINDER,
 )

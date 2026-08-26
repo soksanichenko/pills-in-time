@@ -2,6 +2,7 @@ package app.zelgray.pills_in_time.notification
 
 import android.content.Intent
 import androidx.work.Data
+import app.zelgray.pills_in_time.data.local.entity.AlarmKind
 import app.zelgray.pills_in_time.data.local.entity.DoseMode
 import app.zelgray.pills_in_time.domain.model.AlarmSpec
 import app.zelgray.pills_in_time.domain.model.Occurrence
@@ -23,6 +24,8 @@ object NotificationContracts {
     const val ACTION_VIEW_STOCK = "app.zelgray.pills_in_time.action.VIEW_STOCK"
     const val ACTION_SNOOZE_LOW_STOCK = "app.zelgray.pills_in_time.action.SNOOZE_LOW_STOCK"
     const val ACTION_VIEW_GROUP = "app.zelgray.pills_in_time.action.VIEW_GROUP"
+    const val ACTION_START_DAY = "app.zelgray.pills_in_time.action.START_DAY"
+    const val ACTION_END_DAY = "app.zelgray.pills_in_time.action.END_DAY"
 
     const val EXTRA_DRUG_ID = "extra_drug_id"
     const val EXTRA_SCHEDULED_INTAKE_ID = "extra_scheduled_intake_id"
@@ -37,6 +40,7 @@ object NotificationContracts {
     const val EXTRA_RUN_OUT_DATE_EPOCH_DAY = "extra_run_out_date_epoch_day"
     const val EXTRA_PATIENT_ID = "extra_patient_id"
     const val EXTRA_GROUP_MEMBERS = "extra_group_members"
+    const val EXTRA_KIND = "extra_kind"
 
     fun dataFromSpec(spec: AlarmSpec): Data = Data.Builder()
         .putLong(EXTRA_DRUG_ID, spec.drugId)
@@ -46,6 +50,7 @@ object NotificationContracts {
         .putInt(EXTRA_TIME_OF_DAY_SECOND, spec.timeOfDay.toSecondOfDay())
         .putDouble(EXTRA_DOSE_VALUE, spec.doseValue)
         .putString(EXTRA_DOSE_MODE, spec.doseMode.name)
+        .putString(EXTRA_KIND, spec.kind.name)
         .build()
 
     fun dataFromIntent(intent: Intent): Data = Data.Builder()
@@ -57,14 +62,27 @@ object NotificationContracts {
         .putDouble(EXTRA_DOSE_VALUE, intent.getDoubleExtra(EXTRA_DOSE_VALUE, 1.0))
         .putString(EXTRA_DOSE_MODE, intent.getStringExtra(EXTRA_DOSE_MODE) ?: DoseMode.UNITS.name)
         .putInt(EXTRA_NOTIFICATION_ID, intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1))
+        .putString(EXTRA_KIND, intent.getStringExtra(EXTRA_KIND) ?: AlarmKind.DOSE_REMINDER.name)
         .build()
+
+    fun kindOf(data: Data): AlarmKind =
+        data.getString(EXTRA_KIND)?.let { runCatching { AlarmKind.valueOf(it) }.getOrNull() } ?: AlarmKind.DOSE_REMINDER
+
+    /** Distinct per dose-within-day, since one date can have many session ticks (unlike the single per-triple dose-reminder id). */
+    fun computeSessionTickRequestCode(scheduledIntakeId: Long, intakeTimeId: Long, date: LocalDate, sessionSeq: Int): Int {
+        var result = scheduledIntakeId.hashCode()
+        result = 31 * result + intakeTimeId.hashCode()
+        result = 31 * result + date.hashCode()
+        result = 31 * result + sessionSeq.hashCode()
+        return result
+    }
 
     fun dataFromOccurrence(occurrence: Occurrence): Data = Data.Builder()
         .putLong(EXTRA_DRUG_ID, occurrence.drugId)
         .putLong(EXTRA_SCHEDULED_INTAKE_ID, occurrence.scheduledIntakeId)
         .putLong(EXTRA_INTAKE_TIME_ID, occurrence.intakeTimeId)
         .putLong(EXTRA_OCCURRENCE_DATE_EPOCH_DAY, occurrence.occurrenceDate.toEpochDay())
-        .putInt(EXTRA_TIME_OF_DAY_SECOND, occurrence.timeOfDay.toSecondOfDay())
+        .putInt(EXTRA_TIME_OF_DAY_SECOND, occurrence.timeOfDay?.toSecondOfDay() ?: 0)
         .putDouble(EXTRA_DOSE_VALUE, occurrence.doseValue)
         .putString(EXTRA_DOSE_MODE, occurrence.doseMode.name)
         .build()

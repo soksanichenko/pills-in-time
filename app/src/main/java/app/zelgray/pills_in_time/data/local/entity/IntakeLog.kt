@@ -30,7 +30,7 @@ import java.time.LocalDate
         ),
     ],
     indices = [
-        Index(value = ["scheduledIntakeId", "intakeTimeId", "occurrenceDate"], unique = true),
+        Index(value = ["scheduledIntakeId", "intakeTimeId", "occurrenceDate", "sessionSeq"], unique = true),
         Index("drugId"),
         Index("intakeTimeId"),
     ],
@@ -48,4 +48,13 @@ data class IntakeLog(
     val source: IntakeSource,
     val createdAt: Instant,
     val updatedAt: Instant,
+    // 0 for an ordinary fixed-time occurrence (the vast majority of logs).
+    // For a session-based IntakeTime, each dose within a day gets its own
+    // 1-based ordinal, since a session day can produce many logs against the
+    // same (scheduledIntakeId, intakeTimeId, occurrenceDate) triple — the
+    // uniqueness index above only holds one row per triple otherwise.
+    // Deliberately non-nullable: SQLite's UNIQUE index treats every NULL as
+    // distinct, so a nullable column here would silently stop deduplicating
+    // ordinary logs.
+    val sessionSeq: Int = 0,
 )

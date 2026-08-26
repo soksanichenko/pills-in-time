@@ -260,4 +260,43 @@ class ProjectDrugStockUseCaseTest {
 
         assertTrue(result.periodProjections.getValue(1L).atStartByBatch.isEmpty())
     }
+
+    private fun sessionTime(
+        id: Long = 1,
+        scheduledIntakeId: Long = 1,
+        dayStartFrom: LocalTime = LocalTime.of(8, 0),
+        intervalHours: Int? = null,
+        timesPerDay: Int? = null,
+    ) = IntakeTime(
+        id = id,
+        scheduledIntakeId = scheduledIntakeId,
+        timeOfDay = LocalTime.MIDNIGHT,
+        doseMode = DoseMode.UNITS,
+        doseValue = 1.0,
+        sessionDayStartFrom = dayStartFrom,
+        sessionIntervalHours = intervalHours,
+        sessionTimesPerDay = timesPerDay,
+    )
+
+    @Test
+    fun `count-per-day session consumes exactly its target count each active day`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val p = period(start = today, end = today, times = listOf(sessionTime(timesPerDay = 3)))
+        val result = useCase(listOf(p), batches = listOf(batch(quantity = 10.0)), today = today)
+        // One active day (start == end) at 3 doses/day -> 10 - 3 = 7.
+        assertEquals(7.0, result.periodProjections.getValue(1L).atEnd!!, 0.001)
+    }
+
+    @Test
+    fun `hourly session consumes many doses a day, not just one`() {
+        val today = LocalDate.of(2026, 7, 17)
+        val p = period(
+            start = today,
+            end = today,
+            times = listOf(sessionTime(dayStartFrom = LocalTime.of(8, 0), intervalHours = 1)),
+        )
+        val result = useCase(listOf(p), batches = listOf(batch(quantity = 100.0)), today = today)
+        // 08:00 to midnight is 16 hours, every 1h -> 16 doses that single day.
+        assertEquals(84.0, result.periodProjections.getValue(1L).atEnd!!, 0.001)
+    }
 }

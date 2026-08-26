@@ -9,10 +9,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import app.zelgray.pills_in_time.R
+import app.zelgray.pills_in_time.data.local.entity.DailySession
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.IntakeStatus
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
+import app.zelgray.pills_in_time.data.repository.DailySessionRepository
 import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.IntakeRepository
 import app.zelgray.pills_in_time.data.repository.PatientRepository
@@ -28,6 +30,7 @@ import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
 import app.zelgray.pills_in_time.notification.NotificationContracts
 import app.zelgray.pills_in_time.notification.PostNotificationWorker
+import app.zelgray.pills_in_time.notification.SessionActionHandler
 import app.zelgray.pills_in_time.util.NowProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -85,6 +88,8 @@ class HomeViewModel @Inject constructor(
     private val patientRepository: PatientRepository,
     private val stockRepository: StockRepository,
     private val settingsRepository: SettingsRepository,
+    private val dailySessionRepository: DailySessionRepository,
+    private val sessionActionHandler: SessionActionHandler,
     private val generateOccurrences: GenerateOccurrencesForDateUseCase,
     private val resolveEffectiveStrength: ResolveEffectiveStrengthUseCase,
     private val nowProvider: NowProvider,
@@ -116,11 +121,12 @@ class HomeViewModel @Inject constructor(
             combine(
                 intakeRepository.observeLogsForDate(date),
                 intakeRepository.observeSnoozedForDate(date),
-            ) { logs, snoozed ->
+                dailySessionRepository.observeInRange(date, date),
+            ) { logs, snoozed, sessions ->
                 val now = nowProvider.currentLocalDateTime()
                 val drugsById = inputs.drugs.associateBy { it.id }
                 val batchesByDrugId = inputs.stockBatches.groupBy { it.drugId }
-                val occurrences = generateOccurrences(inputs.periods, logs, date, today, now, snoozed = snoozed)
+                val occurrences = generateOccurrences(inputs.periods, logs, date, today, now, snoozed = snoozed, sessions = sessions)
                 HomeUiState(
                     dayOffset = inputs.offset,
                     date = date,
@@ -149,12 +155,14 @@ class HomeViewModel @Inject constructor(
             combine(
                 scheduleRepository.observeAllPeriods(patientId),
                 intakeRepository.observeRawLogsInRange(patientId, month.atDay(1), month.atEndOfMonth()),
-            ) { periods, logs ->
+                dailySessionRepository.observeInRange(month.atDay(1), month.atEndOfMonth()),
+            ) { periods, logs, sessions ->
                 val today = nowProvider.currentLocalDate()
                 val now = nowProvider.currentLocalDateTime()
+                val sessionsByDate = sessions.groupBy { it.date }
                 (1..month.lengthOfMonth()).associate { day ->
                     val date = month.atDay(day)
-                    val occurrences = generateOccurrences(periods, logs, date, today, now)
+                    val occurrences = generateOccurrences(periods, logs, date, today, now, sessions = sessionsByDate[date].orEmpty())
                     date to calendarMarkFor(date, occurrences, today)
                 }
             }
@@ -212,6 +220,9 @@ class HomeViewModel @Inject constructor(
      * IntakeActionReceiver/SnoozeWorker.
      */
     fun onSnooze(item: HomeListItem) {
+        // Sessions (see IntakeTime.isSession) don't support snooze — the
+        // ongoing status notification already stays visible until acted on.
+        if (item.occurrence.sessionSeq != 0) return
         viewModelScope.launch {
             val minutes = settingsRepository.getSnoozeMinutesOnce()
             val data = NotificationContracts.dataFromOccurrence(item.occurrence)
@@ -230,20 +241,38 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun recordAction(item: HomeListItem, status: IntakeStatus) {
+        val occurrence = item.occurrence
         viewModelScope.launch {
-            val result = intakeRepository.recordQuickAction(
-                drugId = item.occurrence.drugId,
-                scheduledIntakeId = item.occurrence.scheduledIntakeId,
-                intakeTimeId = item.occurrence.intakeTimeId,
-                occurrenceDate = item.occurrence.occurrenceDate,
-                doseValue = item.occurrence.doseValue,
-                doseMode = item.occurrence.doseMode,
-                status = status,
-            )
+            val result = if (occurrence.sessionSeq != 0) {
+                intakeRepository.recordSessionDose(
+                    drugId = occurrence.drugId,
+                    scheduledIntakeId = occurrence.scheduledIntakeId,
+                    intakeTimeId = occurrence.intakeTimeId,
+                    occurrenceDate = occurrence.occurrenceDate,
+                    doseValue = occurrence.doseValue,
+                    doseMode = occurrence.doseMode,
+                    status = status,
+                )
+            } else {
+                intakeRepository.recordQuickAction(
+                    drugId = occurrence.drugId,
+                    scheduledIntakeId = occurrence.scheduledIntakeId,
+                    intakeTimeId = occurrence.intakeTimeId,
+                    occurrenceDate = occurrence.occurrenceDate,
+                    doseValue = occurrence.doseValue,
+                    doseMode = occurrence.doseMode,
+                    status = status,
+                )
+            }
             if (result == RecordLogResult.InsufficientStock) {
                 _toastMessageRes.value = R.string.insufficient_stock_error
+            } else if (occurrence.sessionSeq != 0) {
+                // Refreshes the ongoing status notification (and, for
+                // COUNT_PER_DAY, auto-ends the day once its target is reached)
+                // instead of dismissing a notification the usual way.
+                sessionActionHandler.refreshAfterDose(occurrence.scheduledIntakeId, occurrence.intakeTimeId, occurrence.occurrenceDate)
             } else {
-                cancelReminderNotification(item.occurrence.scheduledIntakeId, item.occurrence.intakeTimeId, item.occurrence.occurrenceDate)
+                cancelReminderNotification(occurrence.scheduledIntakeId, occurrence.intakeTimeId, occurrence.occurrenceDate)
             }
         }
     }

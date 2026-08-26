@@ -34,6 +34,12 @@ data class IntakeTimeInput(
     val doseValue: Double,
     val doseAllocation: List<DoseComboPiece>? = null,
     val isAlarmClock: Boolean = false,
+    // Session-based dosing (see IntakeTime.isSession) — non-null cadence
+    // field marks this as a session row instead of a fixed-clock one; timeOfDay
+    // above is then an unused placeholder.
+    val sessionDayStartFrom: LocalTime? = null,
+    val sessionIntervalHours: Int? = null,
+    val sessionTimesPerDay: Int? = null,
 )
 
 class ScheduleRepository @Inject constructor(
@@ -138,6 +144,9 @@ class ScheduleRepository @Inject constructor(
                             doseValue = input.doseValue,
                             doseAllocation = input.doseAllocation,
                             isAlarmClock = input.isAlarmClock,
+                            sessionDayStartFrom = input.sessionDayStartFrom,
+                            sessionIntervalHours = input.sessionIntervalHours,
+                            sessionTimesPerDay = input.sessionTimesPerDay,
                         ),
                     )
                 } else {
@@ -149,6 +158,9 @@ class ScheduleRepository @Inject constructor(
                             doseValue = input.doseValue,
                             doseAllocation = input.doseAllocation,
                             isAlarmClock = input.isAlarmClock,
+                            sessionDayStartFrom = input.sessionDayStartFrom,
+                            sessionIntervalHours = input.sessionIntervalHours,
+                            sessionTimesPerDay = input.sessionTimesPerDay,
                         ),
                     )
                 }

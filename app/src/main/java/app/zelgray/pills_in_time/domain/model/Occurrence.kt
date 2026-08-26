@@ -9,12 +9,19 @@ data class Occurrence(
     val intakeTimeId: Long,
     val drugId: Long,
     val occurrenceDate: LocalDate,
-    val timeOfDay: LocalTime,
+    // Null only for a session-based IntakeTime's pending dose (see
+    // IntakeTime.isSession) — it has no fixed clock time, only a computed due
+    // instant for HOURLY, or none at all for COUNT_PER_DAY.
+    val timeOfDay: LocalTime?,
     val doseValue: Double,
     val doseMode: DoseMode,
     val doseAllocation: List<DoseComboPiece>?,
     val status: OccurrenceStatus,
     val logId: Long?,
+    // 0 for an ordinary fixed-time occurrence; a session day's individual
+    // doses (logged or still-pending) get a 1-based ordinal instead — see
+    // IntakeLog.sessionSeq.
+    val sessionSeq: Int = 0,
 )
 
 /**

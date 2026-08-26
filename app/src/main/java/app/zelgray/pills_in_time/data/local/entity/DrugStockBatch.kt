@@ -42,4 +42,12 @@ data class DrugStockBatch(
     // no forecast date to key off — reset to false once quantity rises back
     // above the threshold (e.g. a restock), so it can fire again next time.
     val lowStockReminderUnitsAlreadyFired: Boolean = false,
+    // Drops-per-mL calibration for this specific bottle (DrugForm.DROPS only)
+    // — different dropper mechanisms give different drop volumes, so this is
+    // batch-scoped, not drug-scoped. Purely an entry/display convenience: lets
+    // AddEditStockScreen compute quantity (still stored in drops) from a
+    // bottle-volume input instead of the user converting by hand. Consumption
+    // math elsewhere is untouched — it already operates on quantity in
+    // whatever atomic unit the drug's form implies.
+    val dropsPerMl: Double? = null,
 )

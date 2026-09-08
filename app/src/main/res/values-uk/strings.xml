@@ -23,9 +23,13 @@
     <string name="action_save">Зберегти</string>
     <string name="action_discard">Відхилити</string>
     <string name="action_keep_editing">Продовжити редагування</string>
+    <string name="action_fill_history">Заповнити історію</string>
+    <string name="action_not_now">Не зараз</string>
 
     <string name="unsaved_changes_title">Відхилити зміни?</string>
     <string name="unsaved_changes_body">У вас є незбережені зміни, які буде втрачено.</string>
+
+    <string name="backfill_history_title">Заповнити історію?</string>
 
     <string name="drugs_empty">Ще немає ліків. Натисніть +, щоб додати.</string>
 

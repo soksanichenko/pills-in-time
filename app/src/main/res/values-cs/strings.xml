@@ -23,9 +23,13 @@
     <string name="action_save">Uložit</string>
     <string name="action_discard">Zahodit</string>
     <string name="action_keep_editing">Pokračovat v úpravách</string>
+    <string name="action_fill_history">Vyplnit historii</string>
+    <string name="action_not_now">Teď ne</string>
 
     <string name="unsaved_changes_title">Zahodit změny?</string>
     <string name="unsaved_changes_body">Máte neuložené změny, které budou ztraceny.</string>
+
+    <string name="backfill_history_title">Vyplnit historii?</string>
 
     <string name="drugs_empty">Zatím žádné léky. Klepnutím na + jeden přidáte.</string>
 

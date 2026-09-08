@@ -3,11 +3,15 @@ package app.zelgray.pills_in_time.di
 import android.content.Context
 import androidx.room.Room
 import app.zelgray.pills_in_time.data.local.MedTrackerDatabase
+import app.zelgray.pills_in_time.data.local.dao.DailySessionDao
 import app.zelgray.pills_in_time.data.local.dao.DrugDao
+import app.zelgray.pills_in_time.data.local.dao.IntakeLogConsumptionDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeLogDao
 import app.zelgray.pills_in_time.data.local.dao.IntakeTimeDao
+import app.zelgray.pills_in_time.data.local.dao.PatientDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduleDao
 import app.zelgray.pills_in_time.data.local.dao.ScheduledAlarmDao
+import app.zelgray.pills_in_time.data.local.dao.SnoozedOccurrenceDao
 import app.zelgray.pills_in_time.data.local.dao.StockBatchDao
 import dagger.Module
 import dagger.Provides
@@ -44,4 +48,19 @@ object TestDatabaseModule {
     @Provides
     fun provideScheduledAlarmDao(database: MedTrackerDatabase): ScheduledAlarmDao =
         database.scheduledAlarmDao()
+
+    @Provides
+    fun providePatientDao(database: MedTrackerDatabase): PatientDao = database.patientDao()
+
+    @Provides
+    fun provideIntakeLogConsumptionDao(database: MedTrackerDatabase): IntakeLogConsumptionDao =
+        database.intakeLogConsumptionDao()
+
+    @Provides
+    fun provideSnoozedOccurrenceDao(database: MedTrackerDatabase): SnoozedOccurrenceDao =
+        database.snoozedOccurrenceDao()
+
+    @Provides
+    fun provideDailySessionDao(database: MedTrackerDatabase): DailySessionDao =
+        database.dailySessionDao()
 }

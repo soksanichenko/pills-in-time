@@ -23,9 +23,13 @@
     <string name="action_save">Сохранить</string>
     <string name="action_discard">Отклонить</string>
     <string name="action_keep_editing">Продолжить редактирование</string>
+    <string name="action_fill_history">Заполнить историю</string>
+    <string name="action_not_now">Не сейчас</string>
 
     <string name="unsaved_changes_title">Отклонить изменения?</string>
     <string name="unsaved_changes_body">У вас есть несохранённые изменения, которые будут потеряны.</string>
+
+    <string name="backfill_history_title">Заполнить историю?</string>
 
     <string name="drugs_empty">Пока нет лекарств. Нажмите +, чтобы добавить.</string>
 

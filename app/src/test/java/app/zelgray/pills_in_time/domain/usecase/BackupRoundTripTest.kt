@@ -326,6 +326,140 @@ class BackupRoundTripTest {
     }
 
     @Test
+    fun `session-based dosing and drop calibration fields survive round trip`() {
+        val batch = DrugStockBatch(
+            id = 9,
+            drugId = 1,
+            quantity = 10.0,
+            strengthValue = null,
+            strengthUnit = null,
+            addedAt = Instant.EPOCH,
+            dropsPerMl = 20.0,
+        )
+        val time = IntakeTime(
+            id = 9,
+            scheduledIntakeId = 9,
+            timeOfDay = LocalTime.MIDNIGHT,
+            doseMode = DoseMode.UNITS,
+            doseValue = 1.0,
+            sessionDayStartFrom = LocalTime.of(8, 0),
+            sessionIntervalHours = 2,
+        )
+        val log = IntakeLog(
+            id = 9,
+            drugId = 1,
+            scheduledIntakeId = 9,
+            intakeTimeId = 9,
+            occurrenceDate = LocalDate.of(2026, 1, 1),
+            status = IntakeStatus.TAKEN,
+            actualDateTime = Instant.EPOCH,
+            actualDoseValue = 1.0,
+            actualDoseMode = DoseMode.UNITS,
+            source = IntakeSource.REMINDER,
+            createdAt = Instant.EPOCH,
+            updatedAt = Instant.EPOCH,
+            sessionSeq = 3,
+        )
+        val payload = exportUseCase(
+            patients = emptyList(),
+            drugs = emptyList(),
+            stockBatches = listOf(batch),
+            scheduledIntakes = emptyList(),
+            intakeTimes = listOf(time),
+            intakeLogs = listOf(log),
+            exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
+        )
+        val jsonText = json.encodeToString(payload)
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
+        val imported = importUseCase(decoded)
+
+        assertEquals(batch, imported.stockBatches.single())
+        assertEquals(time, imported.intakeTimes.single())
+        assertEquals(log, imported.intakeLogs.single())
+    }
+
+    @Test
+    fun `legacy backup with session doses flattened to sessionSeq 0 is renumbered instead of colliding`() {
+        // A backup made before IntakeLogDto carried sessionSeq flattens every
+        // dose of a session day to the same triple with sessionSeq = 0 — the
+        // intake_logs unique index would otherwise reject all but one on
+        // restore. Three logs, taken an hour apart, simulate that.
+        val legacyJson = """
+            {
+              "exportedAtEpochMilli": 0,
+              "drugs": [],
+              "stockBatches": [],
+              "scheduledIntakes": [],
+              "intakeTimes": [],
+              "intakeLogs": [
+                {
+                  "id": 1, "drugId": 1, "scheduledIntakeId": 9, "intakeTimeId": 9,
+                  "occurrenceDateEpochDay": 100, "status": "TAKEN",
+                  "actualDateTimeEpochMilli": 1000, "actualDoseValue": 1.0, "actualDoseMode": "UNITS",
+                  "source": "REMINDER", "createdAtEpochMilli": 1000, "updatedAtEpochMilli": 1000
+                },
+                {
+                  "id": 2, "drugId": 1, "scheduledIntakeId": 9, "intakeTimeId": 9,
+                  "occurrenceDateEpochDay": 100, "status": "TAKEN",
+                  "actualDateTimeEpochMilli": 4600000, "actualDoseValue": 1.0, "actualDoseMode": "UNITS",
+                  "source": "REMINDER", "createdAtEpochMilli": 4600000, "updatedAtEpochMilli": 4600000
+                },
+                {
+                  "id": 3, "drugId": 1, "scheduledIntakeId": 9, "intakeTimeId": 9,
+                  "occurrenceDateEpochDay": 100, "status": "SKIPPED",
+                  "actualDateTimeEpochMilli": 8200000, "actualDoseValue": 1.0, "actualDoseMode": "UNITS",
+                  "source": "REMINDER", "createdAtEpochMilli": 8200000, "updatedAtEpochMilli": 8200000
+                }
+              ]
+            }
+        """.trimIndent()
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(legacyJson)
+        val imported = importUseCase(decoded)
+
+        assertEquals(3, imported.intakeLogs.size)
+        val bySeq = imported.intakeLogs.associateBy { it.sessionSeq }
+        assertEquals(1L, bySeq.getValue(1).id)
+        assertEquals(2L, bySeq.getValue(2).id)
+        assertEquals(3L, bySeq.getValue(3).id)
+        // No two logs share a (scheduledIntakeId, intakeTimeId, occurrenceDate, sessionSeq) key.
+        assertEquals(3, imported.intakeLogs.map { it.sessionSeq }.distinct().size)
+    }
+
+    @Test
+    fun `a single ordinary log with sessionSeq 0 is left untouched`() {
+        val log = IntakeLog(
+            id = 10,
+            drugId = 1,
+            scheduledIntakeId = 1,
+            intakeTimeId = 1,
+            occurrenceDate = LocalDate.of(2026, 1, 1),
+            status = IntakeStatus.TAKEN,
+            actualDateTime = Instant.EPOCH,
+            actualDoseValue = 1.0,
+            actualDoseMode = DoseMode.UNITS,
+            source = IntakeSource.MANUAL,
+            createdAt = Instant.EPOCH,
+            updatedAt = Instant.EPOCH,
+        )
+        val payload = exportUseCase(
+            patients = emptyList(),
+            drugs = emptyList(),
+            stockBatches = emptyList(),
+            scheduledIntakes = emptyList(),
+            intakeTimes = emptyList(),
+            intakeLogs = listOf(log),
+            exportedAt = Instant.EPOCH,
+            snoozeMinutes = 15,
+        )
+        val jsonText = json.encodeToString(payload)
+        val decoded = json.decodeFromString<app.zelgray.pills_in_time.domain.model.BackupPayload>(jsonText)
+        val imported = importUseCase(decoded)
+
+        assertEquals(log, imported.intakeLogs.single())
+    }
+
+    @Test
     fun `backup JSON from before snoozeMinutes existed still decodes, with it null`() {
         val legacyJson = """
             {

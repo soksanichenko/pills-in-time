@@ -30,4 +30,23 @@
         <!-- "саше" is indeclinable in Ukrainian, same form for any quantity. -->
         <item quantity="other">%1$s саше</item>
     </plurals>
+
+    <plurals name="backfill_history_body">
+        <item quantity="one">Цей період почався %1$d день тому. Позначити всі заплановані прийоми відтоді як прийняті?</item>
+        <item quantity="few">Цей період почався %1$d дні тому. Позначити всі заплановані прийоми відтоді як прийняті?</item>
+        <item quantity="many">Цей період почався %1$d днів тому. Позначити всі заплановані прийоми відтоді як прийняті?</item>
+        <item quantity="other">Цей період почався %1$d дня тому. Позначити всі заплановані прийоми відтоді як прийняті?</item>
+    </plurals>
+    <plurals name="backfill_result_filled">
+        <item quantity="one">Заповнено %1$d дозу як прийняту.</item>
+        <item quantity="few">Заповнено %1$d дози як прийняті.</item>
+        <item quantity="many">Заповнено %1$d доз як прийняті.</item>
+        <item quantity="other">Заповнено %1$d дози як прийняті.</item>
+    </plurals>
+    <plurals name="backfill_result_insufficient_suffix">
+        <item quantity="one"> %1$d дозу пропущено через нестачу запасу.</item>
+        <item quantity="few"> %1$d дози пропущено через нестачу запасу.</item>
+        <item quantity="many"> %1$d доз пропущено через нестачу запасу.</item>
+        <item quantity="other"> %1$d дози пропущено через нестачу запасу.</item>
+    </plurals>
 </resources>

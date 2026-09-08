@@ -3,6 +3,7 @@ package app.zelgray.pills_in_time.ui.settings
 import android.app.PendingIntent
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.zelgray.pills_in_time.R
@@ -18,6 +19,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private enum class PendingDriveAction { CONNECT, BACKUP, RESTORE }
+
+private const val TAG = "SettingsViewModel"
 
 data class SettingsUiState(
     val snoozeMinutes: Int = SettingsRepository.DEFAULT_SNOOZE_MINUTES,
@@ -92,6 +95,7 @@ class SettingsViewModel @Inject constructor(
                 backupRepository.backupToFile(uri)
                 showToast(R.string.backup_complete_toast)
             } catch (e: Exception) {
+                Log.e(TAG, "Local backup failed", e)
                 showToast(R.string.backup_error_generic)
             } finally {
                 _uiState.update { it.copy(localBackupBusy = false) }
@@ -106,6 +110,7 @@ class SettingsViewModel @Inject constructor(
                 backupRepository.restoreFromFile(uri)
                 showToast(R.string.restore_complete_toast)
             } catch (e: Exception) {
+                Log.e(TAG, "Local restore failed", e)
                 showToast(R.string.restore_error_generic)
             } finally {
                 _uiState.update { it.copy(localRestoreBusy = false) }
@@ -142,6 +147,7 @@ class SettingsViewModel @Inject constructor(
                     settingsRepository.setLastBackupEpochMilli(System.currentTimeMillis())
                     showToast(R.string.backup_complete_toast)
                 } catch (e: Exception) {
+                    Log.e(TAG, "Drive backup failed", e)
                     showToast(R.string.backup_error_generic)
                 } finally {
                     setBusy(action, false)
@@ -153,6 +159,7 @@ class SettingsViewModel @Inject constructor(
                     settingsRepository.setDriveConnected(true)
                     showToast(R.string.restore_complete_toast)
                 } catch (e: Exception) {
+                    Log.e(TAG, "Drive restore failed", e)
                     showToast(R.string.restore_error_generic)
                 } finally {
                     setBusy(action, false)

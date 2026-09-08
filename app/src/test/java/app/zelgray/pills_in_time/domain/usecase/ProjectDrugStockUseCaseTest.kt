@@ -212,6 +212,22 @@ class ProjectDrugStockUseCaseTest {
     }
 
     @Test
+    fun `a later period hitting the same already-exhausted stock is flagged depleted too`() {
+        // p1: 3/day from 10 -> 10,7,4,1, then day3 needs 3 but only 1 left ->
+        // insufficient, stuck at 1 for the rest of p1's run (days 0-9).
+        // p2 starts right after p1 ends, needs 1/day: day10 consumes the
+        // stuck 1 -> 0, then day11 needs 1 but none left -> insufficient on
+        // p2's own days, so p2 must be flagged depleted too, not just p1.
+        val today = LocalDate.of(2026, 7, 17)
+        val p1 = period(id = 1, start = today, end = today.plusDays(9), times = listOf(unitsTime(scheduledIntakeId = 1, dose = 3.0)))
+        val p2 = period(id = 2, start = today.plusDays(10), end = today.plusDays(14), times = listOf(unitsTime(id = 2, scheduledIntakeId = 2, dose = 1.0)))
+        val result = useCase(listOf(p1, p2), batches = listOf(batch(quantity = 10.0)), today = today)
+
+        assertTrue(result.periodProjections.getValue(1L).stockDepleted)
+        assertTrue(result.periodProjections.getValue(2L).stockDepleted)
+    }
+
+    @Test
     fun `open-ended period that runs out is flagged depleted`() {
         val today = LocalDate.of(2026, 7, 17)
         val p = period(start = today, end = null, times = listOf(unitsTime(dose = 5.0)))

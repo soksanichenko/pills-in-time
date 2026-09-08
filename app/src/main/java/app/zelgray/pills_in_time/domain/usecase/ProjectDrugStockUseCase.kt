@@ -63,6 +63,11 @@ class ProjectDrugStockUseCase @Inject constructor(
         val atStartByBatch = mutableMapOf<Long, Map<Long, Double>>()
         val atEndByBatch = mutableMapOf<Long, Map<Long, Double>>()
         val batchExhaustionDates = mutableMapOf<Long, LocalDate>()
+        // Per-period first-insufficient-date, not a single shared date — a later
+        // period sharing the same now-exhausted stock/batch has its own dose
+        // fail on its own days, which a single global "first ever" date would
+        // never capture once it's already been claimed by an earlier period.
+        val periodInsufficientDates = mutableMapOf<Long, LocalDate>()
 
         fun totalRemaining() = working.sumOf { it.quantity }
         // A period pinned to one specific supply cares about that batch's own
@@ -86,6 +91,7 @@ class ProjectDrugStockUseCase @Inject constructor(
 
             val activePeriods = relevant.filter { isPeriodActiveOn(it.scheduledIntake, date) }
             for (period in activePeriods) {
+                val periodSid = period.scheduledIntake.id
                 for (time in period.times) {
                     // A session-based time (see IntakeTime.isSession) has no
                     // single daily dose — it fires many times a day, either an
@@ -105,6 +111,7 @@ class ProjectDrugStockUseCase @Inject constructor(
                             is DoseConsumptionResult.Resolved -> working = applyDecrements(working, result.decrements)
                             is DoseConsumptionResult.Insufficient -> {
                                 if (runOutDate == null) runOutDate = date
+                                periodInsufficientDates.putIfAbsent(periodSid, date)
                                 // The implicated batch(es) may never actually reach literal
                                 // zero (an atomic dose that can't fully resolve consumes
                                 // nothing, so they get stuck just above it) — mark them
@@ -141,15 +148,12 @@ class ProjectDrugStockUseCase @Inject constructor(
             val pinnedBatchId = p.scheduledIntake.pinnedBatchId
             val start = atStart[sid] ?: batches.sumOf { it.quantity }
             val end = atEnd[sid]
-            val periodEnd = p.scheduledIntake.endDate
-            val periodStart = maxOf(p.scheduledIntake.startDate, today)
-            val depletionDate = if (pinnedBatchId != null) batchExhaustionDates[pinnedBatchId] else runOutDate
-            // A shortfall only counts against a period if it actually falls
-            // within that period's own active date range — an unrelated,
-            // separately-impossible period elsewhere shouldn't phantom-flag this one.
-            val depletionWithinPeriod = depletionDate != null &&
-                !depletionDate.isBefore(periodStart) &&
-                (periodEnd == null || !depletionDate.isAfter(periodEnd))
+            // Recorded only while this exact period was itself active and its own
+            // dose failed to resolve, so it's already guaranteed to fall within
+            // this period's own date range — no separate bound check needed, and
+            // an unrelated, separately-impossible period elsewhere never phantom-
+            // flags this one (it only ever sets its own sid's entry).
+            val depletionWithinPeriod = periodInsufficientDates[sid] != null
             sid to PeriodStockProjection(
                 atStart = start,
                 atEnd = end,

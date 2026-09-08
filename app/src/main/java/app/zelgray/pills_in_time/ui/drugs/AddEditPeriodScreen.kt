@@ -25,11 +25,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -84,7 +88,35 @@ fun AddEditPeriodScreen(
         )
     }
 
+    state.backfillPromptDayCount?.let { days ->
+        ConfirmDialog(
+            title = stringResource(R.string.backfill_history_title),
+            body = pluralStringResource(R.plurals.backfill_history_body, days, days),
+            confirmLabel = stringResource(R.string.action_fill_history),
+            dismissLabel = stringResource(R.string.action_not_now),
+            onConfirm = { viewModel.onBackfillConfirmed() },
+            onDismiss = { viewModel.onBackfillDeclined() },
+        )
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    LaunchedEffect(state.backfillResult) {
+        state.backfillResult?.let { (filled, insufficient) ->
+            val resources = context.resources
+            val message = resources.getQuantityString(R.plurals.backfill_result_filled, filled, filled) +
+                if (insufficient > 0) {
+                    resources.getQuantityString(R.plurals.backfill_result_insufficient_suffix, insufficient, insufficient)
+                } else {
+                    ""
+                }
+            snackbarHostState.showSnackbar(message)
+            viewModel.consumeBackfillResult()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {

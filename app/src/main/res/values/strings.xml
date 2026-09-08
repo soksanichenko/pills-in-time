@@ -23,9 +23,13 @@
     <string name="action_save">Save</string>
     <string name="action_discard">Discard</string>
     <string name="action_keep_editing">Keep editing</string>
+    <string name="action_fill_history">Fill in history</string>
+    <string name="action_not_now">Not now</string>
 
     <string name="unsaved_changes_title">Discard changes?</string>
     <string name="unsaved_changes_body">You have unsaved changes that will be lost.</string>
+
+    <string name="backfill_history_title">Fill in history?</string>
 
     <string name="drugs_empty">No drugs yet. Tap + to add one.</string>
 

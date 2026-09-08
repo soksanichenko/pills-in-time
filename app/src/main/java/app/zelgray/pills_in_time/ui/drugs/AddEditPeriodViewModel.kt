@@ -10,6 +10,7 @@ import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
 import app.zelgray.pills_in_time.data.local.entity.EndMode
 import app.zelgray.pills_in_time.data.local.entity.isSession
 import app.zelgray.pills_in_time.data.repository.DrugRepository
+import app.zelgray.pills_in_time.data.repository.IntakeRepository
 import app.zelgray.pills_in_time.data.repository.IntakeTimeInput
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 enum class StartMode { CUSTOM, CONTINUE }
@@ -94,6 +96,12 @@ data class AddEditPeriodUiState(
     val specificDaysError: Boolean = false,
     val daysOnOffError: Boolean = false,
     val saved: Boolean = false,
+    // Non-null right after saving a brand-new, backdated period — prompts
+    // whether to retroactively fill in history for the days already covered
+    // by the backdated start date (see BackfillHistoryUseCase).
+    val backfillPromptDayCount: Int? = null,
+    // One-shot result of a confirmed backfill (filled, insufficientStock), for a Snackbar.
+    val backfillResult: Pair<Int, Int>? = null,
 ) {
     val isEditing: Boolean get() = scheduleId != null
 
@@ -148,10 +156,13 @@ class AddEditPeriodViewModel @Inject constructor(
     private val drugRepository: DrugRepository,
     private val resolveEffectiveStrength: ResolveEffectiveStrengthUseCase,
     private val findDoseCombos: FindDoseCombosUseCase,
+    private val intakeRepository: IntakeRepository,
 ) : ViewModel() {
 
     private val drugId: Long = checkNotNull(savedStateHandle[NavRoutes.ARG_DRUG_ID])
     private val editingScheduleId: Long? = savedStateHandle[NavRoutes.ARG_SCHEDULE_ID]
+    private var pendingBackfillScheduleId: Long? = null
+    private var pendingOnSaved: (() -> Unit)? = null
 
     private val _uiState = MutableStateFlow(AddEditPeriodUiState(drugId = drugId, scheduleId = editingScheduleId))
     val uiState: StateFlow<AddEditPeriodUiState> = _uiState.asStateFlow()
@@ -245,6 +256,8 @@ class AddEditPeriodViewModel @Inject constructor(
             specificDaysError = initialSnapshot.specificDaysError,
             daysOnOffError = initialSnapshot.daysOnOffError,
             saved = initialSnapshot.saved,
+            backfillPromptDayCount = initialSnapshot.backfillPromptDayCount,
+            backfillResult = initialSnapshot.backfillResult,
         ) != initialSnapshot
     }
 
@@ -472,7 +485,7 @@ class AddEditPeriodViewModel @Inject constructor(
                         .takeIf { row.isSessionRow && row.sessionCadence == SessionCadence.COUNT_PER_DAY },
                 )
             }
-            scheduleRepository.savePeriod(
+            val savedId = scheduleRepository.savePeriod(
                 scheduleId = state.scheduleId,
                 drugId = state.drugId,
                 startDate = state.effectiveStartDate,
@@ -488,7 +501,42 @@ class AddEditPeriodViewModel @Inject constructor(
                 pinnedBatchId = if (state.pinnedSupplyAvailable) state.pinnedBatchId else null,
                 times = timeInputs,
             )
-            onSaved()
+
+            // Only a brand-new (not edited), backdated period has any actual
+            // gap worth offering to fill — re-adding a deleted period is the
+            // main case, since deleting one cascades away its whole history.
+            val daysAgo = ChronoUnit.DAYS.between(state.effectiveStartDate, LocalDate.now()).toInt()
+            if (state.scheduleId == null && daysAgo > 0) {
+                pendingBackfillScheduleId = savedId
+                pendingOnSaved = onSaved
+                _uiState.update { it.copy(backfillPromptDayCount = daysAgo) }
+            } else {
+                onSaved()
+            }
         }
     }
+
+    /** User chose to retroactively fill in history for the backdated period just saved. */
+    fun onBackfillConfirmed() {
+        val scheduleId = pendingBackfillScheduleId ?: return
+        val callback = pendingOnSaved
+        pendingBackfillScheduleId = null
+        pendingOnSaved = null
+        viewModelScope.launch {
+            val result = intakeRepository.backfillHistoryForPeriod(scheduleId, drugId)
+            _uiState.update { it.copy(backfillPromptDayCount = null, backfillResult = result.filled to result.insufficientStock) }
+            callback?.invoke()
+        }
+    }
+
+    /** User declined to backfill — just proceeds as an ordinary save. */
+    fun onBackfillDeclined() {
+        val callback = pendingOnSaved
+        pendingBackfillScheduleId = null
+        pendingOnSaved = null
+        _uiState.update { it.copy(backfillPromptDayCount = null) }
+        callback?.invoke()
+    }
+
+    fun consumeBackfillResult() = _uiState.update { it.copy(backfillResult = null) }
 }

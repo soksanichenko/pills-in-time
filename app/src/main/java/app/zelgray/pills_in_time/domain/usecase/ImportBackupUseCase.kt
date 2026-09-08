@@ -48,8 +48,32 @@ class ImportBackupUseCase @Inject constructor() {
             stockBatches = payload.stockBatches.map { it.toEntity() },
             scheduledIntakes = payload.scheduledIntakes.map { it.toEntity() },
             intakeTimes = payload.intakeTimes.map { it.toEntity() },
-            intakeLogs = payload.intakeLogs.map { it.toEntity() },
+            intakeLogs = renumberLegacySessionLogs(payload.intakeLogs.map { it.toEntity() }),
             snoozeMinutes = payload.snoozeMinutes,
         )
     }
+
+    /**
+     * Backups made before IntakeLogDto carried sessionSeq (schema version <
+     * 11) flattened every session dose of a day to sessionSeq = 0, so a day
+     * with several real doses decodes as several logs all sharing the exact
+     * same (scheduledIntakeId, intakeTimeId, occurrenceDate, sessionSeq)
+     * key — which the live intake_logs unique index would otherwise reject
+     * outright on restore. A live-written log can never actually collide
+     * like this (upsertLog always keeps exactly one row per key), so seeing
+     * more than one here only ever means an old export lost the real
+     * ordinals — recover them by renumbering in the order they were taken.
+     */
+    private fun renumberLegacySessionLogs(logs: List<IntakeLog>): List<IntakeLog> =
+        logs.groupBy { Triple(it.scheduledIntakeId, it.intakeTimeId, it.occurrenceDate) }
+            .flatMap { (_, group) ->
+                val zeroSeq = group.filter { it.sessionSeq == 0 }
+                if (zeroSeq.size <= 1) {
+                    group
+                } else {
+                    val renumbered = zeroSeq.sortedBy { it.actualDateTime }
+                        .mapIndexed { index, log -> log.copy(sessionSeq = index + 1) }
+                    group.filter { it.sessionSeq != 0 } + renumbered
+                }
+            }
 }

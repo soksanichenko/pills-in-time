@@ -43,7 +43,7 @@ data class BackupPayload(
     val snoozeMinutes: Int? = null,
 ) {
     companion object {
-        const val SCHEMA_VERSION = 10
+        const val SCHEMA_VERSION = 11
     }
 }
 
@@ -78,6 +78,8 @@ data class StockBatchDto(
     val lowStockReminderFiredForRunOutDateEpochDay: Long? = null,
     val lowStockReminderUnitsBefore: Double? = null,
     val lowStockReminderUnitsAlreadyFired: Boolean = false,
+    // Absent on backups made before this field existed.
+    val dropsPerMl: Double? = null,
 )
 
 @Serializable
@@ -111,6 +113,10 @@ data class IntakeTimeDto(
     val doseAllocationCsv: String? = null,
     // Absent on backups made before this field existed.
     val isAlarmClock: Boolean = false,
+    // Absent on backups made before session-based dosing existed.
+    val sessionDayStartFromSecond: Int? = null,
+    val sessionIntervalHours: Int? = null,
+    val sessionTimesPerDay: Int? = null,
 )
 
 @Serializable
@@ -127,6 +133,9 @@ data class IntakeLogDto(
     val source: String,
     val createdAtEpochMilli: Long,
     val updatedAtEpochMilli: Long,
+    // 0 on backups made before session-based dosing existed (same default as
+    // IntakeLog.sessionSeq — an ordinary fixed-time log).
+    val sessionSeq: Int = 0,
 )
 
 fun Patient.toDto() = PatientDto(
@@ -174,6 +183,7 @@ fun DrugStockBatch.toDto() = StockBatchDto(
     lowStockReminderFiredForRunOutDateEpochDay = lowStockReminderFiredForRunOutDate?.toEpochDay(),
     lowStockReminderUnitsBefore = lowStockReminderUnitsBefore,
     lowStockReminderUnitsAlreadyFired = lowStockReminderUnitsAlreadyFired,
+    dropsPerMl = dropsPerMl,
 )
 
 fun StockBatchDto.toEntity() = DrugStockBatch(
@@ -187,6 +197,7 @@ fun StockBatchDto.toEntity() = DrugStockBatch(
     lowStockReminderFiredForRunOutDate = lowStockReminderFiredForRunOutDateEpochDay?.let { LocalDate.ofEpochDay(it) },
     lowStockReminderUnitsBefore = lowStockReminderUnitsBefore,
     lowStockReminderUnitsAlreadyFired = lowStockReminderUnitsAlreadyFired,
+    dropsPerMl = dropsPerMl,
 )
 
 fun ScheduledIntake.toDto() = ScheduledIntakeDto(
@@ -233,6 +244,9 @@ fun IntakeTime.toDto() = IntakeTimeDto(
     doseValue = doseValue,
     doseAllocationCsv = doseAllocation?.encodeToCsv(),
     isAlarmClock = isAlarmClock,
+    sessionDayStartFromSecond = sessionDayStartFrom?.toSecondOfDay(),
+    sessionIntervalHours = sessionIntervalHours,
+    sessionTimesPerDay = sessionTimesPerDay,
 )
 
 fun IntakeTimeDto.toEntity() = IntakeTime(
@@ -243,6 +257,9 @@ fun IntakeTimeDto.toEntity() = IntakeTime(
     doseValue = doseValue,
     doseAllocation = doseAllocationCsv.decodeDoseAllocationCsv(),
     isAlarmClock = isAlarmClock,
+    sessionDayStartFrom = sessionDayStartFromSecond?.let { LocalTime.ofSecondOfDay(it.toLong()) },
+    sessionIntervalHours = sessionIntervalHours,
+    sessionTimesPerDay = sessionTimesPerDay,
 )
 
 fun IntakeLog.toDto() = IntakeLogDto(
@@ -258,6 +275,7 @@ fun IntakeLog.toDto() = IntakeLogDto(
     source = source.name,
     createdAtEpochMilli = createdAt.toEpochMilli(),
     updatedAtEpochMilli = updatedAt.toEpochMilli(),
+    sessionSeq = sessionSeq,
 )
 
 fun IntakeLogDto.toEntity() = IntakeLog(
@@ -273,4 +291,5 @@ fun IntakeLogDto.toEntity() = IntakeLog(
     source = IntakeSource.valueOf(source),
     createdAt = Instant.ofEpochMilli(createdAtEpochMilli),
     updatedAt = Instant.ofEpochMilli(updatedAtEpochMilli),
+    sessionSeq = sessionSeq,
 )

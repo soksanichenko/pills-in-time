@@ -14,12 +14,17 @@ import app.zelgray.pills_in_time.data.local.entity.SnoozedOccurrence
 import app.zelgray.pills_in_time.data.local.relation.IntakeLogWithDrug
 import app.zelgray.pills_in_time.domain.model.DoseConsumptionResult
 import app.zelgray.pills_in_time.domain.model.RecordLogResult
+import app.zelgray.pills_in_time.domain.usecase.BackfillHistoryUseCase
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import javax.inject.Inject
 
 private class InsufficientStockException : Exception()
+
+/** Result of [IntakeRepository.backfillHistoryForPeriod] — how many past doses were actually filled in vs skipped. */
+data class BackfillHistoryResult(val filled: Int, val insufficientStock: Int)
 
 class IntakeRepository @Inject constructor(
     private val database: MedTrackerDatabase,
@@ -28,6 +33,7 @@ class IntakeRepository @Inject constructor(
     private val scheduleDao: ScheduleDao,
     private val snoozedOccurrenceDao: SnoozedOccurrenceDao,
     private val stockConsumptionRepository: StockConsumptionRepository,
+    private val backfillHistoryUseCase: BackfillHistoryUseCase,
 ) {
     fun observeLogsForDate(date: LocalDate): Flow<List<IntakeLog>> = intakeLogDao.observeLogsForDate(date)
 
@@ -169,6 +175,38 @@ class IntakeRepository @Inject constructor(
             source = IntakeSource.REMINDER,
             sessionSeq = nextSeq,
         )
+    }
+
+    /**
+     * Retroactively logs every past dose a freshly-created, backdated period
+     * should have had, up to (not including) today — offered on save from
+     * AddEditPeriodScreen. Each day is written the same way a real manual
+     * history entry would be (source = MANUAL, real stock consumption); a day
+     * whose stock can't cover it is simply skipped rather than aborting the
+     * rest, since the batches available today may not match what was
+     * actually on hand for a past date.
+     */
+    suspend fun backfillHistoryForPeriod(scheduleId: Long, drugId: Long): BackfillHistoryResult {
+        val schedule = scheduleDao.getById(scheduleId) ?: return BackfillHistoryResult(0, 0)
+        val times = intakeTimeDao.getTimesForSchedule(scheduleId)
+        val entries = backfillHistoryUseCase(schedule, times, until = LocalDate.now())
+
+        var filled = 0
+        var insufficient = 0
+        entries.forEach { entry ->
+            val result = recordManualEntry(
+                drugId = drugId,
+                scheduledIntakeId = scheduleId,
+                intakeTimeId = entry.intakeTimeId,
+                occurrenceDate = entry.occurrenceDate,
+                actualDateTime = entry.occurrenceDate.atTime(entry.timeOfDay).atZone(ZoneId.systemDefault()).toInstant(),
+                doseValue = entry.doseValue,
+                doseMode = entry.doseMode,
+                status = IntakeStatus.TAKEN,
+            )
+            if (result == RecordLogResult.InsufficientStock) insufficient++ else filled++
+        }
+        return BackfillHistoryResult(filled, insufficient)
     }
 
     suspend fun deleteLog(log: IntakeLog) {

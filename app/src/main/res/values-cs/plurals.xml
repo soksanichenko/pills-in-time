@@ -33,4 +33,20 @@
         <item quantity="many">%1$s sáčku</item>
         <item quantity="other">%1$s sáčků</item>
     </plurals>
+
+    <plurals name="backfill_history_body">
+        <item quantity="one">Toto období začalo před %1$d dnem. Označit všechny naplánované dávky od té doby jako podané?</item>
+        <item quantity="few">Toto období začalo před %1$d dny. Označit všechny naplánované dávky od té doby jako podané?</item>
+        <item quantity="other">Toto období začalo před %1$d dny. Označit všechny naplánované dávky od té doby jako podané?</item>
+    </plurals>
+    <plurals name="backfill_result_filled">
+        <item quantity="one">Vyplněna %1$d dávka jako podaná.</item>
+        <item quantity="few">Vyplněny %1$d dávky jako podané.</item>
+        <item quantity="other">Vyplněno %1$d dávek jako podané.</item>
+    </plurals>
+    <plurals name="backfill_result_insufficient_suffix">
+        <item quantity="one"> %1$d dávka přeskočena z důvodu nedostatku zásoby.</item>
+        <item quantity="few"> %1$d dávky přeskočeny z důvodu nedostatku zásoby.</item>
+        <item quantity="other"> %1$d dávek přeskočeno z důvodu nedostatku zásoby.</item>
+    </plurals>
 </resources>

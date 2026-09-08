@@ -102,14 +102,8 @@ fun AddEditPeriodScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     LaunchedEffect(state.backfillResult) {
-        state.backfillResult?.let { (filled, insufficient) ->
-            val resources = context.resources
-            val message = resources.getQuantityString(R.plurals.backfill_result_filled, filled, filled) +
-                if (insufficient > 0) {
-                    resources.getQuantityString(R.plurals.backfill_result_insufficient_suffix, insufficient, insufficient)
-                } else {
-                    ""
-                }
+        state.backfillResult?.let { filled ->
+            val message = context.resources.getQuantityString(R.plurals.backfill_result_filled, filled, filled)
             snackbarHostState.showSnackbar(message)
             viewModel.consumeBackfillResult()
         }

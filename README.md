@@ -35,6 +35,8 @@ Each drug can have multiple, possibly overlapping, time-bound periods:
 
 An ongoing or upcoming period can be **stopped** or **paused** directly from its card, without opening the edit form: Stop ends it as of today. Pause suspends it — no reminders, no missed marks, no stock consumed — for a chosen number of days, a chosen number of doses, or indefinitely until you tap Resume. A period with a session-based time also gets a **Начать день** ("Day started") / **Иду спать** ("Going to sleep") button here, for starting or ending that day's session by hand instead of waiting for (or reacting to) its notification.
 
+Saving a brand-new period whose start date is in the past offers to retroactively mark every dose since then as taken — handy for re-adding a period you deleted, since deleting one also deletes its whole history. Declining just leaves those days to fill in by hand later via History, if you want to at all.
+
 ### Home
 Shows the day's scheduled intakes (previous/today/next-day navigation, also reachable by swiping or tapping the date to open a calendar) with live status: upcoming, overdue (past scheduled time + grace period), postponed (snoozed via "Remind later" until the snooze delay elapses, so it doesn't keep reading as overdue in the meantime), taken, skipped, or missed (a past occurrence with no recorded action). "Took it" / "Skipped" quick actions log the occurrence immediately; re-opening an already-logged occurrence offers an "Undo" instead. The date-picker calendar marks each day at a glance — a filled green circle for a day where every scheduled dose was taken, a gray outline for a future day with a dose scheduled, and nothing for empty or incomplete days.
 
@@ -42,7 +44,7 @@ Shows the day's scheduled intakes (previous/today/next-day navigation, also reac
 Day-grouped log of every taken/skipped occurrence, filterable by drug, with manual add/edit/delete for retroactive entries (distinguished from reminder-driven entries by source).
 
 ### Stock consumption & projection
-Marking a dose as taken really decrements the matching on-hand stock batch — by the exact combination fixed on the period for strength doses, or first-in-first-out (oldest supply first) for plain unit doses, unless that period pins one specific supply (see above) — not just a passive count. Editing or deleting a logged dose (or changing it from Taken back to Skipped) reverses that deduction exactly. If stock can't cover a dose, taking it is blocked everywhere (Home, notification, manual history entry) until you add more — nothing is ever force-deducted into the negative.
+Marking a dose as taken really decrements the matching on-hand stock batch — by the exact combination fixed on the period for strength doses, or first-in-first-out (oldest supply first) for plain unit doses, unless that period pins one specific supply (see above) — not just a passive count. Editing or deleting a logged dose (or changing it from Taken back to Skipped) reverses that deduction exactly. If stock can't cover a dose, taking it is blocked everywhere (Home, notification, manual history entry) until you add more — nothing is ever force-deducted into the negative. A **backdated** entry (a past-dated manual history entry, or the retroactive history fill above) is the one exception: it never touches stock at all, and is never blocked by insufficient stock either — it already happened before your current on-hand count, so it shouldn't be deducted a second time.
 
 For each period, the app also projects how much stock is left at its start and end, by simulating day-by-day consumption forward from today the same way real logging would (so the projection and reality never disagree). Once a drug has more than one supply, both the overall and per-period figures also break down each supply's own projected run-out date individually (or "sufficient" if it isn't expected to run out soon), and an "i" icon next to the period's start/end figures opens a popup with each supply's own quantity at that point. A period pinned to one supply reports its own start/end/run-out against that supply alone rather than the drug-wide total. A period card is only highlighted as depleted when an actual dose along the way can't be covered — running out exactly after covering the period's last dose is not flagged.
 
@@ -87,7 +89,7 @@ or open the project in Android Studio and run the `app` configuration on a devic
 
 ## Release
 
-Release builds are signed via a gitignored `keystore.properties` (repo root) with `storeFile`/`storePassword`/`keyAlias`/`keyPassword` keys — without it, release builds are simply unsigned. Bump `versionCode` in `app/build.gradle.kts` before every new upload.
+Release builds are signed via a gitignored `keystore.properties` (repo root) with `storeFile`/`storePassword`/`keyAlias`/`keyPassword` keys — without it, release builds are simply unsigned. Bump `versionCode` in `app/build.gradle.kts` before every new upload (even to a different track); `versionName` derives from it automatically.
 
 ```
 ./gradlew bundleRelease          # produces app/build/outputs/bundle/release/app-release.aab

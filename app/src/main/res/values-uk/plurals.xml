@@ -43,10 +43,4 @@
         <item quantity="many">Заповнено %1$d доз як прийняті.</item>
         <item quantity="other">Заповнено %1$d дози як прийняті.</item>
     </plurals>
-    <plurals name="backfill_result_insufficient_suffix">
-        <item quantity="one"> %1$d дозу пропущено через нестачу запасу.</item>
-        <item quantity="few"> %1$d дози пропущено через нестачу запасу.</item>
-        <item quantity="many"> %1$d доз пропущено через нестачу запасу.</item>
-        <item quantity="other"> %1$d дози пропущено через нестачу запасу.</item>
-    </plurals>
 </resources>

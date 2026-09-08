@@ -33,8 +33,4 @@
         <item quantity="one">Filled in %1$d dose as taken.</item>
         <item quantity="other">Filled in %1$d doses as taken.</item>
     </plurals>
-    <plurals name="backfill_result_insufficient_suffix">
-        <item quantity="one"> %1$d dose skipped due to insufficient stock.</item>
-        <item quantity="other"> %1$d doses skipped due to insufficient stock.</item>
-    </plurals>
 </resources>

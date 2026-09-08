@@ -30,6 +30,8 @@ import javax.inject.Inject
  * — offered when saving a brand-new, backdated period, so re-adding a period
  * that was deleted (which cascades away its whole history) doesn't leave a
  * permanent gap for the days already covered by the backdated start date.
+ * Also covers IntakeRepository.writeLog's backdated-doesn't-touch-stock rule
+ * more generally, since backfill is just one caller of it.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -45,7 +47,7 @@ class BackfillHistoryIntegrationTest {
     @Inject lateinit var intakeRepository: IntakeRepository
 
     @Test
-    fun backfillingA3DayBackdatedPeriod_fillsThreeTakenLogsAndConsumesStock() = runBlocking {
+    fun backfillingA3DayBackdatedPeriod_fillsThreeTakenLogsWithoutTouchingStock() = runBlocking {
         hiltRule.inject()
 
         val patientId = patientRepository.createPatient("Test", 0)
@@ -69,10 +71,9 @@ class BackfillHistoryIntegrationTest {
             ),
         )
 
-        val result = intakeRepository.backfillHistoryForPeriod(scheduleId, drugId)
+        val filled = intakeRepository.backfillHistoryForPeriod(scheduleId, drugId)
 
-        assertEquals(3, result.filled)
-        assertEquals(0, result.insufficientStock)
+        assertEquals(3, filled)
 
         // Each of the 3 past days got its own TAKEN, MANUAL-sourced log.
         val timeId = scheduleRepository.getTimesForSchedule(scheduleId).first().id
@@ -84,8 +85,56 @@ class BackfillHistoryIntegrationTest {
         // Today itself is untouched by the backfill.
         assertEquals(null, intakeRepository.getLogForOccurrenceOnce(scheduleId, timeId, today))
 
-        // 3 doses of 1 unit each consumed from the 30-unit batch.
+        // Backdated doses reflect consumption that already happened before
+        // today's physical count, so current stock is left untouched.
         val batch = stockRepository.getById(batchId)
-        assertEquals(27.0, batch?.quantity)
+        assertEquals(30.0, batch?.quantity)
+    }
+
+    @Test
+    fun manualEntry_backdatedLeavesStockUntouched_sameDayStillConsumesIt() = runBlocking {
+        hiltRule.inject()
+
+        val patientId = patientRepository.createPatient("Test", 0)
+        val drugId = drugRepository.createDrug(patientId, "Metformin", DrugForm.TABLET, null)
+        val batchId = stockRepository.createBatch(drugId, quantity = 10.0, strengthValue = null, strengthUnit = null)
+        val today = LocalDate.now()
+        val scheduleId = scheduleRepository.savePeriod(
+            scheduleId = null,
+            drugId = drugId,
+            startDate = today.minusDays(1),
+            endMode = EndMode.NONE,
+            endDate = null,
+            durationDays = null,
+            cycleType = CycleType.DAILY,
+            specificDays = null,
+            customCycleText = null,
+            times = listOf(IntakeTimeInput(id = 0, timeOfDay = LocalTime.of(8, 0), doseMode = DoseMode.UNITS, doseValue = 1.0)),
+        )
+        val timeId = scheduleRepository.getTimesForSchedule(scheduleId).first().id
+
+        intakeRepository.recordManualEntry(
+            drugId = drugId,
+            scheduledIntakeId = scheduleId,
+            intakeTimeId = timeId,
+            occurrenceDate = today.minusDays(1),
+            actualDateTime = today.minusDays(1).atTime(8, 0).atZone(java.time.ZoneId.systemDefault()).toInstant(),
+            doseValue = 1.0,
+            doseMode = DoseMode.UNITS,
+            status = IntakeStatus.TAKEN,
+        )
+        assertEquals(10.0, stockRepository.getById(batchId)?.quantity)
+
+        intakeRepository.recordManualEntry(
+            drugId = drugId,
+            scheduledIntakeId = scheduleId,
+            intakeTimeId = timeId,
+            occurrenceDate = today,
+            actualDateTime = today.atTime(8, 0).atZone(java.time.ZoneId.systemDefault()).toInstant(),
+            doseValue = 1.0,
+            doseMode = DoseMode.UNITS,
+            status = IntakeStatus.TAKEN,
+        )
+        assertEquals(9.0, stockRepository.getById(batchId)?.quantity)
     }
 }

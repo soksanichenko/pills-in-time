@@ -100,8 +100,8 @@ data class AddEditPeriodUiState(
     // whether to retroactively fill in history for the days already covered
     // by the backdated start date (see BackfillHistoryUseCase).
     val backfillPromptDayCount: Int? = null,
-    // One-shot result of a confirmed backfill (filled, insufficientStock), for a Snackbar.
-    val backfillResult: Pair<Int, Int>? = null,
+    // One-shot result of a confirmed backfill (how many doses got filled in), for a Snackbar.
+    val backfillResult: Int? = null,
 ) {
     val isEditing: Boolean get() = scheduleId != null
 
@@ -523,8 +523,8 @@ class AddEditPeriodViewModel @Inject constructor(
         pendingBackfillScheduleId = null
         pendingOnSaved = null
         viewModelScope.launch {
-            val result = intakeRepository.backfillHistoryForPeriod(scheduleId, drugId)
-            _uiState.update { it.copy(backfillPromptDayCount = null, backfillResult = result.filled to result.insufficientStock) }
+            val filled = intakeRepository.backfillHistoryForPeriod(scheduleId, drugId)
+            _uiState.update { it.copy(backfillPromptDayCount = null, backfillResult = filled) }
             callback?.invoke()
         }
     }

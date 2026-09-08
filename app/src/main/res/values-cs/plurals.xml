@@ -44,9 +44,4 @@
         <item quantity="few">Vyplněny %1$d dávky jako podané.</item>
         <item quantity="other">Vyplněno %1$d dávek jako podané.</item>
     </plurals>
-    <plurals name="backfill_result_insufficient_suffix">
-        <item quantity="one"> %1$d dávka přeskočena z důvodu nedostatku zásoby.</item>
-        <item quantity="few"> %1$d dávky přeskočeny z důvodu nedostatku zásoby.</item>
-        <item quantity="other"> %1$d dávek přeskočeno z důvodu nedostatku zásoby.</item>
-    </plurals>
 </resources>

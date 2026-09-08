@@ -23,9 +23,6 @@ import javax.inject.Inject
 
 private class InsufficientStockException : Exception()
 
-/** Result of [IntakeRepository.backfillHistoryForPeriod] — how many past doses were actually filled in vs skipped. */
-data class BackfillHistoryResult(val filled: Int, val insufficientStock: Int)
-
 class IntakeRepository @Inject constructor(
     private val database: MedTrackerDatabase,
     private val intakeLogDao: IntakeLogDao,
@@ -181,20 +178,18 @@ class IntakeRepository @Inject constructor(
      * Retroactively logs every past dose a freshly-created, backdated period
      * should have had, up to (not including) today — offered on save from
      * AddEditPeriodScreen. Each day is written the same way a real manual
-     * history entry would be (source = MANUAL, real stock consumption); a day
-     * whose stock can't cover it is simply skipped rather than aborting the
-     * rest, since the batches available today may not match what was
-     * actually on hand for a past date.
+     * history entry would be (source = MANUAL) — every entry is necessarily
+     * backdated (occurrenceDate < today), so writeLog never touches current
+     * stock for any of them (see writeLog) and this can't ever be blocked by
+     * insufficient stock.
      */
-    suspend fun backfillHistoryForPeriod(scheduleId: Long, drugId: Long): BackfillHistoryResult {
-        val schedule = scheduleDao.getById(scheduleId) ?: return BackfillHistoryResult(0, 0)
+    suspend fun backfillHistoryForPeriod(scheduleId: Long, drugId: Long): Int {
+        val schedule = scheduleDao.getById(scheduleId) ?: return 0
         val times = intakeTimeDao.getTimesForSchedule(scheduleId)
         val entries = backfillHistoryUseCase(schedule, times, until = LocalDate.now())
 
-        var filled = 0
-        var insufficient = 0
         entries.forEach { entry ->
-            val result = recordManualEntry(
+            recordManualEntry(
                 drugId = drugId,
                 scheduledIntakeId = scheduleId,
                 intakeTimeId = entry.intakeTimeId,
@@ -204,9 +199,8 @@ class IntakeRepository @Inject constructor(
                 doseMode = entry.doseMode,
                 status = IntakeStatus.TAKEN,
             )
-            if (result == RecordLogResult.InsufficientStock) insufficient++ else filled++
         }
-        return BackfillHistoryResult(filled, insufficient)
+        return entries.size
     }
 
     suspend fun deleteLog(log: IntakeLog) {
@@ -221,10 +215,17 @@ class IntakeRepository @Inject constructor(
     /**
      * Single write path for insert-or-update: reverses any previous TAKEN
      * consumption before touching the log row, then — if the new status is
-     * TAKEN — resolves and applies fresh consumption against the
-     * now-restored batches. Insufficient stock throws inside the transaction
-     * so everything (including the reversal) rolls back atomically and
-     * nothing is written at all.
+     * TAKEN and the occurrence isn't backdated — resolves and applies fresh
+     * consumption against the now-restored batches. A backdated occurrence
+     * (before today) already happened before today's on-hand count was
+     * taken, so decrementing current stock for it would double-count a dose
+     * that count already excludes — it's logged with no stock effect at all
+     * (never blocked by insufficient stock, either). The reversal above still
+     * always runs regardless, so re-saving an old backdated log that had
+     * consumption applied under prior behavior self-heals it back.
+     * Insufficient stock throws inside the transaction so everything
+     * (including the reversal) rolls back atomically and nothing is written
+     * at all.
      */
     private suspend fun writeLog(
         existingLog: IntakeLog?,
@@ -264,7 +265,8 @@ class IntakeRepository @Inject constructor(
                 ),
             )
 
-            if (status == IntakeStatus.TAKEN) {
+            val isBackdated = occurrenceDate.isBefore(LocalDate.now())
+            if (status == IntakeStatus.TAKEN && !isBackdated) {
                 val intakeTime = intakeTimeDao.getById(intakeTimeId)
                 val allocation = intakeTime
                     ?.takeIf { it.doseMode == doseMode && it.doseValue == doseValue }

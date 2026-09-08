@@ -1,3 +1,1 @@
-Fixed: a later period sharing an already-depleted supply now shows as low/out too, not just the first one.
-Fixed: restoring a backup could fail if it had session-dose history; restore is now more resilient and backups keep full session-dosing data.
-New: adding a backdated period now offers to fill in its missed history as taken.
+Fixed: logging a backdated dose (manual history entry, or filling in history for a backdated period) no longer decreases your current stock count. That dose already happened before your last stock count, so it's now recorded without touching stock.

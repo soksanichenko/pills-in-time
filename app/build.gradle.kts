@@ -36,7 +36,10 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 31
-        versionName = "1.0"
+        // Kept in lockstep with versionCode so testers can tell builds apart
+        // in Play Store/app info without needing adb — no separate bump to
+        // remember on release.
+        versionName = "1.0.$versionCode"
 
         testInstrumentationRunner = "app.zelgray.pills_in_time.HiltTestRunner"
     }

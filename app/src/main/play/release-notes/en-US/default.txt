@@ -1,3 +1,3 @@
-Improved: hourly session reminders (e.g. eye drops) now post as regular dismissible notifications instead of one that stays pinned all day.
-New: session reminders (day-start prompt, hourly, and count-per-day) each have their own notification channel, so you can mute them independently.
-Improved: switch a period's time between fixed and session-based dosing in place, and pick its repeat cycle from a dropdown.
+Fixed: a later period sharing an already-depleted supply now shows as low/out too, not just the first one.
+Fixed: restoring a backup could fail if it had session-dose history; restore is now more resilient and backups keep full session-dosing data.
+New: adding a backdated period now offers to fill in its missed history as taken.

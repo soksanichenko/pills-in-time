@@ -28,10 +28,6 @@ class LowStockActionReceiver : BroadcastReceiver() {
         val data = Data.Builder()
             .putLong(NotificationContracts.EXTRA_DRUG_ID, intent.getLongExtra(NotificationContracts.EXTRA_DRUG_ID, -1))
             .putLong(NotificationContracts.EXTRA_STOCK_ID, intent.getLongExtra(NotificationContracts.EXTRA_STOCK_ID, -1))
-            .putLong(
-                NotificationContracts.EXTRA_RUN_OUT_DATE_EPOCH_DAY,
-                intent.getLongExtra(NotificationContracts.EXTRA_RUN_OUT_DATE_EPOCH_DAY, -1),
-            )
             .build()
         val request = OneTimeWorkRequestBuilder<SnoozeLowStockReminderWorker>()
             .setInputData(data)

@@ -37,7 +37,6 @@ object NotificationContracts {
     const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
     const val EXTRA_STATUS = "extra_status"
     const val EXTRA_STOCK_ID = "extra_stock_id"
-    const val EXTRA_RUN_OUT_DATE_EPOCH_DAY = "extra_run_out_date_epoch_day"
     const val EXTRA_PATIENT_ID = "extra_patient_id"
     const val EXTRA_GROUP_MEMBERS = "extra_group_members"
     const val EXTRA_KIND = "extra_kind"

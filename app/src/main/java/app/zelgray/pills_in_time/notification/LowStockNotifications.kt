@@ -49,7 +49,6 @@ object LowStockNotifications {
             putExtra(NotificationContracts.EXTRA_NOTIFICATION_ID, notificationId)
             putExtra(NotificationContracts.EXTRA_DRUG_ID, drug.id)
             putExtra(NotificationContracts.EXTRA_STOCK_ID, batch.id)
-            putExtra(NotificationContracts.EXTRA_RUN_OUT_DATE_EPOCH_DAY, runOutDate?.toEpochDay() ?: -1L)
         }
         val snoozePendingIntent = PendingIntent.getBroadcast(
             context,

@@ -9,6 +9,7 @@ import app.zelgray.pills_in_time.data.local.entity.ScheduledIntake
 import app.zelgray.pills_in_time.data.local.entity.StrengthUnit
 import app.zelgray.pills_in_time.data.local.relation.ScheduledIntakeWithTimes
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
@@ -175,5 +176,39 @@ class CheckLowStockRemindersUseCaseTest {
         )
         assertEquals(1, alerts.size)
         assertEquals(null, alerts.single().runOutDate)
+    }
+
+    // isLow() is the bare condition SnoozeLowStockReminderWorker re-checks
+    // before re-posting a postponed "Remind tomorrow" reminder — ignoring
+    // the fired/already-notified dedup, since that worker wants to know
+    // whether the shortage still holds at all, not whether it was already
+    // reported.
+
+    @Test
+    fun `isLow for days-before mode is true only when the forecast falls within the notice window`() {
+        val batch = batch(daysBefore = 3)
+        assertTrue(useCase.isLow(batch, runOutDate = today.plusDays(3), today = today))
+        assertFalse(useCase.isLow(batch, runOutDate = today.plusDays(4), today = today))
+        assertFalse(useCase.isLow(batch, runOutDate = null, today = today))
+    }
+
+    @Test
+    fun `isLow for units-before mode is true once quantity drops to or below the threshold`() {
+        assertTrue(useCase.isLow(batch(quantity = 5.0, daysBefore = null, unitsBefore = 5.0), runOutDate = null, today = today))
+        assertFalse(useCase.isLow(batch(quantity = 6.0, daysBefore = null, unitsBefore = 5.0), runOutDate = null, today = today))
+    }
+
+    @Test
+    fun `isLow is false when no reminder is configured`() {
+        assertFalse(useCase.isLow(batch(daysBefore = null, unitsBefore = null), runOutDate = today, today = today))
+    }
+
+    @Test
+    fun `isLow ignores the fired-already dedup, unlike the main alert check`() {
+        // Already notified for this exact run-out date — the main invoke()
+        // check would dedupe this to no alert, but isLow only cares whether
+        // the shortage itself still holds.
+        val batch = batch(quantity = 2.0, daysBefore = 3, firedFor = today.plusDays(1))
+        assertTrue(useCase.isLow(batch, runOutDate = today.plusDays(1), today = today))
     }
 }

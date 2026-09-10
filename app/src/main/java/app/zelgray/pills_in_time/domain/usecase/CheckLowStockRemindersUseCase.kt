@@ -43,21 +43,31 @@ class CheckLowStockRemindersUseCase @Inject constructor(
         )
         drugBatches.mapNotNull { batch ->
             val runOutDate = projection.batchExhaustionDates[batch.id]
-            val daysBefore = batch.lowStockReminderDaysBefore
-            val unitsBefore = batch.lowStockReminderUnitsBefore
-            when {
-                daysBefore != null -> {
-                    if (runOutDate == null || runOutDate.isAfter(today.plusDays(daysBefore.toLong()))) return@mapNotNull null
-                    if (batch.lowStockReminderFiredForRunOutDate == runOutDate) return@mapNotNull null
-                    LowStockAlert(batchId = batch.id, drugId = batch.drugId, runOutDate = runOutDate)
-                }
-                unitsBefore != null -> {
-                    if (batch.quantity > unitsBefore) return@mapNotNull null
-                    if (batch.lowStockReminderUnitsAlreadyFired) return@mapNotNull null
-                    LowStockAlert(batchId = batch.id, drugId = batch.drugId, runOutDate = runOutDate)
-                }
-                else -> null
+            if (!isLow(batch, runOutDate, today)) return@mapNotNull null
+            val alreadyNotified = if (batch.lowStockReminderDaysBefore != null) {
+                batch.lowStockReminderFiredForRunOutDate == runOutDate
+            } else {
+                batch.lowStockReminderUnitsAlreadyFired
             }
+            if (alreadyNotified) return@mapNotNull null
+            LowStockAlert(batchId = batch.id, drugId = batch.drugId, runOutDate = runOutDate)
+        }
+    }
+
+    /**
+     * Whether [batch] is currently below its configured reminder threshold —
+     * the bare condition, without the fired/already-notified dedup above.
+     * Exposed so SnoozeLowStockReminderWorker can re-check this exact
+     * condition before re-posting a postponed reminder (e.g. a restock
+     * resolved it in the meantime) without duplicating the logic.
+     */
+    fun isLow(batch: DrugStockBatch, runOutDate: LocalDate?, today: LocalDate): Boolean {
+        val daysBefore = batch.lowStockReminderDaysBefore
+        val unitsBefore = batch.lowStockReminderUnitsBefore
+        return when {
+            daysBefore != null -> runOutDate != null && !runOutDate.isAfter(today.plusDays(daysBefore.toLong()))
+            unitsBefore != null -> batch.quantity <= unitsBefore
+            else -> false
         }
     }
 }

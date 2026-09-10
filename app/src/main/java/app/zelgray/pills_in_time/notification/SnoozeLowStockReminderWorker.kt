@@ -8,6 +8,7 @@ import app.zelgray.pills_in_time.data.repository.DrugRepository
 import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
+import app.zelgray.pills_in_time.domain.usecase.CheckLowStockRemindersUseCase
 import app.zelgray.pills_in_time.domain.usecase.ProjectDrugStockUseCase
 import app.zelgray.pills_in_time.util.NowProvider
 import dagger.assisted.Assisted
@@ -23,6 +24,7 @@ class SnoozeLowStockReminderWorker @AssistedInject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val patientRepository: PatientRepository,
     private val projectDrugStock: ProjectDrugStockUseCase,
+    private val checkLowStockReminders: CheckLowStockRemindersUseCase,
     private val nowProvider: NowProvider,
 ) : CoroutineWorker(appContext, params) {
 
@@ -39,16 +41,9 @@ class SnoozeLowStockReminderWorker @AssistedInject constructor(
         val periods = scheduleRepository.getPeriodsForDrugOnce(drugId)
         val projection = projectDrugStock(periods, stockRepository.getBatchesForDrugOnce(drugId), today)
         val runOutDate = projection.batchExhaustionDates[batch.id]
-        val daysBefore = batch.lowStockReminderDaysBefore
-        val unitsBefore = batch.lowStockReminderUnitsBefore
-        val stillLow = when {
-            daysBefore != null -> runOutDate != null && !runOutDate.isAfter(today.plusDays(daysBefore.toLong()))
-            unitsBefore != null -> batch.quantity <= unitsBefore
-            else -> false
-        }
         // A restock between the snooze and this re-post already resolved the
         // shortage, so the postponed reminder no longer applies.
-        if (!stillLow) return Result.success()
+        if (!checkLowStockReminders.isLow(batch, runOutDate, today)) return Result.success()
 
         val patients = patientRepository.getAllOnce()
         val patient = patients.find { it.id == drug.patientId }

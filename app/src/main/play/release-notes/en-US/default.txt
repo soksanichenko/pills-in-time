@@ -1,1 +1,1 @@
-Fixed: logging a backdated dose (manual history entry, or filling in history for a backdated period) no longer decreases your current stock count. That dose already happened before your last stock count, so it's now recorded without touching stock.
+Fixed: low-stock reminders kept popping up on a postponed "Remind tomorrow" re-check even after you'd already restocked.

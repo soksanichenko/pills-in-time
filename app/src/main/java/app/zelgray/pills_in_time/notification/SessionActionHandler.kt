@@ -41,10 +41,13 @@ import javax.inject.Inject
  *  - COUNT_PER_DAY has no per-dose due moment, so it keeps one persistent
  *    "N of M today" status pinned for the whole day instead.
  *
- * Tick alarms (HOURLY) are purely a wall-clock cadence (every intervalHours
- * from startedAt) independent of how many doses have actually been logged —
- * logging early or late (or not at all) never needs to touch the tick chain,
- * it just changes which dose ordinal the next reminder ends up representing.
+ * Tick alarms (HOURLY) always re-arm for whenever the next undone dose is
+ * actually due (startedAt + loggedCount * intervalHours — the same formula
+ * GenerateOccurrencesForDateUseCase's pendingSessionOccurrence uses for the
+ * UI), not a fixed wall-clock grid: logging a dose early — e.g. from Home,
+ * where the pending occurrence is tappable before its reminder ever fires —
+ * used to leave the old grid tick armed, so it could still fire and nag
+ * about a dose that wasn't due for another interval yet.
  */
 class SessionActionHandler @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -67,9 +70,11 @@ class SessionActionHandler @Inject constructor(
 
         if (time.sessionIntervalHours != null) {
             // Dose #1 is due immediately (0 elapsed hours) — posted directly
-            // here rather than waiting for a tick alarm.
+            // here rather than waiting for a tick alarm. The tick then arms
+            // for dose #2, which is next in line regardless of whether #1
+            // gets logged (its own re-nagging is the 5-minute repost chain).
             postIntervalDoseReminder(drug, time, scheduledIntakeId, date, session, targetSeq = 1)
-            scheduleNextTick(drug.id, scheduledIntakeId, time, date, startedAt)
+            scheduleNextTick(drug.id, scheduledIntakeId, time, date, startedAt, nextSeq = 2)
         } else {
             postCountStatus(drug, time, scheduledIntakeId, date, loggedCount = 0, forceAlert = true)
         }
@@ -86,9 +91,9 @@ class SessionActionHandler @Inject constructor(
         SessionStatusNotifications.cancel(context, scheduledIntakeId, intakeTimeId, date)
 
         val time = scheduleRepository.getTimeById(intakeTimeId)
-        val intervalHours = time?.sessionIntervalHours
-        if (session != null && intervalHours != null) {
-            alarmScheduler.cancel(nextTickRequestCode(scheduledIntakeId, intakeTimeId, date, session.startedAt, intervalHours))
+        if (session != null && time?.sessionIntervalHours != null) {
+            val loggedCount = intakeRepository.getSessionDoseCountOnce(scheduledIntakeId, intakeTimeId, date)
+            alarmScheduler.cancel(NotificationContracts.computeSessionTickRequestCode(scheduledIntakeId, intakeTimeId, date, loggedCount + 1))
         }
     }
 
@@ -132,10 +137,10 @@ class SessionActionHandler @Inject constructor(
             val session = activeSessions[period.scheduledIntake.id] ?: return@forEach
             val time = period.times.find { it.isSession } ?: return@forEach
             val drug = drugRepository.getById(period.scheduledIntake.drugId) ?: return@forEach
+            val loggedCount = intakeRepository.getSessionDoseCountOnce(period.scheduledIntake.id, time.id, today)
             if (time.sessionIntervalHours != null) {
-                scheduleNextTick(drug.id, period.scheduledIntake.id, time, today, session.startedAt)
+                scheduleNextTick(drug.id, period.scheduledIntake.id, time, today, session.startedAt, nextSeq = loggedCount + 1)
             } else {
-                val loggedCount = intakeRepository.getSessionDoseCountOnce(period.scheduledIntake.id, time.id, today)
                 postCountStatus(drug, time, period.scheduledIntake.id, today, loggedCount, forceAlert = false)
             }
         }
@@ -146,11 +151,23 @@ class SessionActionHandler @Inject constructor(
         val session = dailySessionRepository.getForDate(scheduledIntakeId, date) ?: return
         if (session.endedAt != null) return
         val time = scheduleRepository.getTimeById(intakeTimeId) ?: return
+        val intervalHours = time.sessionIntervalHours ?: return
         val drug = drugRepository.getById(drugId) ?: return
         val loggedCount = intakeRepository.getSessionDoseCountOnce(scheduledIntakeId, intakeTimeId, date)
 
+        // Doses logged early (e.g. from Home, ahead of their reminder) can
+        // leave the next undone dose not actually due yet — don't nag about
+        // it before its own time, just re-arm for when it genuinely is.
+        val dueAt = session.startedAt.plus(loggedCount * intervalHours.toLong(), ChronoUnit.HOURS)
+        if (Instant.now().isBefore(dueAt)) {
+            scheduleNextTick(drugId, scheduledIntakeId, time, date, session.startedAt, nextSeq = loggedCount + 1)
+            return
+        }
+
         postIntervalDoseReminder(drug, time, scheduledIntakeId, date, session, targetSeq = loggedCount + 1)
-        scheduleNextTick(drugId, scheduledIntakeId, time, date, session.startedAt)
+        // Arms for the dose after the one just posted — its own re-nagging is
+        // the 5-minute repost chain, not another tick for the same ordinal.
+        scheduleNextTick(drugId, scheduledIntakeId, time, date, session.startedAt, nextSeq = loggedCount + 2)
     }
 
     /** Called when an interval reminder's 5-minute repost fires — re-nags unless that specific dose has been resolved in the meantime. */
@@ -223,11 +240,11 @@ class SessionActionHandler @Inject constructor(
         )
     }
 
-    private fun scheduleNextTick(drugId: Long, scheduledIntakeId: Long, time: IntakeTime, date: LocalDate, startedAt: Instant) {
+    /** Arms the tick for whenever dose ordinal [nextSeq] is actually due. */
+    private fun scheduleNextTick(drugId: Long, scheduledIntakeId: Long, time: IntakeTime, date: LocalDate, startedAt: Instant, nextSeq: Int) {
         val intervalHours = time.sessionIntervalHours ?: return
-        val requestCode = nextTickRequestCode(scheduledIntakeId, time.id, date, startedAt, intervalHours)
-        val nextTickNumber = ChronoUnit.HOURS.between(startedAt, Instant.now()) / intervalHours + 1
-        val dueAt = startedAt.plus(nextTickNumber * intervalHours, ChronoUnit.HOURS)
+        val requestCode = NotificationContracts.computeSessionTickRequestCode(scheduledIntakeId, time.id, date, nextSeq)
+        val dueAt = startedAt.plus((nextSeq - 1) * intervalHours.toLong(), ChronoUnit.HOURS)
         alarmScheduler.scheduleSessionTick(
             requestCode = requestCode,
             triggerAtEpochMilli = dueAt.toEpochMilli(),
@@ -238,11 +255,5 @@ class SessionActionHandler @Inject constructor(
             doseValue = time.doseValue,
             doseMode = time.doseMode,
         )
-    }
-
-    /** The request code of whichever tick would next fire right now — same formula used to schedule it, so it can be recomputed to cancel. */
-    private fun nextTickRequestCode(scheduledIntakeId: Long, intakeTimeId: Long, date: LocalDate, startedAt: Instant, intervalHours: Int): Int {
-        val nextTickNumber = (ChronoUnit.HOURS.between(startedAt, Instant.now()) / intervalHours + 1).toInt()
-        return NotificationContracts.computeSessionTickRequestCode(scheduledIntakeId, intakeTimeId, date, nextTickNumber)
     }
 }

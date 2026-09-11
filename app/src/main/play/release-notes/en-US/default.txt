@@ -1,1 +1,1 @@
-Fixed: session reminders' "Going to sleep" action now asks you to confirm first, so a stray tap can no longer silently end the day and stop your hourly/daily reminders.
+Fixed: hourly session reminders no longer fire early for a dose that isn't due yet if you logged an earlier dose ahead of schedule from Home.

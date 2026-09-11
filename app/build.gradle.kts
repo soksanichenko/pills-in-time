@@ -35,7 +35,7 @@ android {
         applicationId = "app.zelgray.pills_in_time"
         minSdk = 26
         targetSdk = 37
-        versionCode = 37
+        versionCode = 39
         // Kept in lockstep with versionCode so testers can tell builds apart
         // in Play Store/app info without needing adb — no separate bump to
         // remember on release.

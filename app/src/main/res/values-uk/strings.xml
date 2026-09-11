@@ -225,6 +225,8 @@
     <string name="session_start_prompt_text">%1$s — торкніться, щоб почати щогодинні нагадування</string>
     <string name="action_start_day">День почато</string>
     <string name="action_end_day">Іду спати</string>
+    <string name="end_day_confirm_title">Ідете спати?</string>
+    <string name="end_day_confirm_body">Сьогодні нагадування про приймання цих ліків більше не надходитимуть.</string>
     <string name="session_count_status_title">%1$s — %2$d з %3$d сьогодні</string>
     <string name="session_count_status_done">Усі %1$d прийом(и) на сьогодні виконано</string>
     <string name="low_stock_notification_title">Запас закінчується: %1$s</string>

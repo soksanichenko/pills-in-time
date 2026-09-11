@@ -99,7 +99,7 @@ object SessionStatusNotifications {
             .setContentIntent(contentIntent(context, id))
             .addAction(0, context.getString(R.string.action_took_it), broadcastPendingIntent(context, id * 10 + 1, takeIntent))
             .addAction(0, context.getString(R.string.action_skipped), broadcastPendingIntent(context, id * 10 + 2, skipIntent))
-            .addAction(0, context.getString(R.string.action_end_day), broadcastPendingIntent(context, id * 10 + 3, endDayIntent(context, id, scheduledIntakeId, time.id, date)))
+            .addAction(0, context.getString(R.string.action_end_day), activityPendingIntent(context, id * 10 + 3, endDayIntent(context, id, scheduledIntakeId, time.id, date)))
 
         patient?.let { builder.setColor(it.color) }
         NotificationManagerCompat.from(context).notify(id, builder.build())
@@ -142,7 +142,7 @@ object SessionStatusNotifications {
             .setContentIntent(contentIntent(context, id))
             .addAction(0, context.getString(R.string.action_took_it), broadcastPendingIntent(context, id * 10 + 1, takeIntent))
             .addAction(0, context.getString(R.string.action_skipped), broadcastPendingIntent(context, id * 10 + 2, skipIntent))
-            .addAction(0, context.getString(R.string.action_end_day), broadcastPendingIntent(context, id * 10 + 3, endDayIntent(context, id, scheduledIntakeId, time.id, date)))
+            .addAction(0, context.getString(R.string.action_end_day), activityPendingIntent(context, id * 10 + 3, endDayIntent(context, id, scheduledIntakeId, time.id, date)))
 
         patient?.let { builder.setColor(it.color) }
         NotificationManagerCompat.from(context).notify(id, builder.build())
@@ -178,9 +178,12 @@ object SessionStatusNotifications {
         putExtra(NotificationContracts.EXTRA_KEEP_NOTIFICATION, keepNotification)
     }
 
+    // Opens a confirm dialog (EndDayConfirmActivity) instead of ending the day
+    // directly — it sits right next to Took it/Skipped with no undo, so a
+    // bare tap used to be able to silently end the whole day.
     private fun endDayIntent(context: Context, notificationId: Int, scheduledIntakeId: Long, intakeTimeId: Long, date: LocalDate): Intent =
-        Intent(context, SessionActionReceiver::class.java).apply {
-            action = NotificationContracts.ACTION_END_DAY
+        Intent(context, EndDayConfirmActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             putExtra(NotificationContracts.EXTRA_NOTIFICATION_ID, notificationId)
             putExtra(NotificationContracts.EXTRA_SCHEDULED_INTAKE_ID, scheduledIntakeId)
             putExtra(NotificationContracts.EXTRA_INTAKE_TIME_ID, intakeTimeId)
@@ -196,4 +199,7 @@ object SessionStatusNotifications {
 
     private fun broadcastPendingIntent(context: Context, requestCode: Int, intent: Intent): PendingIntent =
         PendingIntent.getBroadcast(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+    private fun activityPendingIntent(context: Context, requestCode: Int, intent: Intent): PendingIntent =
+        PendingIntent.getActivity(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 }

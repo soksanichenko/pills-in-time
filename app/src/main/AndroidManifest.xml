@@ -59,6 +59,13 @@
             android:name=".notification.SessionActionReceiver"
             android:exported="false" />
 
+        <activity
+            android:name=".notification.EndDayConfirmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.Pillsintime.Dialog" />
+
         <receiver
             android:name=".notification.LowStockActionReceiver"
             android:exported="false" />

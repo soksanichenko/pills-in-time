@@ -13,4 +13,15 @@
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
     </style>
+
+    <!-- Used by EndDayConfirmActivity: a transparent, dialog-sized window so
+         the confirm prompt reads as a dialog over whatever was on screen
+         rather than a full app launch. -->
+    <style name="Theme.Pillsintime.Dialog" parent="Theme.Pillsintime">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
 </resources>

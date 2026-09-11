@@ -1,1 +1,1 @@
-Fixed: low-stock reminders kept popping up on a postponed "Remind tomorrow" re-check even after you'd already restocked.
+Fixed: session reminders' "Going to sleep" action now asks you to confirm first, so a stray tap can no longer silently end the day and stop your hourly/daily reminders.

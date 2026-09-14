@@ -8,6 +8,7 @@ import androidx.compose.ui.res.stringResource
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.ui.common.ConfirmDialog
 import app.zelgray.pills_in_time.ui.theme.MedTrackerTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * Confirmation step for the "Иду спать" action on a session status
@@ -18,6 +19,7 @@ import app.zelgray.pills_in_time.ui.theme.MedTrackerTheme
  * actual end-day logic (SessionActionHandler.endDay via EndDayWorker) is
  * untouched.
  */
+@AndroidEntryPoint
 class EndDayConfirmActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -256,6 +256,9 @@
     <string name="snooze_minutes_value">%1$d хв</string>
 
     <string name="history_filter_all">Усі ліки</string>
+    <string name="drugs_filter_all">Усі</string>
+    <string name="drugs_filter_active">Активні</string>
+    <string name="drugs_filter_inactive">Неактивні</string>
     <string name="history_empty">Історії ще немає.</string>
     <string name="source_reminder">Нагадування</string>
     <string name="source_manual">Вручну</string>

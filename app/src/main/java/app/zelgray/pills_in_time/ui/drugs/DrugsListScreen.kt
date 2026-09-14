@@ -37,6 +37,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.zelgray.pills_in_time.R
 import app.zelgray.pills_in_time.data.local.entity.Drug
+import app.zelgray.pills_in_time.ui.common.ChipOption
+import app.zelgray.pills_in_time.ui.common.ChipSelector
 import app.zelgray.pills_in_time.ui.common.PatientSwitcherAction
 
 @Composable
@@ -46,7 +48,7 @@ fun DrugsListScreen(
     onManagePatients: () -> Unit = {},
     viewModel: DrugsListViewModel = hiltViewModel(),
 ) {
-    val drugs by viewModel.drugs.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -61,29 +63,37 @@ fun DrugsListScreen(
             }
         },
     ) { innerPadding ->
-        if (drugs.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding).padding(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.drugs_empty),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = innerPadding.calculateTopPadding() + 8.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 8.dp,
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            ChipSelector(
+                options = listOf(
+                    ChipOption(DrugActivityFilter.ALL, stringResource(R.string.drugs_filter_all)),
+                    ChipOption(DrugActivityFilter.ACTIVE, stringResource(R.string.drugs_filter_active)),
+                    ChipOption(DrugActivityFilter.INACTIVE, stringResource(R.string.drugs_filter_inactive)),
                 ),
-            ) {
-                items(drugs, key = { it.id }) { drug ->
-                    DrugRow(drug = drug, onClick = { onDrugClick(drug.id) })
+                selected = state.selectedFilter,
+                onSelect = viewModel::onSelectFilter,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+
+            if (state.drugs.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.drugs_empty),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    items(state.drugs, key = { it.id }) { drug ->
+                        DrugRow(drug = drug, onClick = { onDrugClick(drug.id) })
+                    }
                 }
             }
         }

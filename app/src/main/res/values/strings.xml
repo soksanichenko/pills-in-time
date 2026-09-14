@@ -256,6 +256,9 @@
     <string name="snooze_minutes_value">%1$d min</string>
 
     <string name="history_filter_all">All drugs</string>
+    <string name="drugs_filter_all">All</string>
+    <string name="drugs_filter_active">Active</string>
+    <string name="drugs_filter_inactive">Inactive</string>
     <string name="history_empty">No history yet.</string>
     <string name="source_reminder">Reminder</string>
     <string name="source_manual">Manual</string>

@@ -256,6 +256,9 @@
     <string name="snooze_minutes_value">%1$d мин</string>
 
     <string name="history_filter_all">Все лекарства</string>
+    <string name="drugs_filter_all">Все</string>
+    <string name="drugs_filter_active">Активные</string>
+    <string name="drugs_filter_inactive">Неактивные</string>
     <string name="history_empty">Истории пока нет.</string>
     <string name="source_reminder">Напоминание</string>
     <string name="source_manual">Вручную</string>

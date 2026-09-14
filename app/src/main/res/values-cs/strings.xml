@@ -256,6 +256,9 @@
     <string name="snooze_minutes_value">%1$d min</string>
 
     <string name="history_filter_all">Všechny léky</string>
+    <string name="drugs_filter_all">Vše</string>
+    <string name="drugs_filter_active">Aktivní</string>
+    <string name="drugs_filter_inactive">Neaktivní</string>
     <string name="history_empty">Zatím žádná historie.</string>
     <string name="source_reminder">Připomenutí</string>
     <string name="source_manual">Ručně</string>

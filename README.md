@@ -12,6 +12,8 @@ Every drug belongs to a patient — useful if you're tracking your own medicatio
 ### Drugs & supplies
 Add a drug with a form (tablet, capsule, drops, ml, ampoule, sachet, or a custom text form) — this drives how quantities are labeled everywhere ("3 sachets", "12 drops", etc.), fully localized (English/Ukrainian/Russian/Czech, including proper plural forms).
 
+The Drugs list can be filtered to All / Active / Inactive (a drug counts as active if it has at least one period that hasn't ended yet — a paused-but-not-stopped period still counts).
+
 Track one or more stock batches ("supplies") per drug — each batch has its own **quantity**, **strength** (value + unit: mg/mcg/IU), and purchase date (`addedAt`, used to tell which batch is the "current"/most-recently-bought one). Strength is **optional**: leave it blank if you don't need dose-strength tracking for this drug. A drug with no strength is capped at a single supply, though — strength is what would justify (and let the app tell apart) more than one batch on hand at once. Supply rows support a quick **"+"** action to add newly purchased quantity onto an existing batch without creating a duplicate batch row (so partial refills of the same purchase don't fragment your stock history).
 
 For a **drops**-form drug, since different bottles/droppers give different-sized drops, you can enter a batch's quantity by calibrating from the bottle instead of counting drops yourself — bottle volume (mL) plus how many drops that specific dropper gives per mL — and the app computes the drop count for you.

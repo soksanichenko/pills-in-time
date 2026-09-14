@@ -1,1 +1,2 @@
-Fixed: hourly session reminders no longer fire early for a dose that isn't due yet if you logged an earlier dose ahead of schedule from Home.
+- Drugs list can now be filtered by All / Active / Inactive.
+- Fixed a crash when tapping "Going to sleep" on a session reminder.

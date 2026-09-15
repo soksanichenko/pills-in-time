@@ -98,6 +98,7 @@
     <string name="period_ongoing_from">%1$s — продолжается</string>
     <string name="period_paused_until">На паузе до %1$s</string>
     <string name="period_paused_indefinitely">На паузе</string>
+    <string name="past_periods_section">Прошедшие периоды (%1$d)</string>
 
     <string name="delete_period_title">Удалить период?</string>
     <string name="delete_period_body">Этот период и его время приёма будут удалены навсегда.</string>

@@ -2,6 +2,7 @@
 
 package app.zelgray.pills_in_time.ui.drugs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
@@ -90,6 +93,7 @@ fun DrugDetailScreen(
     var restockBatch by remember { mutableStateOf<DrugStockBatch?>(null) }
     var shortfallToShow by remember { mutableStateOf<StockShortfall?>(null) }
     var stockBreakdownToShow by remember { mutableStateOf<Pair<String, List<String>>?>(null) }
+    var pastPeriodsExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -224,7 +228,12 @@ fun DrugDetailScreen(
                             }
                         }
                     }
-                    items(state.periods, key = { "period_${it.scheduledIntake.id}" }) { periodWithTimes ->
+                    val today = LocalDate.now()
+                    val (pastPeriods, currentPeriods) = state.periods.partition {
+                        val endDate = it.scheduledIntake.endDate
+                        endDate != null && endDate.isBefore(today)
+                    }
+                    val renderPeriodCard: @Composable (ScheduledIntakeWithTimes) -> Unit = { periodWithTimes ->
                         PeriodCard(
                             periodWithTimes = periodWithTimes,
                             drug = state.drug!!,
@@ -245,6 +254,39 @@ fun DrugDetailScreen(
                             onShowShortfall = { shortfallToShow = it },
                             onShowStockBreakdown = { title, lines -> stockBreakdownToShow = title to lines },
                         )
+                    }
+
+                    items(currentPeriods, key = { "period_${it.scheduledIntake.id}" }) { periodWithTimes ->
+                        renderPeriodCard(periodWithTimes)
+                    }
+
+                    if (pastPeriods.isNotEmpty()) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { pastPeriodsExpanded = !pastPeriodsExpanded }
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.past_periods_section, pastPeriods.size),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Icon(
+                                    imageVector = if (pastPeriodsExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (pastPeriodsExpanded) {
+                            items(pastPeriods, key = { "period_${it.scheduledIntake.id}" }) { periodWithTimes ->
+                                renderPeriodCard(periodWithTimes)
+                            }
+                        }
                     }
                 }
             }
@@ -437,14 +479,15 @@ private fun PeriodCard(
     val depleted = stockProjection?.stockDepleted == true
     val today = LocalDate.now()
     val isPaused = period.pausedUntilDate != null && !today.isAfter(period.pausedUntilDate)
+    val isActive = !isPaused && isPeriodActiveOn(period, today)
     // Stopping/pausing a course that's already over doesn't mean anything.
     val canManage = period.endDate == null || !period.endDate.isBefore(today)
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = if (depleted) {
-            CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-        } else {
-            CardDefaults.cardColors()
+        colors = when {
+            depleted -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+            isActive -> CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            else -> CardDefaults.cardColors()
         },
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -464,11 +507,11 @@ private fun PeriodCard(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                } else if (isPeriodActiveOn(period, today)) {
+                } else if (isActive) {
                     Text(
                         text = stringResource(R.string.period_active_now),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }

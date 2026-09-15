@@ -98,6 +98,7 @@
     <string name="period_ongoing_from">%1$s – pokračuje</string>
     <string name="period_paused_until">Pozastaveno do %1$s</string>
     <string name="period_paused_indefinitely">Pozastaveno</string>
+    <string name="past_periods_section">Minulá období (%1$d)</string>
 
     <string name="delete_period_title">Smazat období?</string>
     <string name="delete_period_body">Toto období a jeho časy užívání budou trvale smazány.</string>

@@ -98,6 +98,7 @@
     <string name="period_ongoing_from">%1$s – ongoing</string>
     <string name="period_paused_until">Paused until %1$s</string>
     <string name="period_paused_indefinitely">Paused</string>
+    <string name="past_periods_section">Past periods (%1$d)</string>
 
     <string name="delete_period_title">Delete period?</string>
     <string name="delete_period_body">This will permanently delete this period and its times.</string>

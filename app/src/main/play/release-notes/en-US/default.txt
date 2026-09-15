@@ -1,2 +1,2 @@
-- Drugs list can now be filtered by All / Active / Inactive.
-- Fixed a crash when tapping "Going to sleep" on a session reminder.
+- The currently active period is now highlighted on the drug detail screen.
+- Ended periods are grouped into a collapsible "Past periods" section.

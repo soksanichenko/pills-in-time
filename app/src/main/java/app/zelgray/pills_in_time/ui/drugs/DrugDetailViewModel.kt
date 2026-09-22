@@ -1,8 +1,11 @@
 package app.zelgray.pills_in_time.ui.drugs
 
+import android.content.Context
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkManager
 import app.zelgray.pills_in_time.data.local.entity.DailySession
 import app.zelgray.pills_in_time.data.local.entity.Drug
 import app.zelgray.pills_in_time.data.local.entity.DrugStockBatch
@@ -19,10 +22,13 @@ import app.zelgray.pills_in_time.domain.usecase.ComputeStockShortfallUseCase
 import app.zelgray.pills_in_time.domain.usecase.ProjectDrugStockUseCase
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
 import app.zelgray.pills_in_time.domain.usecase.INDEFINITE_PAUSE_DATE
+import app.zelgray.pills_in_time.domain.usecase.ScheduleAlarmsForWindowUseCase
 import app.zelgray.pills_in_time.domain.usecase.computePauseUntilDateForOccurrences
+import app.zelgray.pills_in_time.notification.NotificationContracts
 import app.zelgray.pills_in_time.notification.SessionActionHandler
 import app.zelgray.pills_in_time.ui.navigation.NavRoutes
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -50,6 +56,7 @@ data class DrugDetailUiState(
 
 @HiltViewModel
 class DrugDetailViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val drugRepository: DrugRepository,
     private val stockRepository: StockRepository,
@@ -125,10 +132,37 @@ class DrugDetailViewModel @Inject constructor(
         viewModelScope.launch { scheduleRepository.deletePeriod(periodWithTimes.scheduledIntake) }
     }
 
+    /**
+     * Stopping goes into effect immediately, even before today's own doses
+     * from this period were taken — so any of today's already-posted (not
+     * just pending) reminders for this period are dismissed right away
+     * rather than waiting for DailyRescheduleWorker's reconcile, which only
+     * cancels alarms that haven't fired yet.
+     */
     fun stopPeriod(periodWithTimes: ScheduledIntakeWithTimes) {
-        viewModelScope.launch {
-            scheduleRepository.stopPeriod(periodWithTimes.scheduledIntake.id, LocalDate.now())
+        val today = LocalDate.now()
+        val scheduledIntakeId = periodWithTimes.scheduledIntake.id
+        periodWithTimes.times.forEach { time ->
+            if (!time.isSession) {
+                cancelReminderNotification(scheduledIntakeId, time.id, today)
+            }
         }
+        viewModelScope.launch {
+            val sessionTime = periodWithTimes.times.find { it.isSession }
+            if (sessionTime != null) {
+                val session = dailySessionRepository.getForDate(scheduledIntakeId, today)
+                if (session != null && session.endedAt == null) {
+                    sessionActionHandler.endDay(scheduledIntakeId, sessionTime.id, today)
+                }
+            }
+            scheduleRepository.stopPeriod(scheduledIntakeId, today)
+        }
+    }
+
+    private fun cancelReminderNotification(scheduledIntakeId: Long, intakeTimeId: Long, occurrenceDate: LocalDate) {
+        val notificationId = ScheduleAlarmsForWindowUseCase.computeRequestCode(scheduledIntakeId, intakeTimeId, occurrenceDate)
+        NotificationManagerCompat.from(context).cancel(notificationId)
+        WorkManager.getInstance(context).cancelUniqueWork(NotificationContracts.repeatWorkName(notificationId))
     }
 
     fun pausePeriodForDays(periodWithTimes: ScheduledIntakeWithTimes, days: Int) {

@@ -179,10 +179,16 @@ class ScheduleRepository @Inject constructor(
         DailyRescheduleWorker.enqueueNow(context)
     }
 
-    /** Ends the period as of [stopDate] — same effect as editing its end date, just one tap. */
+    /**
+     * Ends the period immediately as of [stopDate] — even if [stopDate]'s own
+     * remaining doses haven't been taken yet, the period goes fully inactive
+     * from that date onward (endDate = the day before), not just from
+     * tomorrow, so isPeriodActiveOn already reads false for [stopDate] itself
+     * and today's not-yet-fired reminders get reconciled away below.
+     */
     suspend fun stopPeriod(scheduleId: Long, stopDate: LocalDate) {
         val existing = scheduleDao.getById(scheduleId) ?: return
-        scheduleDao.update(existing.copy(endMode = EndMode.DATE, endDate = stopDate))
+        scheduleDao.update(existing.copy(endMode = EndMode.DATE, endDate = stopDate.minusDays(1)))
         DailyRescheduleWorker.enqueueNow(context)
     }
 

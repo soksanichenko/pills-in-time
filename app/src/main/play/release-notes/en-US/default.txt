@@ -1,2 +1,1 @@
-- The currently active period is now highlighted on the drug detail screen.
-- Ended periods are grouped into a collapsible "Past periods" section.
+- Stopping a period now takes effect immediately, even before today's dose is taken, dismissing today's reminders for it right away.

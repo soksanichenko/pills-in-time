@@ -16,6 +16,7 @@ import app.zelgray.pills_in_time.data.repository.PatientRepository
 import app.zelgray.pills_in_time.data.repository.ScheduleRepository
 import app.zelgray.pills_in_time.data.repository.StockRepository
 import app.zelgray.pills_in_time.domain.usecase.ResolveEffectiveStrengthUseCase
+import app.zelgray.pills_in_time.domain.usecase.isPeriodActiveOn
 import app.zelgray.pills_in_time.ui.drugs.doseTextPlain
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
@@ -60,10 +61,35 @@ class SessionActionHandler @Inject constructor(
     private val dailySessionRepository: DailySessionRepository,
     private val alarmScheduler: AlarmScheduler,
 ) {
+    /**
+     * Starts the given session-based time's day, then also starts every other
+     * still-unstarted, currently-active session-based time for the same
+     * patient — so a patient with more than one session drug only has to
+     * start their day once instead of separately per drug.
+     */
     suspend fun startDay(scheduledIntakeId: Long, intakeTimeId: Long, date: LocalDate) {
         val time = scheduleRepository.getTimeById(intakeTimeId) ?: return
         val schedule = scheduleRepository.getById(scheduledIntakeId) ?: return
         val drug = drugRepository.getById(schedule.drugId) ?: return
+        startDayFor(schedule.id, time, drug, date)
+
+        val periods = scheduleRepository.getAllPeriodsForPatientOnce(drug.patientId)
+        periods.forEach { period ->
+            if (period.scheduledIntake.id == scheduledIntakeId) return@forEach
+            val otherTime = period.times.find { it.isSession } ?: return@forEach
+            if (!isPeriodActiveOn(period.scheduledIntake, date)) return@forEach
+            if (dailySessionRepository.getForDate(period.scheduledIntake.id, date) != null) return@forEach
+            val otherDrug = drugRepository.getById(period.scheduledIntake.drugId) ?: return@forEach
+            startDayFor(period.scheduledIntake.id, otherTime, otherDrug, date)
+        }
+
+        // Drops the now-obsolete "start your day?" prompt alarm(s) for today —
+        // the next reconcile would exclude them anyway (a DailySession now
+        // exists), but this makes the registry consistent immediately.
+        DailyRescheduleWorker.enqueueNow(context)
+    }
+
+    private suspend fun startDayFor(scheduledIntakeId: Long, time: IntakeTime, drug: Drug, date: LocalDate) {
         val startedAt = Instant.now()
         dailySessionRepository.start(scheduledIntakeId, date, startedAt)
         val session = DailySession(scheduledIntakeId = scheduledIntakeId, date = date, startedAt = startedAt)
@@ -78,10 +104,6 @@ class SessionActionHandler @Inject constructor(
         } else {
             postCountStatus(drug, time, scheduledIntakeId, date, loggedCount = 0, forceAlert = true)
         }
-        // Drops the now-obsolete "start your day?" prompt alarm for today —
-        // the next reconcile would exclude it anyway (a DailySession now
-        // exists), but this makes the registry consistent immediately.
-        DailyRescheduleWorker.enqueueNow(context)
     }
 
     suspend fun endDay(scheduledIntakeId: Long, intakeTimeId: Long, date: LocalDate) {

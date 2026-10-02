@@ -240,6 +240,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** "Going to sleep" from Home — ends today's session early, same as the manual button on the period's own card. */
+    fun onEndDay(item: HomeListItem) {
+        val occurrence = item.occurrence
+        if (occurrence.sessionSeq == 0) return
+        viewModelScope.launch {
+            sessionActionHandler.endDay(occurrence.scheduledIntakeId, occurrence.intakeTimeId, occurrence.occurrenceDate)
+        }
+    }
+
     private fun recordAction(item: HomeListItem, status: IntakeStatus) {
         val occurrence = item.occurrence
         viewModelScope.launch {

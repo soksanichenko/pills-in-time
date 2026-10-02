@@ -190,7 +190,11 @@ class DrugDetailViewModel @Inject constructor(
         viewModelScope.launch { scheduleRepository.resumePeriod(periodWithTimes.scheduledIntake.id) }
     }
 
-    /** Manual "Начать день" — the same start-of-day anchor a day-start-prompt notification tap would set. */
+    /**
+     * Manual "Начать день" — the same start-of-day anchor a day-start-prompt
+     * notification tap would set. Also starts every other still-unstarted
+     * session-based drug for this patient (see SessionActionHandler.startDay).
+     */
     fun startDay(periodWithTimes: ScheduledIntakeWithTimes) {
         val time = periodWithTimes.times.find { it.isSession } ?: return
         viewModelScope.launch {

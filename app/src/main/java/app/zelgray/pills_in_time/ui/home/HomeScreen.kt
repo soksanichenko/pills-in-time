@@ -205,6 +205,10 @@ fun HomeScreen(
                     viewModel.onCancelStatus(item)
                     sheetItem = null
                 },
+                onEndDay = {
+                    viewModel.onEndDay(item)
+                    sheetItem = null
+                },
             )
         }
     }
@@ -473,8 +477,10 @@ private fun HomeActionSheetContent(
     onSkipped: () -> Unit,
     onSnooze: () -> Unit,
     onCancel: () -> Unit,
+    onEndDay: () -> Unit,
 ) {
     val alreadyLogged = item.occurrence.status == OccurrenceStatus.TAKEN || item.occurrence.status == OccurrenceStatus.SKIPPED
+    val isSession = item.occurrence.sessionSeq != 0
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
             text = occurrenceTimeLabel(item.occurrence) + " · " + item.drug.name + " · " +
@@ -490,7 +496,10 @@ private fun HomeActionSheetContent(
         )
         Column(modifier = Modifier.padding(top = 16.dp)) {
             if (alreadyLogged) {
-                OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = if (isSession) 8.dp else 0.dp),
+                ) {
                     Text(stringResource(R.string.action_undo_status))
                 }
             } else {
@@ -502,16 +511,24 @@ private fun HomeActionSheetContent(
                 }
                 OutlinedButton(
                     onClick = onSkipped,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = if (item.occurrence.sessionSeq == 0) 8.dp else 0.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                 ) {
                     Text(stringResource(R.string.action_skipped))
                 }
                 // Sessions (see IntakeTime.isSession) don't support snooze —
                 // their ongoing status notification already stays visible.
-                if (item.occurrence.sessionSeq == 0) {
+                if (!isSession) {
                     OutlinedButton(onClick = onSnooze, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.action_snooze))
                     }
+                }
+            }
+            // A session-based occurrence always offers "going to sleep" here
+            // too, mirroring the same action on the notification and on the
+            // period's own card — not tied to this particular dose's status.
+            if (isSession) {
+                OutlinedButton(onClick = onEndDay, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.action_end_day))
                 }
             }
         }

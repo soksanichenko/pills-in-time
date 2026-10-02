@@ -22,7 +22,7 @@ enum class DrugActivityFilter { ALL, ACTIVE, INACTIVE }
 
 data class DrugsListUiState(
     val drugs: List<Drug> = emptyList(),
-    val selectedFilter: DrugActivityFilter = DrugActivityFilter.ALL,
+    val selectedFilter: DrugActivityFilter = DrugActivityFilter.ACTIVE,
 )
 
 @HiltViewModel
@@ -33,7 +33,7 @@ class DrugsListViewModel @Inject constructor(
     private val nowProvider: NowProvider,
 ) : ViewModel() {
 
-    private val selectedFilter = MutableStateFlow(DrugActivityFilter.ALL)
+    private val selectedFilter = MutableStateFlow(DrugActivityFilter.ACTIVE)
 
     val uiState: StateFlow<DrugsListUiState> = patientRepository.observeCurrentPatientId()
         .flatMapLatest { patientId ->

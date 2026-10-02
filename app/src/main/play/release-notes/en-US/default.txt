@@ -1,1 +1,3 @@
-- Stopping a period now takes effect immediately, even before today's dose is taken, dismissing today's reminders for it right away.
+- Drugs list now defaults to the Active filter.
+- Starting a session-based drug's day now starts every other active session-based drug too, not just one.
+- Home's action sheet now offers "Going to sleep" for session-based doses.

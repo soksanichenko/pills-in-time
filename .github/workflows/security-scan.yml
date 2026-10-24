@@ -1,0 +1,16 @@
+---
+name: Security scan
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: write
+
+jobs:
+  scan:
+    uses: soksanichenko/service-repo-template/.github/workflows/security-scan-reusable.yml@6301098faeb26b3e9d865fed6fe6a6d46819ca40 # v1.0.0

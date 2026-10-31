@@ -169,23 +169,27 @@ Every reminder (`PostNotificationWorker`) and low-stock notification (`LowStockN
 
 The **Gradle Play Publisher** plugin (`com.github.triplet.play`, `libs.plugins.play.publisher`) is applied in `app/build.gradle.kts` with a `play { }` block pointing at `release-manager-key.json` (repo root, gitignored — a Google Cloud service account key scoped to Play Console's "Manage testing releases" permission only, never production) and `track.set("internal")`. `./gradlew publishReleaseBundle` builds and uploads the release bundle straight to the internal testing track in one step — no manual Play Console upload needed. Without `release-manager-key.json` present, normal builds are unaffected; only the publish task would fail.
 
+## CI & Dependency Updates
+
+`.github/dependabot.yml` opens weekly grouped PRs (one `gradle-dependencies` group, one `github-actions-dependencies` group) for Gradle and GitHub Actions. `.github/workflows/security-scan.yml` runs a daily (05:17 UTC) osv-scanner scan by calling a reusable workflow pinned by commit SHA from `soksanichenko/service-repo-template`. It scans `app/gradle.lockfile`, which Gradle dependency locking generates for `releaseRuntimeClasspath` only (configured in the root `build.gradle.kts`) — build/lint/test tooling is deliberately excluded so its findings don't bury the ones that ship in the app. After changing dependencies, refresh the lock with `./gradlew :app:dependencies --configuration releaseRuntimeClasspath --write-locks`.
+
 ## Key Dependencies
 
 | Package | Version | Purpose |
 |---|---|---|
-| AGP | 9.3.2 | Android Gradle Plugin |
-| Kotlin / KSP | 2.2.10 / 2.3.2 | Language + annotation processing |
+| AGP | 9.5.0 | Android Gradle Plugin |
+| Kotlin / KSP | 2.4.21 / 2.3.12 | Language + annotation processing |
 | Hilt | 2.60.1 | DI |
-| Room | 2.8.4 | Local persistence |
-| Compose BOM | 2026.06.01 | UI toolkit (Material3) |
-| Navigation Compose | 2.9.8 | In-app navigation |
+| Room | 2.8.5 | Local persistence |
+| Compose BOM | 2026.09.00 | UI toolkit (Material3) |
+| Navigation Compose | 2.10.2 | In-app navigation |
 | Lifecycle | 2.11.0 | ViewModel/runtime-compose |
-| WorkManager | 2.11.2 | Background reschedule/backup/log workers |
-| DataStore Preferences | 1.2.1 | Settings (snooze minutes, Drive connection state) |
-| kotlinx-serialization-json | 1.11.0 | Backup JSON payload |
+| WorkManager | 2.12.0 | Background reschedule/backup/log workers |
+| DataStore Preferences | 1.3.0 | Settings (snooze minutes, Drive connection state) |
+| kotlinx-serialization-json | 1.12.0 | Backup JSON payload |
 | kotlinx-coroutines | 1.11.0 | Coroutines (+ play-services interop) |
-| Credentials / googleid / play-services-auth | 1.6.0 / 1.2.0 / 21.6.0 | Google account auth for Drive backup |
-| Retrofit / OkHttp | 2.12.0 / 4.12.0 | Drive v3 REST API client |
+| Credentials / googleid / play-services-auth | 1.6.0 / 1.2.1 / 22.0.0 | Google account auth for Drive backup |
+| Retrofit / OkHttp | 3.0.0 / 5.5.1 | Drive v3 REST API client |
 | Turbine / MockK | 1.2.1 / 1.14.11 | Test-only: Flow testing, mocking |
 
 `minSdk 26`, `targetSdk`/`compileSdk 37`. Exact versions live in `gradle/libs.versions.toml` — check there directly rather than trusting this table if it looks stale.

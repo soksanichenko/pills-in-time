@@ -65,7 +65,7 @@ English, Українська, Русский, and Čeština, switchable in-app 
 
 ## Requirements
 
-- Android Studio with AGP 9.3.2 / Gradle
+- Android Studio with AGP 9.5.0 / Gradle
 - JDK 11+
 - Android SDK: `minSdk 26`, `targetSdk 37`, `compileSdk 37`
 - A physical or emulated device running API 26+

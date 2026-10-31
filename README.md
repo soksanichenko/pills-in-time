@@ -100,6 +100,8 @@ Release builds are signed via a gitignored `keystore.properties` (repo root) wit
 
 `publishReleaseBundle` needs a gitignored `release-manager-key.json` (repo root) — a Google Cloud service account key with Play Console's "Manage testing releases" permission only.
 
+Every merge to `main` that changes the app or its dependencies is published automatically by the `Publish to Play` GitHub workflow: it runs CI, bumps `versionCode`, uploads to the internal track and promotes the same build to alpha. Release notes are generated from the commits since the last release, unless `app/src/main/play/release-notes/en-US/default.txt` was edited in the meantime. Production is not automated.
+
 ## License
 
 [MIT](https://opensource.org/licenses/MIT)

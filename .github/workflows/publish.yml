@@ -57,11 +57,23 @@ jobs:
         run: |
           current=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
           next=$((current + 1))
-          mkdir -p app/src/main/play/release-notes/en-US
-          .github/scripts/release-notes.sh > app/src/main/play/release-notes/en-US/default.txt
+          notes=app/src/main/play/release-notes/en-US/default.txt
+          mkdir -p "$(dirname "$notes")"
+          # Notes committed by hand since the last bump (via /release-notes) win over
+          # the generated ones.
+          base=$(git log -1 --format=%H -G'versionCode = ' -- app/build.gradle.kts)
+          if [ -n "$base" ] && [ -s "$notes" ] && ! git diff --quiet "$base" HEAD -- "$notes"; then
+            echo "Using release notes committed since the last bump"
+            if [ "$(wc -m < "$notes")" -gt 500 ]; then
+              echo "::error::Release notes exceed Play's 500-character limit"
+              exit 1
+            fi
+          else
+            .github/scripts/release-notes.sh > "$notes"
+          fi
           sed -i "s/versionCode = $current/versionCode = $next/" app/build.gradle.kts
           echo "version_code=$next" >> "$GITHUB_OUTPUT"
-          cat app/src/main/play/release-notes/en-US/default.txt
+          cat "$notes"
 
       # main requires signed commits and PRs for everyone but admins and the release
       # GitHub App (a bypass actor of the main rulesets). A commit created through the

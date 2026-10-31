@@ -102,4 +102,4 @@ Release builds are signed via a gitignored `keystore.properties` (repo root) wit
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](https://opensource.org/licenses/MIT)

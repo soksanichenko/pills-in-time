@@ -33,6 +33,9 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Holds the signing and Play secrets (synced from Infisical); the environment only
+    # deploys from protected branches.
+    environment: production
     permissions:
       contents: write
     steps:

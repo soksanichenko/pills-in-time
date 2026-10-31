@@ -66,6 +66,26 @@ jobs:
       # main requires signed commits and PRs for everyone but admins and the release
       # GitHub App (a bypass actor of the main rulesets). A commit created through the
       # GraphQL API with the app's token is signed by GitHub, so it satisfies both.
+      # TEMPORARY: prints only the shape of APP_PRIVATE_KEY, never its contents. PEM
+      # header lines are spaced out because Actions masks every line of a secret.
+      - name: Diagnose app private key format
+        env:
+          KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: |
+          echo "chars: ${#KEY}"
+          echo "lines: $(printf '%s\n' "$KEY" | wc -l)"
+          echo "literal backslash-n sequences: $(printf '%s' "$KEY" | grep -o '\\n' | wc -l)"
+          echo "carriage returns: $(printf '%s' "$KEY" | tr -cd '\r' | wc -c)"
+          echo "starts with quote: $([[ "$KEY" == [\"\']* ]] && echo yes || echo no)"
+          for pos in first last; do
+            if [ "$pos" = first ]; then line=$(printf '%s\n' "$KEY" | head -n1); else line=$(printf '%s\n' "$KEY" | tail -n1); fi
+            if [[ "$line" =~ ^-----(BEGIN|END)\ [A-Z\ ]+-----$ ]]; then
+              echo "$pos line: $(printf '%s' "$line" | sed 's/./& /g')"
+            else
+              echo "$pos line: not a PEM header (${#line} chars)"
+            fi
+          done
+
       - name: Create release app token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0

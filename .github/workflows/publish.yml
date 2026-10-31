@@ -1,0 +1,97 @@
+---
+name: Publish to Play
+
+# Every merge to main that changes the app or its dependencies is built, tested,
+# uploaded to the internal track and promoted to alpha (same artifact, same
+# versionCode). Production is deliberately not automated.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    # Skip the bump commit pushed by this workflow and by the local /publish-* flow.
+    if: github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore(release)')
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Bump versionCode and write release notes
+        id: bump
+        run: |
+          current=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
+          next=$((current + 1))
+          mkdir -p app/src/main/play/release-notes/en-US
+          .github/scripts/release-notes.sh > app/src/main/play/release-notes/en-US/default.txt
+          sed -i "s/versionCode = $current/versionCode = $next/" app/build.gradle.kts
+          echo "version_code=$next" >> "$GITHUB_OUTPUT"
+          cat app/src/main/play/release-notes/en-US/default.txt
+
+      # Pushed before publishing so the repo's versionCode never falls behind Play
+      # (a skipped number is harmless, a reused one is rejected).
+      - name: Commit the bump
+        env:
+          VERSION_CODE: ${{ steps.bump.outputs.version_code }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/build.gradle.kts app/src/main/play/release-notes
+          git commit -m "chore(release): bump versionCode to $VERSION_CODE, update release notes"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Restore signing and Play credentials
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          {
+            printf 'storeFile=%s\n' "$RUNNER_TEMP/upload.keystore"
+            printf 'storePassword=%s\n' "$STORE_PASSWORD"
+            printf 'keyAlias=%s\n' "$KEY_ALIAS"
+            printf 'keyPassword=%s\n' "$KEY_PASSWORD"
+          } > keystore.properties
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > release-manager-key.json
+
+      - name: Upload to internal
+        run: ./gradlew publishReleaseBundle --console=plain
+
+      - name: Promote internal to alpha
+        run: ./gradlew promoteReleaseArtifact --from-track internal --promote-track alpha --console=plain
+
+      - name: Remove credentials
+        if: always()
+        run: rm -f keystore.properties release-manager-key.json "$RUNNER_TEMP/upload.keystore"

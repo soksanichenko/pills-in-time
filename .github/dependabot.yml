@@ -6,23 +6,31 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      gradle-dependencies:
+      gradle-patch:
         patterns:
           - "*"
         update-types:
-          - "major"
-          - "minor"
           - "patch"
+      gradle-minor-major:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     groups:
-      github-actions-dependencies:
+      github-actions-patch:
         patterns:
           - "*"
         update-types:
-          - "major"
-          - "minor"
           - "patch"
+      github-actions-minor-major:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "major"

@@ -37,7 +37,7 @@ jobs:
     # deploys from protected branches.
     environment: production
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -59,18 +59,48 @@ jobs:
           echo "version_code=$next" >> "$GITHUB_OUTPUT"
           cat app/src/main/play/release-notes/en-US/default.txt
 
-      # Pushed before publishing so the repo's versionCode never falls behind Play
-      # (a skipped number is harmless, a reused one is rejected).
+      # main requires signed commits and PRs for everyone but admins and the release
+      # GitHub App (a bypass actor of the main rulesets). A commit created through the
+      # GraphQL API with the app's token is signed by GitHub, so it satisfies both.
+      - name: Create release app token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      # Committed before publishing so the repo's versionCode never falls behind Play
+      # (a skipped number is harmless, a reused one is rejected). Fails, before anything
+      # is uploaded, if main moved on since this run started (expectedHeadOid).
       - name: Commit the bump
         env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION_CODE: ${{ steps.bump.outputs.version_code }}
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add app/build.gradle.kts app/src/main/play/release-notes
-          git commit -m "chore(release): bump versionCode to $VERSION_CODE, update release notes"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg branch "$GITHUB_REF_NAME" \
+            --arg oid "$GITHUB_SHA" \
+            --arg headline "chore(release): bump versionCode to $VERSION_CODE, update release notes" \
+            --arg gradle "$(base64 -w0 app/build.gradle.kts)" \
+            --arg notes "$(base64 -w0 app/src/main/play/release-notes/en-US/default.txt)" \
+            '{
+              query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
+              variables: { input: {
+                branch: { repositoryNameWithOwner: $repo, branchName: $branch },
+                expectedHeadOid: $oid,
+                message: { headline: $headline },
+                fileChanges: { additions: [
+                  { path: "app/build.gradle.kts", contents: $gradle },
+                  { path: "app/src/main/play/release-notes/en-US/default.txt", contents: $notes }
+                ] }
+              } }
+            }' \
+            | gh api graphql --input - --jq '.data.createCommitOnBranch.commit.url' \
+            | tee commit-url.txt
+          test -s commit-url.txt
+          rm commit-url.txt
 
       - name: Restore signing and Play credentials
         env:

@@ -17,11 +17,43 @@ jobs:
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+      # The merge must not be made with GITHUB_TOKEN: GitHub does not start workflows
+      # for events caused by it, so the push to main would never trigger "Publish to
+      # Play". A GitHub App token avoids that. Runs triggered by Dependabot only see
+      # Dependabot secrets (not Actions or environment ones), so APP_CLIENT_ID and
+      # APP_PRIVATE_KEY must also be stored under "Dependabot secrets".
+      - name: Decode app private key
+        id: app-key
+        env:
+          RAW_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: |
+          case "$RAW_KEY" in
+            '"'*) key=$(printf '%s' "$RAW_KEY" | jq -r .) ;;
+            *) key=$RAW_KEY ;;
+          esac
+          while IFS= read -r line; do
+            [ -n "$line" ] && echo "::add-mask::$line"
+          done <<< "$key"
+          {
+            echo 'value<<APP_KEY_EOF'
+            echo "$key"
+            echo 'APP_KEY_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create merge app token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.APP_CLIENT_ID }}
+          private-key: ${{ steps.app-key.outputs.value }}
+          permission-contents: write
+          permission-pull-requests: write
+
       # Patch-only PRs and security updates are merged by GitHub once the required
       # CI check passes; minor/major bumps stay manual.
       - name: Enable auto-merge for patch and security updates
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           IS_SECURITY: ${{ contains(github.event.pull_request.labels.*.name, 'security') }}
           DEPS_JSON: ${{ steps.meta.outputs.updated-dependencies-json }}
